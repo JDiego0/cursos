@@ -1,0 +1,79 @@
+@if (curso(); as c) {
+  <div class="crumb">{{ c.estado.crumb }}</div>
+  <h1 class="page-title" [innerHTML]="c.estado.titulo | htmlSeguro"></h1>
+  <p class="lead" [innerHTML]="c.estado.lead | htmlSeguro"></p>
+
+  <div class="side-block" style="max-width: none">
+    <div class="pct">
+      <span>{{ c.estado.etiquetaProgreso }}</span>
+      <b>{{ avance().pct }}%</b>
+    </div>
+    <div class="bar"><i [style.width.%]="avance().pct"></i></div>
+    <div class="sub">
+      {{ piezas().hechos }} de {{ piezas().total }} piezas construidas ·
+      {{ avance().set.size }} de {{ avance().total }} capítulos completados
+    </div>
+  </div>
+
+  <h2 class="sec">Arquitectura por capas</h2>
+  <div class="legend">
+    <span><i class="on"></i>Encendido = ya lo construiste</span>
+    <span><i class="off"></i>Apagado = todavía pendiente</span>
+  </div>
+
+  <div class="capas">
+    @for (capa of c.arquitectura; track capa.layer) {
+      <div class="capa">
+        <div class="titulo">{{ capa.layer }}</div>
+        <div class="nodos">
+          @for (nodo of capa.nodes; track nodo.n) {
+            <a
+              class="nodo"
+              [class.on]="construido(nodo.ch)"
+              [routerLink]="RUTAS.capitulo(c.id, nodo.ch)"
+              [title]="'Se construye en el capítulo ' + nodo.ch"
+            >
+              <span class="i">{{ nodo.i }}</span>
+              <span>{{ nodo.n }}</span>
+              <span class="st">cap. {{ nodo.ch }}</span>
+            </a>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <h2 class="sec">Artefactos del proyecto</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Artefacto</th>
+          <th>Dónde vive</th>
+          <th>Cap.</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of c.artefactos; track a.nombre + a.capitulo) {
+          <tr [class.pending]="!construido(a.capitulo)">
+            <td [innerHTML]="a.nombre | htmlSeguro"></td>
+            <td><code>{{ a.donde }}</code></td>
+            <td>
+              <a [routerLink]="RUTAS.capitulo(c.id, a.capitulo)">{{ a.capitulo }}</a>
+            </td>
+            <td>
+              <span class="badge" [class.ok]="construido(a.capitulo)" [class.pend]="!construido(a.capitulo)">
+                {{ construido(a.capitulo) ? '✓ Construido' : 'Pendiente' }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (c.estado.nota) {
+    <div class="note" [innerHTML]="c.estado.nota | htmlSeguro"></div>
+  }
+}

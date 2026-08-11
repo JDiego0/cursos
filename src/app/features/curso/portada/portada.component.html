@@ -1,0 +1,61 @@
+@if (curso(); as c) {
+  <div class="hero">
+    <div class="kicker">{{ c.portada.kicker }}</div>
+    <h1 class="page-title" [innerHTML]="c.portada.titulo | htmlSeguro"></h1>
+    <p class="lead" [innerHTML]="c.portada.lead | htmlSeguro"></p>
+    <div class="btns">
+      @if (avance().set.size > 0) {
+        <a class="btn primary" [routerLink]="RUTAS.capitulo(c.id, capituloContinuar())">
+          ▶ Continuar por el capítulo {{ capituloContinuar() }}
+        </a>
+      } @else {
+        <a class="btn primary" [routerLink]="RUTAS.capitulo(c.id, primerCapitulo())">
+          Empezar por el capítulo {{ primerCapitulo() }}
+        </a>
+      }
+      <a class="btn" [routerLink]="RUTAS.estadoProyecto(c.id)">Ver el estado del proyecto</a>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    @for (s of c.portada.stats; track s.etiqueta) {
+      <div class="stat"><b>{{ s.valor }}</b><span>{{ s.etiqueta }}</span></div>
+    }
+  </div>
+
+  <!-- Cuerpo de la portada: viene tal cual del curso original. -->
+  <div class="contenido" [innerHTML]="c.portada.cuerpo | htmlSeguro"></div>
+
+  <h2 class="sec">Temario completo</h2>
+  <p>
+    {{ c.capitulos.length }} capítulos agrupados en {{ store.modulos().length }} módulos. Los que ya
+    has completado salen marcados; haz clic en cualquiera para abrirlo.
+  </p>
+
+  @for (modulo of store.modulos(); track modulo.nombre) {
+    <div class="modulo">
+      <div class="mod-cab">
+        <span>{{ modulo.nombre }}</span>
+        <span class="cuenta">{{ modulo.capitulos.length }} capítulos</span>
+      </div>
+      @for (cap of modulo.capitulos; track cap.num) {
+        <a
+          class="fila"
+          [class.hecha]="avance().set.has(cap.num)"
+          [routerLink]="RUTAS.capitulo(c.id, cap.num)"
+        >
+          <span class="punto">{{ avance().set.has(cap.num) ? '✓' : '' }}</span>
+          <span class="num">{{ cap.num }}</span>
+          <span class="ico">{{ cap.icono }}</span>
+          <span class="nombre">
+            {{ cap.corto }}
+            <small>{{ cap.titulo }}</small>
+          </span>
+          <span class="chip {{ cap.nivel | nivelClase }}">{{ cap.nivel }}</span>
+          <span class="meta">⏱ {{ cap.duracion }}</span>
+          <span class="ir">›</span>
+        </a>
+      }
+    </div>
+  }
+}

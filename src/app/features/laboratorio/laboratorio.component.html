@@ -1,0 +1,98 @@
+@let e = ejercicio();
+
+<div class="barra">
+  <span class="titulo">
+    🧪 <span>{{ e.titulo }}</span>
+    @if (e.firma) {
+      <span class="firma">{{ e.firma }}</span>
+    }
+  </span>
+
+  <select
+    class="lenguaje"
+    aria-label="Lenguaje del laboratorio"
+    [value]="labs.lenguaje()"
+    (change)="cambiarLenguaje($event)"
+  >
+    @for (l of LENGUAJES; track l.id) {
+      <option [value]="l.id">{{ l.nombre }}</option>
+    }
+  </select>
+
+  <label
+    class="remoto"
+    [class.activo]="labs.remoto()"
+    title="Ejecuta en un Python, Java o Node de verdad a través de Judge0. Necesita internet y tarda entre uno y tres segundos; desactívalo para volver al intérprete instantáneo de esta página."
+  >
+    <input type="checkbox" [checked]="labs.remoto()" (change)="cambiarRemoto($event)" />
+    ⚡ Servidor real
+  </label>
+
+  <button class="btn sm" type="button" title="Volver al código inicial" (click)="reiniciar()">
+    ↺ Reiniciar
+  </button>
+  <button
+    class="btn sm"
+    type="button"
+    title="Ejecutar (Ctrl + Enter)"
+    [disabled]="ocupado()"
+    (click)="lanzar('run')"
+  >
+    ▶ Ejecutar
+  </button>
+  @if (e.cases) {
+    <button
+      class="btn sm primary"
+      type="button"
+      title="Comprobar contra los casos del ejercicio"
+      [disabled]="ocupado()"
+      (click)="lanzar('test')"
+    >
+      ✅ Probar
+    </button>
+  }
+</div>
+
+<div class="editor">
+  <div class="numeros" aria-hidden="true">{{ numerosDeLinea() }}</div>
+  <textarea
+    #editor
+    spellcheck="false"
+    autocomplete="off"
+    autocapitalize="off"
+    wrap="off"
+    [attr.aria-label]="'Editor de código · ' + e.titulo"
+    [value]="codigo()"
+    (input)="alEscribir($event)"
+    (keydown)="alTeclearEnEditor($event)"
+  ></textarea>
+</div>
+
+<div class="resultado">
+  <div class="cabecera">
+    <span>Resultado</span>
+    <span class="ms">{{ cronometro() }}</span>
+  </div>
+
+  @if (salida(); as s) {
+    @if (s.marcador; as m) {
+      <div class="marcador" [class.ok]="m.ok" [class.ko]="!m.ok">
+        {{ m.ok ? '✅ ' : '⚠ ' }}{{ m.texto }}
+      </div>
+    }
+
+    @for (caso of s.casos ?? []; track $index) {
+      <div class="caso" [class.ok]="caso.ok" [class.ko]="!caso.ok">
+        <span class="marca">{{ caso.ok ? '✓' : '✗' }}</span>
+        <span class="detalle">
+          {{ llamada(caso) }} → {{ obtenido(caso) }}
+          @if (!caso.ok) {
+            <span class="esperado">   · esperado: {{ esperado(caso) }}</span>
+          }
+        </span>
+      </div>
+    }
+
+    <pre [class]="s.clase">{{ s.texto }}</pre>
+  }
+</div>

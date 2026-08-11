@@ -1,0 +1,88 @@
+.acciones {
+  display: flex;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.grupo {
+  margin-bottom: 6px;
+}
+
+.etiqueta {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 14px 10px 6px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.35;
+  transition: background var(--t), color var(--t);
+}
+
+.item:hover {
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.item.activo {
+  background: rgba(var(--accent-rgb), 0.13);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--cb, var(--accent));
+}
+
+.item.especial {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ico {
+  width: 20px;
+  flex: none;
+  text-align: center;
+  font-size: 15px;
+  margin-top: 1px;
+}
+
+.txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.n {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+}
+
+.hecho {
+  color: var(--ok);
+}
+
+.minibar {
+  display: block;
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.minibar > i {
+  display: block;
+  height: 100%;
+  background: var(--cb, var(--accent));
+  transition: width 0.35s ease;
+}

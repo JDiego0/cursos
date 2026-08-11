@@ -1,0 +1,111 @@
+@let f = ficha();
+@let p = avance();
+
+<app-layout>
+  <div lateral>
+    @if (f) {
+      <div class="side-block">
+        <div class="pct">
+          <span>{{ f.nombre }}</span>
+          <b>{{ p.pct }}%</b>
+        </div>
+        <div class="bar lg"><i [style.width.%]="p.pct"></i></div>
+        <div class="sub">{{ p.set.size }} de {{ p.total }} capítulos completados</div>
+
+        <div class="acciones">
+          <button class="btn primary wide sm" type="button" (click)="continuar()">▶ Continuar</button>
+          <button
+            class="btn sm"
+            type="button"
+            title="Reiniciar el progreso de este curso"
+            aria-label="Reiniciar el progreso de este curso"
+            (click)="reiniciar()"
+          >
+            ↺
+          </button>
+        </div>
+
+        <a class="volver" [routerLink]="RUTAS.panel()">◀ Volver al panel de cursos</a>
+      </div>
+
+      <nav aria-label="Capítulos del curso">
+        <div class="grupo">
+          <a
+            class="item especial"
+            [routerLink]="RUTAS.curso(f.id)"
+            routerLinkActive="activo"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (click)="cerrarMenu()"
+          >
+            <span class="ico">🏠</span><span class="txt">Inicio del curso</span>
+          </a>
+          <a
+            class="item especial"
+            [routerLink]="RUTAS.estadoProyecto(f.id)"
+            routerLinkActive="activo"
+            (click)="cerrarMenu()"
+          >
+            <span class="ico">🚀</span><span class="txt">Estado del proyecto</span>
+          </a>
+        </div>
+
+        @for (modulo of catalogo.modulos(f.id); track modulo.nombre) {
+          <div class="grupo">
+            <div class="etiqueta">{{ modulo.nombre }}</div>
+            @for (cap of modulo.capitulos; track cap.num) {
+              <a
+                class="item"
+                [routerLink]="RUTAS.capitulo(f.id, cap.num)"
+                routerLinkActive="activo"
+                (click)="cerrarMenu()"
+              >
+                <span class="ico" [class.hecho]="p.set.has(cap.num)">
+                  {{ p.set.has(cap.num) ? '✓' : cap.icono }}
+                </span>
+                <span class="txt">
+                  <span class="n">Capítulo {{ cap.num }}</span>
+                  {{ cap.corto }}
+                </span>
+              </a>
+            }
+          </div>
+        }
+
+        <div class="grupo">
+          <div class="etiqueta">Anexos</div>
+          <a
+            class="item especial"
+            [routerLink]="RUTAS.glosario(f.id)"
+            routerLinkActive="activo"
+            (click)="cerrarMenu()"
+          >
+            <span class="ico">📚</span><span class="txt">Glosario y comandos</span>
+          </a>
+        </div>
+      </nav>
+    }
+  </div>
+
+  @if (store.cargando()) {
+    <div class="cargando" role="status">
+      <div class="giro" aria-hidden="true"></div>
+      <p>Cargando <b>{{ f?.nombre }}</b>…</p>
+      <p class="fino">
+        El curso completo son unos cientos de páginas de contenido: se descarga una sola vez y luego
+        navegas entre capítulos al instante.
+      </p>
+    </div>
+  } @else if (store.error()) {
+    <div class="note bad">
+      <b class="t">No se pudo cargar el contenido del curso</b>
+      <p>
+        Falta el archivo <code>contenido/{{ cursoId() }}.json</code>. Si acabas de instalar el
+        proyecto, genera el contenido con
+        <code>node herramientas/migrar-contenido.js</code> y vuelve a compilar.
+      </p>
+      <p><a class="btn" [routerLink]="RUTAS.panel()">◀ Volver al panel</a></p>
+    </div>
+  } @else {
+    <router-outlet />
+  }
+</app-layout>

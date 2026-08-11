@@ -1,0 +1,109 @@
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-h);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+/* El botón de menú sólo aparece cuando el lateral se pliega. */
+.menu {
+  display: none;
+}
+
+.volver {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: background var(--t), color var(--t), border-color var(--t);
+}
+
+.volver:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--muted);
+  text-decoration: none;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text);
+  min-width: 0;
+}
+
+.marca:hover {
+  text-decoration: none;
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex: none;
+  background: linear-gradient(135deg, var(--accent), var(--hub-soft));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+
+.rotulo {
+  min-width: 0;
+}
+
+.nombre {
+  display: block;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  line-height: 1.1;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+  .menu {
+    display: flex;
+  }
+  .sub {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .volver span {
+    display: none;
+  }
+  .volver {
+    padding: 0 9px;
+  }
+  .nombre {
+    display: none;
+  }
+}

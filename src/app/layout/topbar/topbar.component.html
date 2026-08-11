@@ -1,0 +1,44 @@
+<header class="topbar">
+  <button
+    class="icon-btn menu"
+    type="button"
+    aria-label="Abrir el menú de navegación"
+    [attr.aria-expanded]="layout.menuAbierto()"
+    (click)="layout.alternarMenu()"
+  >
+    ☰
+  </button>
+
+  @if (curso(); as c) {
+    <a class="volver" [routerLink]="RUTAS.panel()" title="Volver al panel de cursos">
+      ◀ <span>Cursos</span>
+    </a>
+  }
+
+  <a class="marca" [routerLink]="curso() ? RUTAS.curso(curso()!.id) : RUTAS.panel()">
+    <span class="logo" aria-hidden="true">{{ curso()?.icono ?? '📚' }}</span>
+    <span class="rotulo">
+      <span class="nombre">{{ curso()?.nombre ?? 'Panel de Cursos' }}</span>
+      <span class="sub">{{ curso()?.tecnologia ?? 'Todos tus cursos en un sitio' }}</span>
+    </span>
+  </a>
+
+  <app-buscador
+    [cursoId]="curso()?.id"
+    [marcador]="
+      curso() ? 'Buscar en ' + curso()!.nombre + '…' : 'Buscar curso, capítulo o concepto…'
+    "
+  />
+
+  <app-anillo-progreso [pct]="pct()" [etiqueta]="etiquetaProgreso()" />
+
+  <button
+    class="icon-btn"
+    type="button"
+    [attr.aria-label]="tema.tema() === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+    title="Modo claro / oscuro"
+    (click)="tema.alternar()"
+  >
+    {{ tema.tema() === 'dark' ? '🌙' : '☀️' }}
+  </button>
+</header>

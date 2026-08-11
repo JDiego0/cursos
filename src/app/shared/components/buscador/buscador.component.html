@@ -1,0 +1,42 @@
+<div class="caja">
+  <span aria-hidden="true">🔍</span>
+  <input
+    #campo
+    type="search"
+    role="combobox"
+    aria-autocomplete="list"
+    [attr.aria-expanded]="hayConsulta()"
+    aria-controls="resultados-busqueda"
+    [attr.aria-label]="marcador()"
+    [placeholder]="marcador()"
+    autocomplete="off"
+    [formControl]="control"
+    (keydown)="alTeclear($event)"
+  />
+  <span class="pista" aria-hidden="true">/</span>
+</div>
+
+@if (hayConsulta()) {
+  <div class="resultados" id="resultados-busqueda" role="listbox">
+    @for (r of resultados(); track r.cursoId + '#' + (r.capitulo ?? 'c'); let i = $index) {
+      <button
+        type="button"
+        class="item"
+        role="option"
+        [class.sel]="i === seleccion()"
+        [attr.aria-selected]="i === seleccion()"
+        (click)="abrir(r)"
+        (mouseenter)="seleccion.set(i)"
+      >
+        <span class="curso" [style.color]="'var(--c-' + r.cursoId + ')'">{{ r.cursoNombre }}</span>
+        <span class="titulo" [innerHTML]="r.titulo | htmlLimpio"></span>
+        <span class="ctx">{{ r.contexto }}</span>
+        @if (r.fragmento) {
+          <span class="frag" [innerHTML]="r.fragmento | htmlLimpio"></span>
+        }
+      </button>
+    } @empty {
+      <p class="vacio">Sin resultados. Prueba con un concepto suelto: «hooks», «RBAC», «recursividad»…</p>
+    }
+  </div>
+}

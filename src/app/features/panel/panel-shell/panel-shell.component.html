@@ -1,0 +1,86 @@
+<app-layout>
+  <div lateral>
+    <div class="side-block">
+      <div class="pct">
+        <span>Progreso global</span>
+        <b>{{ global().pct }}%</b>
+      </div>
+      <div class="bar lg"><i [style.width.%]="global().pct"></i></div>
+      <div class="sub">
+        {{ global().capitulosHechos }} de {{ global().capitulosTotales }} capítulos completados
+      </div>
+
+      <div class="acciones">
+        @if (continuar(); as c) {
+          <a
+            class="btn primary wide sm"
+            [routerLink]="RUTAS.capitulo(c.curso.id, c.capitulo)"
+            (click)="cerrarMenu()"
+          >
+            ▶ Continuar
+          </a>
+        }
+        <button
+          class="btn sm"
+          type="button"
+          title="Releer el progreso guardado"
+          aria-label="Releer el progreso guardado"
+          (click)="progreso.releer()"
+        >
+          ↻
+        </button>
+      </div>
+    </div>
+
+    <nav aria-label="Cursos disponibles">
+      <div class="grupo">
+        <a
+          class="item especial"
+          [routerLink]="RUTAS.panel()"
+          routerLinkActive="activo"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="cerrarMenu()"
+        >
+          <span class="ico">🏠</span>
+          <span class="txt">Portada del panel</span>
+        </a>
+        <a
+          class="item especial"
+          [routerLink]="RUTAS.progreso()"
+          routerLinkActive="activo"
+          (click)="cerrarMenu()"
+        >
+          <span class="ico">📊</span>
+          <span class="txt">Progreso global</span>
+        </a>
+      </div>
+
+      <div class="grupo">
+        <div class="etiqueta">Cursos</div>
+        @for (ficha of catalogo.fichas(); track ficha.id) {
+          @let p = progreso.porCurso()[ficha.id];
+          <a
+            class="item"
+            [routerLink]="RUTAS.curso(ficha.id)"
+            [style.--cb]="'var(--b-' + ficha.id + ')'"
+            (click)="cerrarMenu()"
+          >
+            <span class="ico">{{ ficha.icono }}</span>
+            <span class="txt">
+              <span class="n">
+                {{ ficha.tecnologia }}
+                @if (p.set.size >= ficha.totalCapitulos) {
+                  <span class="hecho">✓</span>
+                }
+              </span>
+              {{ ficha.nombre }}
+              <span class="minibar"><i [style.width.%]="p.pct"></i></span>
+            </span>
+          </a>
+        }
+      </div>
+    </nav>
+  </div>
+
+  <router-outlet />
+</app-layout>

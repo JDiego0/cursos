@@ -1,0 +1,86 @@
+@if (capitulo(); as cap) {
+  <div class="crumb">{{ cap.modulo }} · Capítulo {{ cap.num }}</div>
+
+  <h1 class="ch-title"><span class="ico">{{ cap.icono }}</span>{{ cap.titulo }}</h1>
+
+  <div class="chips">
+    <span class="chip">⏱ {{ cap.duracion }}</span>
+    <span class="chip {{ cap.nivel | nivelClase }}">📶 {{ cap.nivel }}</span>
+    @for (concepto of cap.conceptos; track concepto) {
+      <span class="chip key">{{ concepto }}</span>
+    }
+  </div>
+
+  <div class="progreso-cap">
+    <div class="lbl">
+      <span>Progreso de este capítulo</span>
+      <span>{{ progresoCapitulo().leidos }} / {{ progresoCapitulo().total }} secciones</span>
+    </div>
+    <div class="bar"><i [style.width.%]="progresoCapitulo().pct"></i></div>
+  </div>
+
+  <div class="goal" [innerHTML]="cap.objetivo | htmlSeguro"></div>
+
+  @for (acc of cap.acordeones; track acc.id; let i = $index) {
+    <app-acordeon
+      [titulo]="acc.titulo"
+      [leido]="leidos().has(i)"
+      [abierto]="abiertos()[i]"
+      (abiertoChange)="alAbrir(i, $event)"
+    >
+      <div [appContenido]="acc.html" (hidratado)="montarLaboratorios($event)"></div>
+    </app-acordeon>
+  }
+
+  <div class="barra-completar">
+    <span class="txt">
+      @if (completado()) {
+        Capítulo completado. Puedes desmarcarlo si quieres repasarlo.
+      } @else {
+        ¿Terminaste el capítulo y comprobaste que todo funciona?
+      }
+    </span>
+    <button
+      class="btn"
+      type="button"
+      [class.primary]="!completado()"
+      (click)="alternarCompletado()"
+    >
+      {{ completado() ? '✓ Completado (clic para marcar pendiente)' : 'Marcar como completado' }}
+    </button>
+  </div>
+
+  <nav class="nav-cap" aria-label="Navegación entre capítulos">
+    @if (vecinos().anterior; as prev) {
+      <a [routerLink]="RUTAS.capitulo(cursoId(), prev.num)">
+        <span class="dir">‹ Anterior</span>
+        <span class="ttl">{{ prev.corto }}</span>
+      </a>
+    } @else {
+      <a [routerLink]="RUTAS.curso(cursoId())">
+        <span class="dir">‹ Anterior</span>
+        <span class="ttl">Inicio del curso</span>
+      </a>
+    }
+
+    @if (vecinos().siguiente; as next) {
+      <a class="sig" [routerLink]="RUTAS.capitulo(cursoId(), next.num)">
+        <span class="dir">Siguiente ›</span>
+        <span class="ttl">{{ next.corto }}</span>
+      </a>
+    } @else {
+      <a class="sig" [routerLink]="RUTAS.estadoProyecto(cursoId())">
+        <span class="dir">Siguiente ›</span>
+        <span class="ttl">Estado final del proyecto</span>
+      </a>
+    }
+  </nav>
+} @else {
+  <div class="note warn">
+    <b class="t">Ese capítulo no existe en este curso</b>
+    <p>
+      Puede que la dirección sea de una versión anterior del temario.
+      <a [routerLink]="RUTAS.curso(cursoId())">Vuelve al índice del curso</a> y elige uno de la lista.
+    </p>
+  </div>
+}

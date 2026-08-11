@@ -1,0 +1,64 @@
+.filtro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  height: 40px;
+  max-width: 420px;
+  transition: border-color var(--t);
+}
+
+.filtro:focus-within {
+  border-color: var(--accent);
+}
+
+.filtro input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.glosario {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 14px 0 18px;
+}
+
+.entrada {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 15px;
+}
+
+dt {
+  font-weight: 650;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.vacio {
+  color: var(--muted);
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .glosario {
+    grid-template-columns: 1fr;
+  }
+}

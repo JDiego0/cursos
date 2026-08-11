@@ -1,0 +1,98 @@
+<div class="hero">
+  <div class="kicker">Panel de aprendizaje · Índice de cursos</div>
+  <h1 class="page-title">
+    Todos tus cursos,<br />en una <span style="color: var(--accent)">sola pantalla</span>
+  </h1>
+  <p class="lead">
+    Este panel no enseña nada por sí mismo: es el <strong>índice</strong> de los cursos interactivos
+    de esta aplicación. Lee el progreso que guarda tu navegador, te dice por dónde ibas y te lleva de
+    un clic al capítulo exacto donde lo dejaste.
+  </p>
+  <div class="btns">
+    @if (continuar(); as c) {
+      <a class="btn primary" [routerLink]="RUTAS.capitulo(c.curso.id, c.capitulo)">
+        ▶ Continuar donde lo dejaste
+      </a>
+    }
+    <a class="btn" [routerLink]="RUTAS.progreso()">Ver progreso global</a>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><b>{{ catalogo.fichas().length }}</b><span>cursos</span></div>
+  <div class="stat"><b>{{ catalogo.totalCapitulos() }}</b><span>capítulos en total</span></div>
+  <div class="stat"><b>{{ catalogo.totalHoras() }}</b><span>horas de estudio</span></div>
+  <div class="stat"><b>{{ global().capitulosHechos }}</b><span>capítulos completados</span></div>
+</div>
+
+<h2 class="sec">Tus cursos</h2>
+<p>
+  Cada tarjeta muestra el progreso real. <strong>Continuar</strong> abre el curso en el capítulo por
+  el que ibas; <strong>Ver capítulos</strong> abre el temario completo con acceso directo a
+  cualquiera de ellos.
+</p>
+
+<div class="cursos">
+  @for (ficha of catalogo.fichas(); track ficha.id) {
+    <app-tarjeta-curso
+      [ficha]="ficha"
+      [progreso]="progreso.porCurso()[ficha.id]"
+      [estado]="progreso.estadoDe(ficha.id)"
+      [capituloContinuar]="progreso.capituloParaContinuar(ficha.id)"
+    />
+  }
+</div>
+
+<h2 class="sec">Cómo se relacionan los cursos entre sí</h2>
+<p>
+  No hay un orden obligatorio, pero sí uno que ahorra tiempo: primero un lenguaje y su forma de
+  pensar, luego la interfaz, después la nube donde vive todo y por último la IA que se apoya en lo
+  anterior.
+</p>
+<div class="diagram">{{ diagramaRuta() }}</div>
+
+<h2 class="sec">Cómo funciona este panel</h2>
+<div class="grid g3">
+  <div class="card">
+    <div class="tag">📊 Progreso real</div>
+    <div class="svc">Una sola fuente de verdad</div>
+    <p>
+      El progreso se guarda en <code>localStorage</code>, bajo la misma clave que usaban los cursos
+      antiguos. Marcas un capítulo dentro del curso y el panel lo refleja al instante.
+    </p>
+  </div>
+  <div class="card">
+    <div class="tag">🎯 Acceso directo</div>
+    <div class="svc">Al capítulo, no a la portada</div>
+    <p>
+      Cada enlace apunta a <code>#/curso/&lt;tema&gt;/capitulo/N</code>, así que abre exactamente el
+      capítulo elegido y la dirección se puede guardar en marcadores.
+    </p>
+  </div>
+  <div class="card">
+    <div class="tag">🔍 Buscador global</div>
+    <div class="svc">Atajo <code>/</code></div>
+    <p>
+      Busca a la vez en los {{ catalogo.totalCapitulos() }} capítulos de todos los cursos: título,
+      módulo y conceptos clave. <kbd>Enter</kbd> abre el primer resultado.
+    </p>
+  </div>
+</div>
+
+<div class="note tip">
+  <b class="t">💡 Cómo aprovecharlo</b>
+  <p>
+    Entra siempre por aquí. Verás de un vistazo cuál es el curso que tienes a medias y cuántos
+    capítulos te faltan, que es justo la información que hace que no lo abandones a mitad.
+  </p>
+</div>
+
+<div class="note warn">
+  <b class="t">⚠ El progreso es de este navegador</b>
+  <p>
+    Se guarda en tu equipo, en el navegador con el que estudias. Si abres la aplicación en Chrome y
+    luego en Firefox, el segundo mostrará 0 %; tampoco se comparte en ventanas de incógnito. Para
+    llevártelo a otro equipo usa <strong>Exportar progreso</strong> en la vista de
+    <a [routerLink]="RUTAS.progreso()">progreso global</a>.
+  </p>
+</div>

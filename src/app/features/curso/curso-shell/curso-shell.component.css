@@ -1,0 +1,113 @@
+.acciones {
+  display: flex;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.volver {
+  display: block;
+  margin-top: 11px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.volver:hover {
+  color: var(--accent);
+}
+
+.grupo {
+  margin-bottom: 6px;
+}
+
+.etiqueta {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 14px 10px 6px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.35;
+  transition: background var(--t), color var(--t);
+}
+
+.item:hover {
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.item.activo {
+  background: rgba(var(--accent-rgb), 0.13);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.item.especial {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ico {
+  width: 20px;
+  flex: none;
+  text-align: center;
+  font-size: 15px;
+  margin-top: 1px;
+}
+
+.ico.hecho {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.n {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+}
+
+/* --- Estado de carga --- */
+.cargando {
+  padding: 60px 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.cargando .fino {
+  font-size: 13.5px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.giro {
+  width: 38px;
+  height: 38px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}

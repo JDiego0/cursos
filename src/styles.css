@@ -1,0 +1,962 @@
+/* ============================================================
+   SISTEMA DE DISEÑO GLOBAL
+
+   Aquí vive todo lo que no puede ir en un componente:
+
+   1. Los tokens de diseño (temas claro y oscuro).
+   2. El reset y la tipografía base.
+   3. Las clases del CONTENIDO de los capítulos (.note, .card,
+      .code-block, .quiz…). El contenido llega como HTML dentro
+      de un [innerHTML], así que la encapsulación de vistas de
+      Angular no lo alcanza: sus estilos tienen que ser globales.
+
+   El "cromo" de la aplicación (barra superior, menú lateral,
+   tarjetas de curso, mapa de progreso, laboratorio) NO está aquí:
+   son componentes y llevan sus estilos encapsulados.
+
+     1. TOKENS DE DISEÑO
+     2. RESET Y BASE
+     3. TIPOGRAFÍA DE CONTENIDO
+     4. COMPONENTES DE CONTENIDO
+     5. BOTONES Y CONTROLES
+     6. RESPONSIVE
+   ============================================================ */
+
+/* ============================================================
+   1. TOKENS DE DISEÑO
+   ============================================================ */
+:root {
+  --hub: #f0b429;                       /* dorado del panel */
+  --hub-soft: #ffd166;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --sidebar-w: 308px;
+  --topbar-h: 58px;
+  --contenido-max: 1120px;
+  --font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Code", "JetBrains Mono", "Consolas", "SF Mono", Menlo, monospace;
+  --t: 0.18s ease;
+
+  /* Color de marca de cada curso: sólido (--b-) y suave (--s-).
+     Sirven igual en los dos temas porque sólo se usan en barras,
+     puntos y filetes, nunca como color de texto. */
+  --b-algoritmia: #0fa678;  --s-algoritmia: #45dcae;
+  --b-angular:    #dd0031;  --s-angular:    #ff6b8a;
+  --b-azure:      #0078d4;  --s-azure:      #4aa3e0;
+  --b-ia:         #7c5cff;  --s-ia:         #a894ff;
+  --b-java:       #e76f00;  --s-java:       #ffa64d;
+  --b-python:     #3776ab;  --s-python:     #6bb3e8;
+  --b-react:      #61dafb;  --s-react:      #9becff;
+}
+
+html[data-theme="dark"] {
+  --bg: #111114;
+  --bg-2: #15151a;
+  --surface: #191920;
+  --surface-2: #20202a;
+  --border: #2e2e3a;
+  --border-soft: #26262f;
+  --text: #e9e9f0;
+  --text-2: #bfc0cc;
+  --muted: #8e8fa0;
+  --code-bg: #0d0d11;
+  --accent: #f0b429;
+  --accent-rgb: 240, 180, 41;           /* el mismo acento en componentes */
+  --accent-ink: #111114;
+  --ok: #3fb950;
+  --warn: #e3b341;
+  --danger: #f85149;
+  --tip: #a371f7;
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+
+  /* Resaltador de sintaxis */
+  --hl-key: #ff9d5c;
+  --hl-str: #8fdc8f;
+  --hl-com: #7a7a8c;
+  --hl-ann: #c8a2ff;
+  --hl-num: #e3b341;
+  --hl-tag: #79b8ff;
+  --hl-typ: #7fe3d4;
+  --hl-cmd: #61dafb;
+  --hl-flag: #e0b3ff;
+
+  /* Color de texto legible de cada curso sobre fondo oscuro */
+  --c-algoritmia: #45dcae;  --c-algoritmia-rgb: 69, 220, 174;
+  --c-angular: #ff6b8a;     --c-angular-rgb: 255, 107, 138;
+  --c-azure: #4aa3e0;       --c-azure-rgb: 74, 163, 224;
+  --c-ia: #a894ff;          --c-ia-rgb: 168, 148, 255;
+  --c-java: #ffa64d;        --c-java-rgb: 255, 166, 77;
+  --c-python: #6bb3e8;      --c-python-rgb: 107, 179, 232;
+  --c-react: #61dafb;       --c-react-rgb: 97, 218, 251;
+}
+
+html[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-2: #f6f6f9;
+  --surface: #ffffff;
+  --surface-2: #f4f4f8;
+  --border: #e0e0e8;
+  --border-soft: #ececf2;
+  --text: #16161c;
+  --text-2: #41414f;
+  --muted: #65657a;
+  --code-bg: #14141b;
+  --accent: #9a6a00;
+  --accent-rgb: 154, 106, 0;
+  --accent-ink: #ffffff;
+  --ok: #1a7f37;
+  --warn: #9a6700;
+  --danger: #cf222e;
+  --tip: #6639ba;
+  --shadow: 0 6px 22px rgba(20, 20, 32, 0.12);
+
+  /* El bloque de código se queda oscuro también en tema claro:
+     es lo que hace cualquier editor y evita releer el resaltado. */
+  --hl-key: #ff9d5c;
+  --hl-str: #8fdc8f;
+  --hl-com: #8b8b9c;
+  --hl-ann: #c8a2ff;
+  --hl-num: #e3b341;
+  --hl-tag: #79b8ff;
+  --hl-typ: #7fe3d4;
+  --hl-cmd: #61dafb;
+  --hl-flag: #e0b3ff;
+
+  --c-algoritmia: #0a7355;  --c-algoritmia-rgb: 10, 115, 85;
+  --c-angular: #a6002a;     --c-angular-rgb: 166, 0, 42;
+  --c-azure: #005a9e;       --c-azure-rgb: 0, 90, 158;
+  --c-ia: #5b3fd6;          --c-ia-rgb: 91, 63, 214;
+  --c-java: #a34f00;        --c-java-rgb: 163, 79, 0;
+  --c-python: #1f5f8b;      --c-python-rgb: 31, 95, 139;
+  --c-react: #0a7ea4;       --c-react-rgb: 10, 126, 164;
+}
+
+/* ------------------------------------------------------------
+   Acento por curso.
+
+   Al entrar en un curso, el shell pone `data-curso="<id>"` en el
+   <html> y toda la interfaz adopta el color de esa tecnología: los
+   botones, la caja de objetivo, los chips, la barra de progreso.
+   Al hacerlo con variables y no con estilos en línea, el acento
+   sigue cambiando solo al alternar entre tema claro y oscuro.
+   ------------------------------------------------------------ */
+html[data-curso="algoritmia"] { --accent: var(--c-algoritmia); --accent-rgb: var(--c-algoritmia-rgb); }
+html[data-curso="angular"]    { --accent: var(--c-angular);    --accent-rgb: var(--c-angular-rgb); }
+html[data-curso="azure"]      { --accent: var(--c-azure);      --accent-rgb: var(--c-azure-rgb); }
+html[data-curso="ia"]         { --accent: var(--c-ia);         --accent-rgb: var(--c-ia-rgb); }
+html[data-curso="java"]       { --accent: var(--c-java);       --accent-rgb: var(--c-java-rgb); }
+html[data-curso="python"]     { --accent: var(--c-python);     --accent-rgb: var(--c-python-rgb); }
+html[data-curso="react"]      { --accent: var(--c-react);      --accent-rgb: var(--c-react-rgb); }
+
+/* ============================================================
+   2. RESET Y BASE
+   ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+::selection {
+  background: var(--hub);
+  color: #111114;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Accesibilidad: respeta a quien pide menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Sólo visible al navegar con teclado. */
+.salto-contenido {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 10px 16px;
+  border-radius: 0 0 var(--radius) 0;
+  font-weight: 600;
+}
+.salto-contenido:focus {
+  left: 0;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ============================================================
+   3. TIPOGRAFÍA DE CONTENIDO
+   ============================================================ */
+.crumb {
+  font-size: 12.5px;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+h1.page-title {
+  font-size: 38px;
+  line-height: 1.12;
+  letter-spacing: -0.8px;
+  margin-bottom: 14px;
+  font-weight: 650;
+}
+
+.ch-title {
+  font-size: 35px;
+  line-height: 1.15;
+  letter-spacing: -0.7px;
+  margin: 8px 0 14px;
+  font-weight: 650;
+}
+.ch-title .ico {
+  margin-right: 8px;
+}
+
+h2.sec {
+  font-size: 24px;
+  margin: 34px 0 12px;
+  letter-spacing: -0.3px;
+  font-weight: 640;
+}
+
+h3 {
+  font-size: 18px;
+  margin: 22px 0 8px;
+  font-weight: 640;
+  letter-spacing: -0.2px;
+}
+
+h4 {
+  font-size: 15px;
+  margin: 18px 0 6px;
+  font-weight: 640;
+  color: var(--text);
+}
+
+p {
+  margin: 0 0 12px;
+  color: var(--text-2);
+}
+p strong,
+li strong {
+  color: var(--text);
+  font-weight: 640;
+}
+
+.lead {
+  font-size: 18px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+/* ============================================================
+   4. COMPONENTES DE CONTENIDO
+   ============================================================ */
+
+/* --- Chips y distintivos --- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 4px 11px;
+  color: var(--text-2);
+}
+.chip.lv1 {
+  color: var(--ok);
+  border-color: rgba(63, 185, 80, 0.4);
+}
+.chip.lv2 {
+  color: var(--warn);
+  border-color: rgba(227, 179, 65, 0.4);
+}
+.chip.lv3 {
+  color: var(--danger);
+  border-color: rgba(248, 81, 73, 0.4);
+}
+.chip.key {
+  background: rgba(var(--accent-rgb), 0.11);
+  border-color: rgba(var(--accent-rgb), 0.33);
+  color: var(--accent);
+}
+
+.badge {
+  font-size: 11.5px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.badge.ok {
+  color: var(--ok);
+  border-color: rgba(63, 185, 80, 0.45);
+  background: rgba(63, 185, 80, 0.1);
+}
+.badge.doing {
+  color: var(--warn);
+  border-color: rgba(227, 179, 65, 0.45);
+  background: rgba(227, 179, 65, 0.1);
+}
+.badge.pend {
+  color: var(--muted);
+}
+
+/* --- Listas --- */
+ul.clean {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 14px;
+}
+ul.clean li {
+  position: relative;
+  padding-left: 22px;
+  margin-bottom: 7px;
+  color: var(--text-2);
+}
+ul.clean li::before {
+  content: "▸";
+  position: absolute;
+  left: 2px;
+  color: var(--accent);
+}
+
+ol.steps {
+  list-style: none;
+  counter-reset: s;
+  padding-left: 0;
+  margin-left: 0;
+}
+ol.steps > li {
+  counter-increment: s;
+  position: relative;
+  padding-left: 38px;
+  margin-bottom: 14px;
+  color: var(--text-2);
+}
+ol.steps > li::before {
+  content: counter(s);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ol.steps ul {
+  margin-top: 6px;
+}
+
+/* --- Avisos --- */
+.note {
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  margin: 14px 0;
+  font-size: 14.5px;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  background: var(--surface-2);
+}
+.note b.t {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 14px;
+}
+.note p:last-child {
+  margin-bottom: 0;
+}
+.note.warn {
+  border-left-color: var(--warn);
+  background: rgba(227, 179, 65, 0.08);
+}
+.note.bad {
+  border-left-color: var(--danger);
+  background: rgba(248, 81, 73, 0.08);
+}
+.note.good {
+  border-left-color: var(--ok);
+  background: rgba(63, 185, 80, 0.08);
+}
+.note.tip {
+  border-left-color: var(--tip);
+  background: rgba(163, 113, 247, 0.08);
+}
+
+/* --- Objetivo del capítulo --- */
+.goal {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), rgba(var(--accent-rgb), 0.03));
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+.goal h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--accent);
+}
+.goal p:last-child {
+  margin-bottom: 0;
+}
+
+/* --- Tablas --- */
+.tbl-wrap {
+  overflow-x: auto;
+  margin: 14px 0 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  background: var(--surface);
+}
+th,
+td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: top;
+}
+thead th {
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+tr.pending td {
+  color: var(--muted);
+}
+
+/* --- Código --- */
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--accent);
+}
+
+.code-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 14px 0;
+  background: var(--code-bg);
+}
+.code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border);
+}
+.code-head .lang {
+  font-size: 11.5px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--hl-typ);
+  font-weight: 700;
+}
+.copy-btn {
+  font-size: 12px;
+  color: #d7d2e0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  padding: 3px 10px;
+  transition: all var(--t);
+  background: rgba(255, 255, 255, 0.04);
+}
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+.copy-btn.ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+.code-block pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #e2ddea;
+}
+.code-block code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.code-note {
+  font-size: 14px;
+  color: var(--muted);
+  margin: -4px 0 16px;
+  border-left: 2px solid var(--border);
+  padding: 2px 0 2px 12px;
+}
+
+.c-key { color: var(--hl-key); font-weight: 600; }
+.c-str { color: var(--hl-str); }
+.c-com { color: var(--hl-com); font-style: italic; }
+.c-ann { color: var(--hl-ann); }
+.c-num { color: var(--hl-num); }
+.c-tag { color: var(--hl-tag); }
+.c-typ { color: var(--hl-typ); }
+.c-cmd { color: var(--hl-cmd); font-weight: 600; }
+.c-flag { color: var(--hl-flag); }
+
+/* --- Diagramas ASCII --- */
+.diagram {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 14px 0;
+  color: var(--text-2);
+}
+
+/* --- Rejillas de tarjetas --- */
+.grid {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0 18px;
+}
+.grid.g2 { grid-template-columns: repeat(2, 1fr); }
+.grid.g3 { grid-template-columns: repeat(3, 1fr); }
+.grid.g4 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.card .tag {
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.card .svc {
+  font-size: 12.5px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.card p {
+  font-size: 14px;
+  margin: 0;
+  color: var(--text-2);
+}
+
+/* --- Autoevaluación --- */
+.quiz .q {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  margin-bottom: 10px;
+  background: var(--surface-2);
+}
+.quiz .q-text {
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.quiz .q-ans {
+  display: none;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 14.5px;
+  color: var(--text-2);
+}
+.quiz.show .q-ans {
+  display: block;
+}
+.quiz .q-ans::before {
+  content: "✔ Respuesta · ";
+  color: var(--ok);
+  font-weight: 700;
+}
+
+/* --- Pistas y soluciones (laboratorios de algoritmia) --- */
+.hint,
+.sol {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  margin: 8px 0;
+  overflow: hidden;
+}
+.hint > summary,
+.sol > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  color: var(--text-2);
+  transition: background var(--t);
+}
+.hint > summary::-webkit-details-marker,
+.sol > summary::-webkit-details-marker {
+  display: none;
+}
+.hint > summary::after,
+.sol > summary::after {
+  content: "+";
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 17px;
+}
+.hint[open] > summary::after,
+.sol[open] > summary::after {
+  content: "–";
+}
+.hint > summary:hover,
+.sol > summary:hover {
+  background: var(--border-soft);
+  color: var(--text);
+}
+.hint {
+  border-left: 3px solid var(--tip);
+}
+.hint[open] > summary {
+  color: var(--text);
+}
+.sol {
+  border-left: 3px solid var(--ok);
+  background: rgba(63, 185, 80, 0.06);
+}
+.sol > summary {
+  color: var(--ok);
+}
+.hint .in,
+.sol .in {
+  padding: 4px 16px 16px;
+  font-size: 14.5px;
+}
+.hint .in > :last-child,
+.sol .in > :last-child {
+  margin-bottom: 0;
+}
+
+/* --- Contenido inyectado: márgenes de los extremos --- */
+.contenido > :first-child { margin-top: 0; }
+.contenido > :last-child { margin-bottom: 0; }
+.contenido ul:not(.clean),
+.contenido ol:not(.steps) {
+  margin: 0 0 14px 4px;
+  padding-left: 20px;
+  color: var(--text-2);
+}
+.contenido li {
+  margin-bottom: 7px;
+}
+.contenido li::marker {
+  color: var(--accent);
+}
+
+/* --- Leyendas --- */
+.legend {
+  display: flex;
+  gap: 16px;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: -1px;
+  margin-right: 5px;
+  border: 1px solid var(--border);
+}
+.legend i.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.legend i.off {
+  background: var(--surface-2);
+}
+
+/* --- Portada --- */
+.hero {
+  background: linear-gradient(140deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.02) 60%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 32px;
+  margin-bottom: 26px;
+}
+.hero .kicker {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.hero .btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 20px 0 26px;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+}
+.stat b {
+  display: block;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+}
+.stat span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* --- Barras de progreso --- */
+.bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--hub-soft));
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+.bar.lg {
+  height: 9px;
+}
+
+.side-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.side-block .pct {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.side-block .pct b {
+  font-size: 18px;
+  color: var(--text);
+}
+.side-block .sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 7px;
+}
+
+/* ============================================================
+   5. BOTONES Y CONTROLES
+   ============================================================ */
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-block;
+  text-decoration: none;
+  transition: background var(--t), border-color var(--t), transform var(--t);
+}
+.btn:hover {
+  background: var(--border-soft);
+  border-color: var(--muted);
+  text-decoration: none;
+  color: var(--text);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn.primary:hover {
+  filter: brightness(1.1);
+  color: var(--accent-ink);
+}
+.btn.sm {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+.btn.wide {
+  flex: 1;
+  text-align: center;
+}
+.btn.ghost {
+  background: transparent;
+}
+.btn[disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: var(--text-2);
+  transition: background var(--t), color var(--t);
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ============================================================
+   6. RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .grid.g4 { grid-template-columns: repeat(2, 1fr); }
+  .grid.g3 { grid-template-columns: repeat(2, 1fr); }
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .grid.g2,
+  .grid.g3,
+  .grid.g4 { grid-template-columns: 1fr; }
+  h1.page-title { font-size: 30px; }
+  .ch-title { font-size: 28px; }
+  .hero { padding: 22px; }
+}
+
+@media (max-width: 620px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+}

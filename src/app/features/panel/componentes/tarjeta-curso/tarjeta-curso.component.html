@@ -1,0 +1,42 @@
+@let f = ficha();
+@let p = progreso();
+
+<div class="cabecera">
+  <span class="icono" aria-hidden="true">{{ f.icono }}</span>
+  <div>
+    <h3>{{ f.nombre }}</h3>
+    <span class="tec">{{ f.tecnologia }}</span>
+  </div>
+  <span class="badge {{ (estado() | estadoCurso).clase }}">{{ (estado() | estadoCurso).texto }}</span>
+</div>
+
+<p class="desc" [innerHTML]="f.descripcion | htmlSeguro"></p>
+
+<div class="meta">
+  <span class="chip">🧩 {{ f.proyecto }}</span>
+  <span class="chip">📘 {{ f.totalCapitulos }} capítulos</span>
+  <span class="chip">⏱ ~{{ f.horas }} h</span>
+  <span class="chip">📶 {{ f.nivel }}</span>
+</div>
+
+<div class="prog">
+  <div class="lbl">
+    <span>{{ p.set.size }} de {{ f.totalCapitulos }} completados</span>
+    <b>{{ p.pct }}%</b>
+  </div>
+  <div class="bar"><i [style.width.%]="p.pct"></i></div>
+</div>
+
+@if (siguiente(); as cap) {
+  <p class="siguiente">
+    {{ estado() === 'completado' ? 'Repasar:' : 'Vas por:' }}
+    <b>{{ cap.icono }} Capítulo {{ cap.num }} · {{ cap.corto }}</b>
+  </p>
+}
+
+<div class="acciones">
+  <a class="btn curso" [routerLink]="RUTAS.capitulo(f.id, capituloContinuar())">
+    {{ textoBoton() }}
+  </a>
+  <a class="btn" [routerLink]="RUTAS.curso(f.id)">Ver capítulos</a>
+</div>

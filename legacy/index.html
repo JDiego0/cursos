@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de Cursos · Todos tus cursos interactivos en un solo sitio</title>
+<meta name="description" content="Índice único de los cursos interactivos: Angular, Azure, IA para desarrolladores, Java y React. Muestra el progreso real de cada curso y permite saltar a cualquier capítulo.">
+<!-- ============================================================
+     PANEL DE CURSOS · index.html
+     Archivo único, sin servidor, sin librerías, sin conexión.
+     Lee el progreso que cada curso guarda en localStorage y lo
+     presenta en una sola interfaz desde la que se abre cualquier
+     capítulo de cualquier curso.
+     Requisito: los .html de los cursos viven en la subcarpeta cursos/
+     (la ruta se controla con la constante BASE del script).
+     ============================================================ -->
+<style>
+/* ============================================================
+   1. TOKENS DE DISEÑO (temas claro y oscuro)
+   ============================================================ */
+:root{
+  --hub:#f0b429;           /* dorado del panel */
+  --hub-soft:#ffd166;
+  --hub-deep:#9a6a00;
+  --radius:10px;
+  --radius-sm:6px;
+  --sidebar-w:300px;
+  --topbar-h:58px;
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Cascadia Code","JetBrains Mono","Consolas","SF Mono",Menlo,monospace;
+  --t:.18s ease;
+
+  /* Color de marca de cada curso: sólido (--b-) y suave (--s-).
+     Sirven igual en tema claro y oscuro porque sólo se usan en
+     barras, puntos y filetes, nunca como color de texto. */
+  --b-algoritmia:#0fa678; --s-algoritmia:#45dcae;
+  --b-angular:#dd0031;  --s-angular:#ff6b8a;
+  --b-azure:#0078d4;    --s-azure:#4aa3e0;
+  --b-ia:#7c5cff;       --s-ia:#a894ff;
+  --b-java:#e76f00;     --s-java:#ffa64d;
+  --b-python:#3776ab;   --s-python:#6bb3e8;
+  --b-react:#61dafb;    --s-react:#9becff;
+}
+html[data-theme="dark"]{
+  --bg:#111114;
+  --bg-2:#15151a;
+  --surface:#191920;
+  --surface-2:#20202a;
+  --border:#2e2e3a;
+  --border-soft:#26262f;
+  --text:#e9e9f0;
+  --text-2:#bfc0cc;
+  --muted:#8e8fa0;
+  --code-bg:#0d0d11;
+  --accent:#f0b429;
+  --accent-ink:#111114;
+  --ok:#3fb950;
+  --warn:#e3b341;
+  --danger:#f85149;
+  --shadow:0 8px 28px rgba(0,0,0,.5);
+  /* color de texto legible de cada curso sobre fondo oscuro */
+  --c-algoritmia:#45dcae;
+  --c-angular:#ff6b8a;
+  --c-azure:#4aa3e0;
+  --c-ia:#a894ff;
+  --c-java:#ffa64d;
+  --c-python:#6bb3e8;
+  --c-react:#61dafb;
+}
+html[data-theme="light"]{
+  --bg:#ffffff;
+  --bg-2:#f6f6f9;
+  --surface:#ffffff;
+  --surface-2:#f4f4f8;
+  --border:#e0e0e8;
+  --border-soft:#ececf2;
+  --text:#16161c;
+  --text-2:#41414f;
+  --muted:#65657a;
+  --code-bg:#14141b;
+  --accent:#9a6a00;
+  --accent-ink:#ffffff;
+  --ok:#1a7f37;
+  --warn:#9a6700;
+  --danger:#cf222e;
+  --shadow:0 6px 22px rgba(20,20,32,.12);
+  /* color de texto legible de cada curso sobre fondo claro */
+  --c-algoritmia:#0a7355;
+  --c-angular:#a6002a;
+  --c-azure:#005a9e;
+  --c-ia:#5b3fd6;
+  --c-java:#a34f00;
+  --c-python:#1f5f8b;
+  --c-react:#0a7ea4;
+}
+
+/* ============================================================
+   2. RESET Y BASE
+   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none;}
+a:hover{text-decoration:underline;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+::selection{background:var(--hub);color:#111114;}
+
+*::-webkit-scrollbar{width:10px;height:10px;}
+*::-webkit-scrollbar-track{background:transparent;}
+*::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+*::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+
+/* ============================================================
+   3. BARRA SUPERIOR
+   ============================================================ */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);z-index:60;
+  display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;white-space:nowrap;color:var(--text);}
+.brand:hover{text-decoration:none;}
+.brand .logo{
+  width:28px;height:28px;border-radius:7px;flex:none;
+  background:linear-gradient(135deg,#f0b429,#ffe08a);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.brand .name{font-size:15px;letter-spacing:-.2px;}
+.brand .sub{font-size:11px;color:var(--muted);display:block;line-height:1.1;font-weight:400;}
+
+.icon-btn{
+  width:36px;height:36px;border-radius:var(--radius-sm);flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+  color:var(--text-2);transition:background var(--t),color var(--t);
+}
+.icon-btn:hover{background:var(--surface-2);color:var(--text);}
+#menuBtn{display:none;}
+
+/* Buscador */
+.search-wrap{position:relative;flex:1;max-width:470px;margin-left:auto;}
+.search-box{display:flex;align-items:center;gap:8px;
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:0 10px;height:36px;transition:border-color var(--t);}
+.search-box:focus-within{border-color:var(--accent);}
+.search-box input{
+  flex:1;background:none;border:none;outline:none;color:var(--text);
+  font-family:inherit;font-size:14px;
+}
+.search-box .hint{font-size:11px;color:var(--muted);border:1px solid var(--border);
+  border-radius:4px;padding:1px 5px;}
+.results{
+  position:absolute;top:44px;left:0;right:0;max-height:66vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:6px;display:none;z-index:70;
+}
+.results.open{display:block;}
+.results .r-item{display:block;width:100%;text-align:left;padding:9px 11px;border-radius:var(--radius-sm);
+  transition:background var(--t);color:var(--text);text-decoration:none;}
+.results .r-item:hover,.results .r-item.sel{background:var(--surface-2);text-decoration:none;}
+.results .r-title{font-size:14px;font-weight:600;}
+.results .r-ctx{font-size:12px;color:var(--muted);margin-top:2px;}
+.results .r-snip{font-size:12.5px;color:var(--text-2);margin-top:3px;line-height:1.45;}
+.results .r-course{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--cc,var(--accent));}
+.results mark{background:rgba(240,180,41,.3);color:inherit;border-radius:3px;padding:0 2px;}
+.results .r-empty{padding:16px;text-align:center;color:var(--muted);font-size:14px;}
+
+.top-progress{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);white-space:nowrap;}
+.ring{width:30px;height:30px;flex:none;border-radius:50%;
+  background:conic-gradient(var(--accent) 0deg, var(--border) 0deg);
+  display:flex;align-items:center;justify-content:center;}
+.ring::after{content:"";width:22px;height:22px;border-radius:50%;background:var(--surface);}
+
+/* ============================================================
+   4. MENÚ LATERAL
+   ============================================================ */
+.sidebar{
+  position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);z-index:50;
+  background:var(--bg-2);border-right:1px solid var(--border);
+  overflow-y:auto;padding:16px 12px 60px;
+  transition:transform .22s ease;
+}
+.side-block{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px;margin-bottom:16px;
+}
+.side-block .pct{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted);margin-bottom:7px;}
+.side-block .pct b{font-size:18px;color:var(--text);}
+.side-block .sub{font-size:11.5px;color:var(--muted);margin-top:7px;}
+.bar{height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
+.bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--hub),var(--hub-soft));border-radius:99px;transition:width .35s ease;}
+.bar.c > i{background:linear-gradient(90deg,var(--cb),var(--cs));}
+.bar.lg{height:9px;}
+.side-actions{display:flex;gap:6px;margin-top:11px;}
+.btn{
+  border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+  border-radius:var(--radius-sm);padding:7px 11px;font-size:13px;font-weight:500;
+  display:inline-block;text-decoration:none;
+  transition:background var(--t),border-color var(--t),transform var(--t);
+}
+.btn:hover{background:var(--border-soft);border-color:var(--muted);text-decoration:none;color:var(--text);}
+.btn:active{transform:translateY(1px);}
+.btn.primary{background:var(--hub);border-color:var(--hub);color:#111114;}
+.btn.primary:hover{background:var(--hub-soft);color:#111114;}
+.btn.course{background:var(--cb);border-color:var(--cb);color:#fff;}
+.btn.course:hover{filter:brightness(1.12);color:#fff;}
+.btn.sm{padding:5px 9px;font-size:12px;}
+.btn.wide{flex:1;text-align:center;}
+.btn.ghost{background:transparent;}
+.btn[disabled]{opacity:.45;pointer-events:none;}
+
+.nav-group{margin-bottom:6px;}
+.nav-label{
+  font-size:11px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);
+  font-weight:700;padding:14px 10px 6px;
+}
+.nav-item{
+  display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;
+  padding:8px 10px;border-radius:var(--radius-sm);font-size:14px;color:var(--text-2);
+  line-height:1.35;transition:background var(--t),color var(--t);
+  text-decoration:none;
+}
+.nav-item:hover{background:var(--surface);color:var(--text);text-decoration:none;}
+.nav-item.active{background:rgba(240,180,41,.13);color:var(--text);font-weight:600;
+  box-shadow:inset 3px 0 0 var(--cb,var(--hub));}
+.nav-item .ico{width:20px;flex:none;text-align:center;font-size:15px;margin-top:1px;}
+.nav-item .txt{flex:1;min-width:0;}
+.nav-item .n{font-size:11px;color:var(--muted);display:block;}
+.nav-item .minibar{height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:5px;}
+.nav-item .minibar > i{display:block;height:100%;background:var(--cb,var(--hub));transition:width .35s ease;}
+.nav-item.special{font-weight:600;color:var(--text);}
+.nav-item .done-mark{font-size:11px;color:var(--ok);}
+
+/* ============================================================
+   5. CONTENIDO PRINCIPAL
+   ============================================================ */
+.main{
+  margin-left:var(--sidebar-w);padding:calc(var(--topbar-h) + 26px) 34px 90px;
+  max-width:1120px;
+}
+.view{display:none;}
+.view.active{display:block;animation:fade .22s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+.crumb{font-size:12.5px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;font-weight:600;}
+h1.page-title{font-size:38px;line-height:1.12;letter-spacing:-.8px;margin-bottom:14px;font-weight:650;}
+.ch-title{font-size:35px;line-height:1.15;letter-spacing:-.7px;margin:8px 0 14px;font-weight:650;}
+.ch-title .ico{margin-right:8px;}
+h2.sec{font-size:24px;margin:34px 0 12px;letter-spacing:-.3px;font-weight:640;}
+h3{font-size:18px;margin:22px 0 8px;font-weight:640;letter-spacing:-.2px;}
+p{margin:0 0 12px;color:var(--text-2);}
+p strong,li strong{color:var(--text);font-weight:640;}
+.lead{font-size:18px;color:var(--text-2);line-height:1.6;margin-bottom:18px;}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;font-size:12.5px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:99px;
+  padding:4px 11px;color:var(--text-2);
+}
+.chip.lv1{color:var(--ok);border-color:rgba(63,185,80,.4);}
+.chip.lv2{color:var(--warn);border-color:rgba(227,179,65,.4);}
+.chip.lv3{color:var(--danger);border-color:rgba(248,81,73,.4);}
+.chip.key{background:rgba(240,180,41,.1);border-color:rgba(240,180,41,.32);color:var(--accent);}
+.chip.course{color:var(--ct);border-color:var(--cb);}
+
+.badge{font-size:11.5px;padding:2px 9px;border-radius:99px;border:1px solid var(--border);white-space:nowrap;}
+.badge.ok{color:var(--ok);border-color:rgba(63,185,80,.45);background:rgba(63,185,80,.1);}
+.badge.doing{color:var(--warn);border-color:rgba(227,179,65,.45);background:rgba(227,179,65,.1);}
+.badge.pend{color:var(--muted);}
+
+ul.clean{list-style:none;padding-left:0;margin:0 0 14px;}
+ul.clean li{position:relative;padding-left:22px;margin-bottom:7px;color:var(--text-2);}
+ul.clean li::before{content:"▸";position:absolute;left:2px;color:var(--accent);}
+
+.note{
+  border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:14.5px;color:var(--text-2);
+  border:1px solid var(--border);border-left:4px solid var(--accent);background:var(--surface-2);
+}
+.note b.t{display:block;margin-bottom:4px;color:var(--text);font-size:14px;}
+.note p:last-child{margin-bottom:0;}
+.note.warn{border-left-color:var(--warn);background:rgba(227,179,65,.08);}
+.note.bad{border-left-color:var(--danger);background:rgba(248,81,73,.08);}
+.note.good{border-left-color:var(--ok);background:rgba(63,185,80,.08);}
+.note.tip{border-left-color:#a371f7;background:rgba(163,113,247,.08);}
+
+.tbl-wrap{overflow-x:auto;margin:14px 0 18px;border:1px solid var(--border);border-radius:var(--radius);}
+table{width:100%;border-collapse:collapse;font-size:14.5px;background:var(--surface);}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border-soft);vertical-align:middle;}
+thead th{background:var(--surface-2);color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.6px;}
+tbody tr:last-child td{border-bottom:none;}
+
+code{
+  font-family:var(--mono);font-size:.88em;background:var(--surface-2);
+  border:1px solid var(--border-soft);border-radius:4px;padding:1px 5px;color:var(--accent);
+}
+.diagram{
+  font-family:var(--mono);font-size:13px;line-height:1.6;white-space:pre;overflow-x:auto;
+  background:var(--surface-2);border:1px dashed var(--border);border-radius:var(--radius);
+  padding:16px;margin:14px 0;color:var(--text-2);
+}
+
+.grid{display:grid;gap:14px;margin:14px 0 18px;}
+.grid.g2{grid-template-columns:repeat(2,1fr);}
+.grid.g3{grid-template-columns:repeat(3,1fr);}
+.card{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;
+}
+.card .tag{font-size:17px;font-weight:650;color:var(--text);margin-bottom:2px;}
+.card .svc{font-size:12.5px;color:var(--accent);margin-bottom:8px;font-weight:600;}
+.card p{font-size:14px;margin:0;color:var(--text-2);}
+
+/* Portada */
+.hero{
+  background:linear-gradient(140deg,rgba(240,180,41,.16),rgba(240,180,41,.02) 60%);
+  border:1px solid var(--border);border-radius:14px;padding:32px;margin-bottom:26px;
+}
+.hero .kicker{color:var(--accent);font-weight:700;letter-spacing:1.4px;font-size:12px;text-transform:uppercase;}
+.hero .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 26px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;}
+.stat b{display:block;font-size:26px;letter-spacing:-.5px;}
+.stat span{font-size:12.5px;color:var(--muted);}
+
+/* --- Tarjetas de curso (componente propio del panel) --- */
+.courses{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:14px 0 10px;}
+.course{
+  position:relative;overflow:hidden;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:18px 18px 16px;display:flex;flex-direction:column;
+  transition:border-color var(--t),transform var(--t),box-shadow var(--t);
+}
+.course::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--cb),var(--cs));}
+.course:hover{border-color:var(--cb);transform:translateY(-2px);box-shadow:var(--shadow);}
+.course .c-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.course .c-ico{
+  width:44px;height:44px;flex:none;border-radius:11px;font-size:22px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--border);
+}
+.course h3{margin:0;font-size:19px;letter-spacing:-.3px;}
+.course .c-tech{font-size:12.5px;color:var(--ct);font-weight:600;}
+.course .c-desc{font-size:14px;color:var(--text-2);margin:0 0 12px;flex:1;}
+.course .c-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.course .c-prog{margin-bottom:12px;}
+.course .c-prog .lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:6px;}
+.course .c-prog .lbl b{color:var(--text);font-size:14px;}
+.course .c-next{font-size:13px;color:var(--muted);margin-bottom:12px;}
+.course .c-next b{color:var(--text-2);font-weight:600;}
+.course .c-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* --- Lista de capítulos de la ficha de curso --- */
+.mod-block{margin:0 0 14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface);}
+.mod-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--border-soft);
+  font-size:12px;text-transform:uppercase;letter-spacing:.9px;font-weight:700;color:var(--ct);
+}
+.mod-head .m-count{color:var(--muted);letter-spacing:.4px;font-weight:600;text-transform:none;font-size:12px;}
+.ch-row{
+  display:flex;align-items:center;gap:11px;padding:10px 14px;
+  border-bottom:1px solid var(--border-soft);color:var(--text-2);text-decoration:none;
+  transition:background var(--t);
+}
+.ch-row:last-child{border-bottom:none;}
+.ch-row:hover{background:var(--surface-2);text-decoration:none;color:var(--text);}
+.ch-row .dot{
+  width:19px;height:19px;flex:none;border-radius:50%;border:1.5px solid var(--border);
+  font-size:11px;display:flex;align-items:center;justify-content:center;color:transparent;
+}
+.ch-row.done .dot{background:var(--ok);border-color:var(--ok);color:#fff;}
+.ch-row .num{font-family:var(--mono);font-size:12px;color:var(--muted);width:22px;flex:none;text-align:right;}
+.ch-row .ico{font-size:15px;flex:none;}
+.ch-row .name{flex:1;min-width:0;font-size:14.5px;}
+.ch-row.done .name{color:var(--text);}
+.ch-row .name small{display:block;color:var(--muted);font-size:12px;}
+.ch-row .meta{font-size:11.5px;color:var(--muted);white-space:nowrap;}
+.ch-row .go{color:var(--muted);font-size:14px;}
+.ch-row:hover .go{color:var(--ct);}
+
+/* --- Mapa de progreso (vista Progreso global) --- */
+.heat{display:flex;flex-direction:column;gap:12px;margin:16px 0 22px;}
+.heat-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.heat-row .h-name{width:150px;flex:none;font-size:13.5px;font-weight:600;color:var(--ct);}
+.heat-cells{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:200px;}
+.cell{
+  width:20px;height:20px;border-radius:4px;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--muted);
+  font-size:9.5px;display:flex;align-items:center;justify-content:center;
+  text-decoration:none;transition:transform var(--t),filter var(--t);
+}
+.cell:hover{transform:scale(1.18);text-decoration:none;filter:brightness(1.1);}
+.cell.on{background:var(--cb);border-color:var(--cb);color:#fff;font-weight:700;}
+.cell.last{outline:2px solid var(--accent);outline-offset:1px;}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap;}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1px solid var(--border);}
+.legend i.on{background:var(--hub);border-color:var(--hub);}
+.legend i.off{background:var(--surface-2);}
+
+.io-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+#ioBox{
+  width:100%;margin-top:10px;min-height:96px;display:none;
+  background:var(--code-bg);color:#dbe7f3;border:1px solid var(--border);border-radius:var(--radius);
+  font-family:var(--mono);font-size:12.5px;padding:12px;resize:vertical;
+}
+#ioBox.show{display:block;}
+
+#toTop{
+  position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;z-index:55;
+  background:var(--hub);color:#111114;font-size:20px;box-shadow:var(--shadow);
+  display:none;align-items:center;justify-content:center;
+}
+#toTop.show{display:flex;}
+#toTop:hover{background:var(--hub-soft);}
+
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:45;display:none;}
+.backdrop.show{display:block;}
+
+/* ============================================================
+   6. RESPONSIVE
+   ============================================================ */
+@media (max-width:1100px){
+  .stat-row{grid-template-columns:repeat(2,1fr);}
+  .courses{grid-template-columns:1fr;}
+  .grid.g3{grid-template-columns:repeat(2,1fr);}
+}
+@media (max-width:900px){
+  #menuBtn{display:flex;}
+  .sidebar{transform:translateX(-100%);box-shadow:var(--shadow);}
+  .sidebar.open{transform:none;}
+  .main{margin-left:0;padding:calc(var(--topbar-h) + 20px) 18px 80px;}
+  .brand .sub{display:none;}
+  .top-progress span{display:none;}
+  .grid.g2,.grid.g3{grid-template-columns:1fr;}
+  h1.page-title{font-size:30px;}
+  .ch-title{font-size:28px;}
+  .hero{padding:22px;}
+  .heat-row .h-name{width:100%;}
+}
+@media (max-width:620px){
+  .brand .name{display:none;}
+  .search-box .hint{display:none;}
+  .stat-row{grid-template-columns:1fr 1fr;}
+  .ch-row .meta{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     BARRA SUPERIOR
+     ============================================================ -->
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="Abrir menú">☰</button>
+  <a class="brand" href="#panel">
+    <span class="logo">📚</span>
+    <span>
+      <span class="name">Panel de Cursos</span>
+      <span class="sub">Todos tus cursos en un sitio</span>
+    </span>
+  </a>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <span aria-hidden="true">🔍</span>
+      <input type="search" id="search" placeholder="Buscar curso, capítulo o concepto…" autocomplete="off" aria-label="Buscar en todos los cursos">
+      <span class="hint">/</span>
+    </div>
+    <div class="results" id="results" role="listbox"></div>
+  </div>
+
+  <div class="top-progress" title="Progreso global de todos los cursos">
+    <div class="ring" id="ring"></div>
+    <span id="ringTxt">0%</span>
+  </div>
+  <button class="icon-btn" id="themeBtn" aria-label="Cambiar tema" title="Modo claro / oscuro">🌙</button>
+</header>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- ============================================================
+     MENÚ LATERAL
+     ============================================================ -->
+<aside class="sidebar" id="sidebar">
+  <div class="side-block">
+    <div class="pct"><span>Progreso global</span><b id="pctTxt">0%</b></div>
+    <div class="bar lg"><i id="pctBar" style="width:0%"></i></div>
+    <div class="sub" id="pctSub">0 de 0 capítulos completados</div>
+    <div class="side-actions">
+      <a class="btn primary wide sm" id="continueBtn" href="#panel">▶ Continuar</a>
+      <button class="btn sm" id="refreshBtn" title="Releer el progreso guardado por los cursos">↻</button>
+    </div>
+  </div>
+  <nav id="nav" aria-label="Cursos disponibles"></nav>
+</aside>
+
+<!-- ============================================================
+     CONTENIDO PRINCIPAL
+     ============================================================ -->
+<main class="main" id="main">
+
+  <!-- ---------------- VISTA: PANEL (portada) ---------------- -->
+  <section class="view" id="panel">
+    <div class="hero">
+      <div class="kicker">Panel de aprendizaje · Índice de cursos</div>
+      <h1 class="page-title">Todos tus cursos,<br>en una <span style="color:var(--accent)">sola pantalla</span></h1>
+      <p class="lead">Este archivo no enseña nada por sí mismo: es el <strong>índice</strong> de los cursos
+      interactivos que tienes en esta carpeta. Lee el progreso que cada curso guarda en tu navegador,
+      te dice por dónde ibas y te lleva de un clic al capítulo exacto donde lo dejaste.</p>
+      <div class="btns">
+        <a class="btn primary" id="heroContinue" href="#panel">▶ Continuar donde lo dejaste</a>
+        <a class="btn" href="#progreso">Ver progreso global</a>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><b id="statCursos">0</b><span>cursos</span></div>
+      <div class="stat"><b id="statCaps">0</b><span>capítulos en total</span></div>
+      <div class="stat"><b id="statHoras">0</b><span>horas de estudio</span></div>
+      <div class="stat"><b id="statHechos">0</b><span>capítulos completados</span></div>
+    </div>
+
+    <h2 class="sec">Tus cursos</h2>
+    <p>Cada tarjeta muestra el progreso real leído del propio curso. <strong>Continuar</strong> abre el
+    curso en el capítulo por el que ibas; <strong>Ver capítulos</strong> abre la ficha con el temario
+    completo y acceso directo a cualquier capítulo.</p>
+    <div class="courses" id="cursosGrid"></div>
+
+    <h2 class="sec">Cómo se relacionan los cursos entre sí</h2>
+    <p>No hay un orden obligatorio, pero sí uno que ahorra tiempo: primero un lenguaje y su forma de
+    pensar, luego la interfaz, después la nube donde vive todo y por último la IA que se apoya en lo
+    anterior.</p>
+    <div class="diagram" id="rutaDiagram"></div>
+
+    <h2 class="sec">Cómo funciona este panel</h2>
+    <div class="grid g3">
+      <div class="card">
+        <div class="tag">📊 Progreso real</div>
+        <div class="svc">Sin duplicar datos</div>
+        <p>El progreso no se guarda aquí: se lee de la misma clave de <code>localStorage</code> que usa
+        cada curso. Marcas un capítulo dentro del curso y el panel lo refleja al volver.</p>
+      </div>
+      <div class="card">
+        <div class="tag">🎯 Acceso directo</div>
+        <div class="svc">Al capítulo, no a la portada</div>
+        <p>Los enlaces apuntan a <code>cursos/&lt;tema&gt;.html#cap-N</code>, así que el curso abre
+        exactamente en el capítulo elegido, con su menú y su buscador propios.</p>
+      </div>
+      <div class="card">
+        <div class="tag">🔍 Buscador global</div>
+        <div class="svc">Atajo <code>/</code></div>
+        <p>Busca a la vez en los <span id="miniCaps">todos los</span> capítulos de todos los cursos: título,
+        módulo y conceptos clave. <kbd>Enter</kbd> abre el primer resultado.</p>
+      </div>
+    </div>
+
+    <div class="note tip">
+      <b class="t">💡 Cómo aprovecharlo</b>
+      <p>Deja este <code>index.html</code> anclado en el navegador y entra siempre por aquí. Verás de un
+      vistazo cuál es el curso que tienes a medias y cuántos capítulos te faltan, que es justo la
+      información que hace que no abandones a mitad.</p>
+    </div>
+
+    <div class="note warn">
+      <b class="t">⚠ Dos condiciones para que el progreso se vea</b>
+      <p><strong>1 · Estructura de carpetas.</strong> Los archivos de los cursos viven en
+      <code>cursos/</code>, junto a este <code>index.html</code>. Si mueves uno, su enlace dejará de
+      abrir; si cambias la carpeta entera, ajusta la constante <code>BASE</code> del script.<br>
+      <strong>2 · Mismo navegador y mismo perfil.</strong> El progreso lo guarda el navegador en tu
+      equipo. Si abres los cursos en Chrome y el panel en Firefox, el panel mostrará 0 % aunque hayas
+      avanzado. Tampoco se comparte entre ventanas de incógnito.</p>
+    </div>
+  </section>
+
+  <!-- ---------------- VISTA: PROGRESO GLOBAL ---------------- -->
+  <section class="view" id="progreso">
+    <div class="crumb">Panel · Seguimiento</div>
+    <h2 class="ch-title"><span class="ico">📊</span>Progreso global</h2>
+    <p class="lead">Todo lo que llevas hecho, curso por curso y capítulo por capítulo. Cada cuadrito es un
+    capítulo: haz clic para abrirlo directamente.</p>
+
+    <div class="side-block" style="max-width:none;">
+      <div class="pct"><span>Capítulos completados en total</span><b id="gPct">0%</b></div>
+      <div class="bar lg"><i id="gBar" style="width:0%"></i></div>
+      <div class="sub" id="gSub">—</div>
+    </div>
+
+    <h3>Resumen por curso</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Curso</th><th>Proyecto</th><th>Capítulos</th><th>Progreso</th><th>Estado</th><th>Ir</th></tr>
+        </thead>
+        <tbody id="progTable"></tbody>
+      </table>
+    </div>
+
+    <h3>Mapa de capítulos</h3>
+    <div class="legend">
+      <span><i class="on"></i>Completado</span>
+      <span><i class="off"></i>Pendiente</span>
+      <span><i class="off" style="outline:2px solid var(--accent);outline-offset:1px;"></i>Último capítulo visitado</span>
+    </div>
+    <div class="heat" id="heat"></div>
+
+    <h3>Copia de seguridad del progreso</h3>
+    <p>El progreso vive en el navegador, y el navegador se puede reinstalar o limpiar. Exporta el texto,
+    guárdalo en un archivo y podrás recuperar tu avance en otro equipo o en otro navegador.</p>
+    <div class="io-row">
+      <button class="btn" id="exportBtn">⬇ Exportar progreso</button>
+      <button class="btn" id="importBtn">⬆ Importar progreso</button>
+      <button class="btn" id="wipeBtn" title="Borra el progreso de todos los cursos">↺ Reiniciar todo</button>
+    </div>
+    <textarea id="ioBox" spellcheck="false" aria-label="Texto del progreso exportado o para importar"></textarea>
+    <div class="note" id="ioMsg" style="display:none;"></div>
+
+    <div class="note good">
+      <b class="t">✅ Sabrás que el panel lee bien tus cursos si…</b>
+      <p>Abres un curso, marcas un capítulo como completado, vuelves a esta pestaña y el porcentaje sube
+      solo (o sube al pulsar <code>↻</code> en el menú lateral). Si siempre marca 0 %, revisa el aviso de
+      la portada: normalmente es que el curso se abrió en otro navegador.</p>
+    </div>
+  </section>
+
+  <!-- Las fichas de cada curso (#curso-<id>) las genera el script -->
+
+  <button id="toTop" title="Volver arriba" aria-label="Volver arriba">↑</button>
+</main>
+
+<script>
+/* ============================================================
+   PANEL DE CURSOS · MOTOR
+    1. Catálogo de cursos y capítulos      ✎ CURSOS (+ CAPS generado)
+    2. Estado y persistencia (localStorage)
+    3. Lectura del progreso de cada curso
+    4. Tema claro / oscuro
+    5. Menú lateral
+    6. Vistas: fichas de curso, panel y progreso
+    7. Navegación entre vistas
+    8. Progreso (anillo, barras y estadísticas)
+    9. Buscador global
+   10. Copia de seguridad (exportar / importar / reiniciar)
+   11. Arranque
+   ============================================================ */
+
+/* ---------- 1. CATÁLOGO DE CURSOS Y CAPÍTULOS ---------- */
+/* Carpeta donde viven los archivos de los cursos, relativa a este index.html.
+   Es el único sitio que hay que tocar si algún día se mueven. */
+const BASE = 'cursos/';
+
+/* Para añadir un curso nuevo basta con añadir una entrada aquí:
+   - id     · identificador corto; debe existir --b-<id>, --s-<id> y --c-<id> en el CSS
+   - file   · nombre del archivo del curso dentro de BASE
+   - key    · su STORE_KEY, tal cual está escrito en el <script> del curso
+   - caps   · nº de capítulos (sólo se usa si el curso no está en CAPS)
+   Si además quieres ver su temario y buscarlo, añade sus capítulos a CAPS
+   ejecutando: node herramientas/generar-catalogo.js */
+const CURSOS = [
+  { id:'algoritmia', file:'algoritmia.html', key:'algoritmia-algonaka-v1',
+    name:'Algoritmia y Lógica', tech:'Python · Java · JavaScript', icon:'🧠',
+    proyecto:'AlgoNaka', proyectoDesc:'tu playbook de patrones para entrevistas técnicas',
+    horas:27, caps:25, nivel:'Principiante → Avanzado',
+    desc:'De variables y bucles a grafos, backtracking y programación dinámica, enfocado a <strong>entrevistas técnicas</strong>. Cada capítulo trae un <strong>laboratorio</strong> donde escribes el código y lo ejecutas en la propia página, en Python, Java o JavaScript, con pistas progresivas y solución bajo demanda.',
+    temas:['Big O','Two Pointers','Sliding Window','Hash Maps','Grafos','Backtracking','Prog. dinámica'] },
+
+  { id:'java', file:'java.html', key:'java-librotech-v1',
+    name:'Java desde Cero', tech:'Java · Spring Boot', icon:'☕',
+    proyecto:'LibroTech', proyectoDesc:'un sistema de gestión de una librería',
+    horas:30, caps:25, nivel:'Principiante → Avanzado',
+    desc:'Del primer <code>Hola Mundo</code> en consola a una arquitectura de microservicios con Spring Boot: tipos, POO, colecciones, excepciones, Maven, JDBC, tests, REST, JPA, seguridad y Docker.',
+    temas:['POO','Colecciones','Streams','Maven','Spring Boot','JPA','Testing'] },
+
+  { id:'react', file:'react.html', key:'react-cinenaka-v1',
+    name:'React desde Cero', tech:'React · Vite · TypeScript', icon:'⚛',
+    proyecto:'CineNaka', proyectoDesc:'un catálogo de cine con lista de pendientes',
+    horas:34, caps:25, nivel:'Principiante → Avanzado',
+    desc:'De un componente que muestra un título a una aplicación profesional: JSX, estado, efectos, custom hooks, React Router, Context, TanStack Query, TypeScript, accesibilidad, tests y despliegue.',
+    temas:['JSX','Hooks','Router','TanStack Query','TypeScript','Vitest'] },
+
+  { id:'python', file:'python.html', key:'python-nakadata-v1',
+    name:'Python desde Cero', tech:'Python · pandas · FastAPI', icon:'🐍',
+    proyecto:'NakaData', proyectoDesc:'la plataforma de datos de una cadena de tiendas',
+    horas:32, caps:25, nivel:'Principiante → Avanzado',
+    desc:'Del primer <code>print()</code> a una plataforma completa: tipos, colecciones, funciones, paquetes, POO, pandas, gráficos, automatización, scraping, SQLite, machine learning, FastAPI y pruebas.',
+    temas:['pandas','NumPy','Matplotlib','Automatización','SQLite','scikit-learn','FastAPI'] },
+
+  { id:'angular', file:'angular.html', key:'angular-nakagym-v1',
+    name:'Angular desde Cero', tech:'Angular · TypeScript · RxJS', icon:'🅰',
+    proyecto:'NakaGym', proyectoDesc:'la aplicación de gestión de un gimnasio',
+    horas:32, caps:24, nivel:'Principiante → Avanzado',
+    desc:'Componentes, signals, inyección de dependencias, rutas protegidas, formularios reactivos, RxJS, interceptores, carga diferida, zoneless, i18n, SSR, tests y despliegue.',
+    temas:['Signals','DI','Router','Formularios','RxJS','SSR'] },
+
+  { id:'ia', file:'ia.html', key:'ia-nakadesk-v1',
+    name:'IA para Desarrolladores', tech:'LLMs · Python · n8n', icon:'🧠',
+    proyecto:'NakaDesk', proyectoDesc:'el copiloto interno de un equipo de desarrollo',
+    horas:24, caps:22, nivel:'Principiante → Avanzado',
+    desc:'De una llamada de veinte líneas a un modelo a un sistema con RAG, agentes con herramientas, MCP, evaluación, automatización con n8n y Power Automate, observabilidad y control de costes.',
+    temas:['Prompting','Embeddings','RAG','Agentes','MCP','n8n'] },
+
+  { id:'azure', file:'azure.html', key:'azure-nakashop-v1',
+    name:'Azure desde Cero', tech:'Microsoft Azure · CLI', icon:'☁',
+    proyecto:'NakaShop', proyectoDesc:'una tienda online en la nube',
+    horas:9, caps:12, nivel:'Principiante → Avanzado',
+    desc:'La nube explicada construyendo una tienda: Resource Groups, identidad y RBAC, redes y máquinas virtuales, App Service, Storage, Azure SQL, Cosmos DB, Functions, mensajería, Key Vault y CI/CD.',
+    temas:['RBAC','App Service','Storage','Azure SQL','Functions','CI/CD'] }
+];
+
+/* La ruta real de cada curso es BASE + su nombre de archivo. Se resuelve una sola
+   vez aquí para que el resto del motor trabaje siempre con c.file ya completo. */
+CURSOS.forEach(c => { c.file = BASE + c.file; });
+
+/* Capítulos de cada curso, extraídos de los data-* de los propios archivos.
+   n=número · s=título corto · t=título largo · m=módulo · h=duración
+   lv=nivel · i=icono · c=conceptos clave separados por | */
+/* __CAPS_INICIO__ */
+const CAPS = {
+ algoritmia: [
+  {n:0,s:'Preparación y método',t:'Cómo se resuelve un problema: el método de los 5 pasos',m:'Módulo 1 · Cómo se piensa un problema',h:'45 min',lv:'Principiante',i:'🧭',c:'Método de 5 pasos|Casos borde|Fuerza bruta|Traza|Laboratorio|Los tres lenguajes'},
+  {n:1,s:'Variables y condicionales',t:'Decidir: variables, tipos y condicionales',m:'Módulo 1 · Cómo se piensa un problema',h:'55 min',lv:'Principiante',i:'🔢',c:'Variable|Tipo|Módulo (%)|if / elif / else|Orden de las condiciones|Booleano'},
+  {n:2,s:'Ciclos y acumuladores',t:'Repetir: ciclos, acumuladores y banderas',m:'Módulo 1 · Cómo se piensa un problema',h:'60 min',lv:'Principiante',i:'🔁',c:'for|while|Acumulador|Bandera|break y continue|Invariante|Salida temprana'},
+  {n:3,s:'Big O y complejidad',t:'Cuánto cuesta lo que escribes: Big O desde el primer día',m:'Módulo 1 · Cómo se piensa un problema',h:'60 min',lv:'Principiante',i:'⏱',c:'Big O|Complejidad temporal|Complejidad espacial|Peor caso|O(1) O(n) O(n log n) O(n²)|Evaluación bloque 1'},
+  {n:4,s:'Strings y palíndromos',t:'Cadenas de texto: recorrer, construir y comparar',m:'Módulo 2 · Datos en fila',h:'65 min',lv:'Principiante',i:'🔤',c:'Inmutabilidad|Índice y longitud|Concatenación en bucle|StringBuilder|Normalizar|Palíndromo'},
+  {n:5,s:'Arrays y listas',t:'Arrays y listas: la estructura que sale en todos los enunciados',m:'Módulo 2 · Datos en fila',h:'65 min',lv:'Principiante',i:'📊',c:'Índice|Coste de cada operación|In place|Puntero de lectura y escritura|Copia vs referencia|Matriz'},
+  {n:6,s:'Aritmética de enteros',t:'Números: primos, dígitos y divisores',m:'Módulo 2 · Datos en fila',h:'60 min',lv:'Principiante',i:'🧮',c:'Primo|Criba de Eratóstenes|Raíz cuadrada como límite|Dígitos con % y //|MCD|Desbordamiento|Evaluación bloque 2'},
+  {n:7,s:'Funciones y descomposición',t:'Partir el problema: funciones y descomposición',m:'Módulo 3 · Dividir el problema',h:'55 min',lv:'Principiante',i:'🧩',c:'Función pura|Efecto secundario|Parámetro y argumento|Ámbito|Descomposición|Nombrar bien'},
+  {n:8,s:'Recursividad',t:'Recursividad: una función que se llama a sí misma',m:'Módulo 3 · Dividir el problema',h:'70 min',lv:'Intermedio',i:'🌀',c:'Caso base|Paso recursivo|Pila de llamadas|Árbol de recursión|Acto de fe|Divide y vencerás'},
+  {n:9,s:'Memoización',t:'Memoización: de exponencial a lineal con una línea',m:'Módulo 3 · Dividir el problema',h:'60 min',lv:'Intermedio',i:'🧠',c:'Subproblemas repetidos|Caché|Top-down|Bottom-up|Espacio a cambio de tiempo|Evaluación bloque 3'},
+  {n:10,s:'Conjuntos (sets)',t:'Conjuntos: la respuesta a «¿ya lo he visto?»',m:'Módulo 4 · Buscar en O(1)',h:'55 min',lv:'Intermedio',i:'🎯',c:'Set|Tabla hash|Pertenencia O(1)|Duplicados|Sin orden|Cambiar memoria por tiempo'},
+  {n:11,s:'Diccionarios y Two Sum',t:'Diccionarios: contar, agrupar e indexar',m:'Módulo 4 · Buscar en O(1)',h:'70 min',lv:'Intermedio',i:'🗂',c:'Mapa clave→valor|Mapa de conteo|Índice inverso|Agrupar|Two Sum|Anagramas|Evaluación bloque 4'},
+  {n:12,s:'Ordenar y comparadores',t:'Ordenar: el sort como herramienta, no como ejercicio',m:'Módulo 5 · Orden y búsqueda',h:'70 min',lv:'Intermedio',i:'🔀',c:'O(n log n)|Clave de ordenación|Comparador|Estabilidad|Criterios compuestos|Merge sort|Quick sort'},
+  {n:13,s:'Búsqueda binaria',t:'Búsqueda binaria: sobre el array y sobre la respuesta',m:'Módulo 5 · Orden y búsqueda',h:'70 min',lv:'Intermedio',i:'🔍',c:'O(log n)|Invariante del rango|Punto medio|Desbordamiento|Primera posición válida|Binaria sobre la respuesta|Evaluación bloque 5'},
+  {n:14,s:'Two Pointers',t:'Dos punteros: recorrer con dos índices coordinados',m:'Módulo 6 · Patrones sobre secuencias',h:'65 min',lv:'Intermedio',i:'↔️',c:'Extremos que se acercan|Mismo sentido|Descartar sin comprobar|O(1) de espacio|Array ordenado|Lento y rápido'},
+  {n:15,s:'Sliding Window',t:'Ventana deslizante: mantener el resumen en vez de recalcularlo',m:'Módulo 6 · Patrones sobre secuencias',h:'70 min',lv:'Intermedio',i:'🪟',c:'Subarray contiguo|Ventana de tamaño fijo|Ventana variable|Estado de la ventana|Encoger y crecer|Amortizado O(n)'},
+  {n:16,s:'Prefijos y Kadane',t:'Sumas de prefijos y Kadane: cuando la ventana no sirve',m:'Módulo 6 · Patrones sobre secuencias',h:'65 min',lv:'Intermedio',i:'➕',c:'Suma de prefijos|Suma de un rango en O(1)|Kadane|Números negativos|Prefijo + diccionario|Evaluación bloque 6'},
+  {n:17,s:'Pilas y colas',t:'Pilas y colas: el último en entrar y el primero en llegar',m:'Módulo 7 · Estructuras dinámicas',h:'70 min',lv:'Intermedio',i:'🥞',c:'LIFO|FIFO|Deque|Paréntesis equilibrados|Pila monótona|Siguiente mayor|Coste de pop(0)'},
+  {n:18,s:'Listas enlazadas',t:'Listas enlazadas: nodos que apuntan a nodos',m:'Módulo 7 · Estructuras dinámicas',h:'75 min',lv:'Avanzado',i:'🔗',c:'Nodo|Puntero|Invertir moviendo punteros|Nodo centinela|Lento y rápido|Ciclo de Floyd|Evaluación bloque 7'},
+  {n:19,s:'Árboles y BST',t:'Árboles binarios: recursión con dos ramas',m:'Módulo 8 · Estructuras ramificadas',h:'75 min',lv:'Avanzado',i:'🌳',c:'Nodo con dos hijos|Altura|Recorridos DFS|Inorden|BFS por niveles|BST|Caso base = nodo nulo'},
+  {n:20,s:'Grafos',t:'Grafos: BFS, DFS y las cuadrículas que en realidad son grafos',m:'Módulo 8 · Estructuras ramificadas',h:'75 min',lv:'Avanzado',i:'🕸',c:'Nodo y arista|Lista de adyacencia|Visitados|BFS camino más corto|DFS|Cuadrícula como grafo|Evaluación bloque 8'},
+  {n:21,s:'Backtracking',t:'Backtracking: elegir, explorar y deshacer',m:'Módulo 9 · Explorar y optimizar',h:'75 min',lv:'Avanzado',i:'♟',c:'Árbol de decisiones|Elegir-explorar-deshacer|Poda|Subconjuntos|Permutaciones|Copiar al guardar'},
+  {n:22,s:'Programación dinámica',t:'Programación dinámica: contar y optimizar sin enumerar',m:'Módulo 9 · Explorar y optimizar',h:'80 min',lv:'Avanzado',i:'📐',c:'Recurrencia|Subproblemas solapados|Subestructura óptima|Tabla 1D y 2D|Bottom-up|Reducir el espacio'},
+  {n:23,s:'Montículos y voraces',t:'Montículos y algoritmos voraces: el mejor de cada momento',m:'Módulo 9 · Explorar y optimizar',h:'70 min',lv:'Avanzado',i:'⛰',c:'Montículo|Cola de prioridad|Top-K en O(n log k)|Voraz|Justificar la elección|Intervalos|Evaluación bloque 9'},
+  {n:24,s:'La entrevista',t:'El día de la entrevista: comunicar, decidir y seguir practicando',m:'Módulo 10 · La entrevista',h:'60 min',lv:'Avanzado',i:'🎤',c:'Árbol de decisión|Protocolo de 45 minutos|Pensar en voz alta|Qué hacer si te bloqueas|Plan de práctica|Examen final'}
+ ],
+ angular: [
+  {n:0,s:'Preparación del entorno',t:'Qué es Angular de verdad y cómo preparar tu entorno',m:'Módulo 1 · Tus primeros componentes',h:'50 min',lv:'Principiante',i:'🅰',c:'Angular|Framework|Node y npm|Angular CLI|Standalone|TypeScript'},
+  {n:1,s:'Componentes y plantillas',t:'Componentes y plantillas: la primera pantalla de NakaGym',m:'Módulo 1 · Tus primeros componentes',h:'65 min',lv:'Principiante',i:'🧩',c:'Interpolación|Property binding|Event binding|@if|@for|track|@switch|@let|TypeScript básico'},
+  {n:2,s:'Signals: estado reactivo',t:'Signals: el estado reactivo que Angular sabe seguir',m:'Módulo 1 · Tus primeros componentes',h:'70 min',lv:'Principiante',i:'📡',c:'signal|computed|effect|set y update|Inmutabilidad|linkedSignal|Grafo reactivo'},
+  {n:3,s:'input, output y proyección',t:'Componentes que hablan entre sí: input, output y proyección',m:'Módulo 1 · Tus primeros componentes',h:'65 min',lv:'Principiante',i:'🔗',c:'input()|output()|model()|ng-content|Componente tonto y listo|Flujo unidireccional'},
+  {n:4,s:'Directivas y pipes',t:'Directivas y pipes: comportamiento y formato reutilizables',m:'Módulo 1 · Tus primeros componentes',h:'55 min',lv:'Principiante',i:'🔧',c:'Directiva de atributo|Host bindings|DatePipe|Pipe puro|Pipe personalizado|hostDirectives'},
+  {n:5,s:'Servicios e inyección',t:'Servicios e inyección de dependencias: sacar la lógica de los componentes',m:'Módulo 2 · Datos y servicios',h:'65 min',lv:'Principiante',i:'💉',c:'Servicio|Injectable|inject()|providedIn root|InjectionToken|Singleton|Jerarquía de inyectores'},
+  {n:6,s:'Rutas y navegación',t:'Rutas: convertir NakaGym en una aplicación de varias pantallas',m:'Módulo 2 · Datos y servicios',h:'70 min',lv:'Intermedio',i:'🧭',c:'provideRouter|routerLink|router-outlet|Parámetros de ruta|withComponentInputBinding|Rutas anidadas|Query params'},
+  {n:7,s:'HTTP y datos remotos',t:'HTTP: los datos de NakaGym vienen de una API real',m:'Módulo 2 · Datos y servicios',h:'75 min',lv:'Intermedio',i:'🌐',c:'provideHttpClient|HttpClient|Observable|toSignal|Estados de carga|CRUD|json-server'},
+  {n:8,s:'RxJS: lo imprescindible',t:'RxJS lo justo: buscador con debounce, cancelación y reintentos',m:'Módulo 2 · Datos y servicios',h:'70 min',lv:'Intermedio',i:'🌊',c:'Observable|Operadores|switchMap|debounceTime|catchError|takeUntilDestroyed|toSignal|toObservable'},
+  {n:9,s:'Formularios reactivos',t:'Formularios reactivos: dar de alta clases con validación de verdad',m:'Módulo 2 · Datos y servicios',h:'75 min',lv:'Intermedio',i:'📝',c:'FormGroup|FormControl|Validators|Validador propio|Validación asíncrona|FormArray|NonNullable'},
+  {n:10,s:'Estado compartido y store',t:'Estado compartido: un store de verdad con signals',m:'Módulo 3 · Una aplicación completa',h:'70 min',lv:'Intermedio',i:'🗄',c:'Store|Fuente única de verdad|Estado normalizado|Entidades|Selectores|Persistencia|Estado de vista'},
+  {n:11,s:'Guards y resolvers',t:'Guards y resolvers: proteger rutas y precargar datos',m:'Módulo 3 · Una aplicación completa',h:'70 min',lv:'Intermedio',i:'🛡',c:'CanActivateFn|CanMatchFn|CanDeactivateFn|ResolveFn|Sesión y roles|Redirección|Datos de ruta'},
+  {n:12,s:'Interceptores HTTP',t:'Interceptores HTTP: token, errores y reintentos en un solo sitio',m:'Módulo 3 · Una aplicación completa',h:'70 min',lv:'Intermedio',i:'🔌',c:'HttpInterceptorFn|Cadena de interceptores|Token de autenticación|Refresco 401|HttpContext|Indicador global'},
+  {n:13,s:'Carga diferida y bundles',t:'Carga diferida: dividir el paquete y cargar sólo lo necesario',m:'Módulo 3 · Una aplicación completa',h:'65 min',lv:'Intermedio',i:'📦',c:'loadComponent|loadChildren|@defer|Precarga|NgOptimizedImage|Presupuestos de bundle|Core Web Vitals'},
+  {n:14,s:'Detección de cambios · zoneless',t:'Detección de cambios y zoneless: entender qué hace Angular por dentro',m:'Módulo 3 · Una aplicación completa',h:'70 min',lv:'Avanzado',i:'⚙',c:'Zone.js|OnPush|Zoneless|markForCheck|Profiler|ExpressionChangedAfterChecked|afterNextRender'},
+  {n:15,s:'TypeScript avanzado',t:'TypeScript en serio: tipar el dominio y validar lo que entra',m:'Módulo 4 · Calidad de producto',h:'65 min',lv:'Avanzado',i:'🔷',c:'strict|Uniones discriminadas|Tipos utilitarios|Guardas de tipo|satisfies|Tipos nominales|Validación en runtime'},
+  {n:16,s:'Estilos y design tokens',t:'Estilos y sistema de diseño: tokens, temas y encapsulación',m:'Módulo 4 · Calidad de producto',h:'60 min',lv:'Intermedio',i:'🎨',c:'Encapsulación|ViewEncapsulation|::ng-deep|Design tokens|Tema claro y oscuro|host y host-context|Animaciones CSS'},
+  {n:17,s:'Accesibilidad (a11y)',t:'Accesibilidad: que NakaGym sirva a todo el mundo',m:'Módulo 4 · Calidad de producto',h:'65 min',lv:'Intermedio',i:'♿',c:'HTML semántico|Navegación por teclado|ARIA|Regiones live|Foco en SPA|Trampa de foco|WCAG'},
+  {n:18,s:'Tests unitarios y de componente',t:'Tests: comprobar que NakaGym sigue funcionando mañana',m:'Módulo 4 · Calidad de producto',h:'75 min',lv:'Avanzado',i:'🧪',c:'TestBed|ComponentFixture|HttpTestingController|Dobles de prueba|Pirámide de tests|Tests en zoneless|E2E'},
+  {n:19,s:'Internacionalización (i18n)',t:'Internacionalización: NakaGym en varios idiomas',m:'Módulo 5 · Producción',h:'60 min',lv:'Avanzado',i:'🌍',c:'i18n de Angular|Extracción de mensajes|Plurales ICU|Formatos por locale|Zonas horarias|Compilación por idioma|RTL'},
+  {n:20,s:'SSR e hidratación',t:'Renderizado en servidor: HTML antes que JavaScript',m:'Módulo 5 · Producción',h:'70 min',lv:'Avanzado',i:'🖥',c:'SSR|Hidratación|Prerenderizado|TransferState|isPlatformBrowser|afterNextRender|SEO'},
+  {n:21,s:'Build y despliegue',t:'Build y despliegue: NakaGym en producción',m:'Módulo 5 · Producción',h:'70 min',lv:'Avanzado',i:'🚀',c:'Configuraciones de build|Variables de entorno|Docker|CI/CD|Cabeceras y caché|CSP|Monitorización'},
+  {n:22,s:'Arquitectura y migración',t:'Arquitectura por features y convivencia con código antiguo',m:'Módulo 6 · Nivel profesional',h:'65 min',lv:'Avanzado',i:'🏛',c:'Arquitectura por features|Barriles|Dependencias por capas|NgModule|Migraciones del CLI|Monorepo|Convenciones de equipo'},
+  {n:23,s:'Cierre y siguientes pasos',t:'Cierre: lo que has construido y hacia dónde seguir',m:'Módulo 6 · Nivel profesional',h:'45 min',lv:'Avanzado',i:'🏁',c:'Repaso integral|Decisiones de arquitectura|Ecosistema Angular|Hacia dónde va el framework|Ruta de aprendizaje'}
+ ],
+ azure: [
+  {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano del proyecto',m:'Módulo 1 · Fundamentos',h:'30 min',lv:'Principiante',i:'🧰',c:'Cuenta Azure|Portal|Azure CLI|ARM|Cloud Shell'},
+  {n:1,s:'Fundamentos y Resource Group',t:'La nube, las regiones y el Resource Group de NakaShop',m:'Módulo 1 · Fundamentos',h:'50 min',lv:'Principiante',i:'☁️',c:'IaaS/PaaS/SaaS|Responsabilidad compartida|Región|Resource Group|Tags'},
+  {n:2,s:'Identidad y RBAC',t:'Identidad y permisos: Entra ID, grupos y RBAC',m:'Módulo 1 · Fundamentos',h:'55 min',lv:'Principiante',i:'🔐',c:'Entra ID|Tenant|Usuarios|Grupos|RBAC|Scope'},
+  {n:3,s:'Redes y Máquinas Virtuales',t:'Redes virtuales y la primera máquina de NakaShop',m:'Módulo 2 · Infraestructura y aplicación',h:'60 min',lv:'Intermedio',i:'🖧',c:'VNet|Subnet|NSG|Puertos|VM|IP pública'},
+  {n:4,s:'App Service (la API)',t:'App Service: publicar la API de NakaShop sin servidores',m:'Módulo 2 · Infraestructura y aplicación',h:'55 min',lv:'Principiante',i:'🌍',c:'PaaS|App Service Plan|Web App|App Settings|Log stream|Slots'},
+  {n:5,s:'Storage y Blobs',t:'Azure Storage: las imágenes de los productos',m:'Módulo 2 · Infraestructura y aplicación',h:'55 min',lv:'Principiante',i:'🗄',c:'Storage Account|Blob|Redundancia|Access tiers|SAS|Access keys'},
+  {n:6,s:'Azure SQL (catálogo)',t:'Azure SQL Database: el catálogo de productos',m:'Módulo 3 · Datos',h:'60 min',lv:'Intermedio',i:'🗃',c:'Servidor lógico|DTU vs vCore|Firewall SQL|Backups|PITR'},
+  {n:7,s:'Cosmos DB (pedidos)',t:'Cosmos DB: los pedidos de los clientes',m:'Módulo 3 · Datos',h:'60 min',lv:'Intermedio',i:'🪐',c:'NoSQL|Partition key|Request Units|Consistencia|Serverless'},
+  {n:8,s:'Azure Functions',t:'Azure Functions: las tareas automáticas de NakaShop',m:'Módulo 4 · Serverless e integración',h:'60 min',lv:'Intermedio',i:'⚡',c:'Serverless|Trigger|Binding|Function App|Cold start|NCRONTAB'},
+  {n:9,s:'Service Bus y Event Grid',t:'Mensajería: que NakaShop no se bloquee nunca',m:'Módulo 4 · Serverless e integración',h:'60 min',lv:'Intermedio',i:'📨',c:'Service Bus|Queue vs Topic|Dead-letter|Event Grid|Logic Apps'},
+  {n:10,s:'Seguridad: Key Vault y APIM',t:'Key Vault, Managed Identity y API Management',m:'Módulo 5 · Seguridad y entrega',h:'60 min',lv:'Avanzado',i:'🔑',c:'Key Vault|Managed Identity|Key Vault References|APIM|Policies'},
+  {n:11,s:'CI/CD y cierre',t:'CI/CD con GitHub Actions, IaC y cierre del proyecto',m:'Módulo 5 · Seguridad y entrega',h:'60 min',lv:'Avanzado',i:'🔄',c:'CI/CD|GitHub Actions|OIDC|Environments|Bicep|Limpieza'}
+ ],
+ ia: [
+  {n:0,s:'Preparación del entorno',t:'Qué es de verdad la IA que vas a usar y cómo preparar tu entorno',m:'Módulo 1 · Fundamentos de la IA',h:'50 min',lv:'Principiante',i:'🧠',c:'IA|LLM|API|Entorno virtual|Variable de entorno|Token'},
+  {n:1,s:'Aprendizaje y marco de decisión',t:'Cómo aprenden las máquinas y cuándo NO deberías usar IA',m:'Módulo 1 · Fundamentos de la IA',h:'55 min',lv:'Principiante',i:'🎓',c:'Aprendizaje supervisado|No supervisado|Refuerzo|Entrenamiento|Inferencia|Dataset|Marco de decisión'},
+  {n:2,s:'Tokens, contexto y coste',t:'Qué hay dentro de un LLM: tokens, contexto y el precio de cada palabra',m:'Módulo 1 · Fundamentos de la IA',h:'55 min',lv:'Principiante',i:'🔢',c:'Token|Tokenizador|Ventana de contexto|Atención|Muestreo|Coste por token|Presupuesto'},
+  {n:3,s:'El cliente de LLM',t:'La API por dentro y un cliente de LLM que no se cae',m:'Módulo 1 · Fundamentos de la IA',h:'60 min',lv:'Principiante',i:'🔌',c:'Roles|Streaming|stop_reason|Reintentos|Backoff|Timeout|Razonamiento|Esfuerzo'},
+  {n:4,s:'Prompting profesional',t:'Prompting: cómo se le pide bien las cosas a un modelo',m:'Módulo 2 · Hablar con el modelo',h:'60 min',lv:'Principiante',i:'✍️',c:'Prompt de sistema|Contexto|Few-shot|Delimitadores|Cadena de pensamiento|Iteración'},
+  {n:5,s:'Salidas estructuradas',t:'Salidas estructuradas: del texto libre al JSON que tu código puede usar',m:'Módulo 2 · Hablar con el modelo',h:'60 min',lv:'Intermedio',i:'🧩',c:'JSON Schema|Pydantic|Validación|Enum|Confianza|Reintento correctivo'},
+  {n:6,s:'Machine learning clásico',t:'Machine learning clásico: cuando un modelo pequeño le gana al grande',m:'Módulo 2 · Hablar con el modelo',h:'70 min',lv:'Intermedio',i:'📈',c:'scikit-learn|TF-IDF|Train/test|Precisión y recall|F1|Matriz de confusión|Sobreajuste'},
+  {n:7,s:'Embeddings y búsqueda',t:'Embeddings: buscar por significado en lugar de por palabras',m:'Módulo 3 · Memoria y conocimiento',h:'60 min',lv:'Intermedio',i:'🧭',c:'Embedding|Vector|Similitud coseno|Espacio semántico|Chunking|Índice vectorial'},
+  {n:8,s:'RAG con citas',t:'RAG: responder con la documentación de tu empresa y citar la fuente',m:'Módulo 3 · Memoria y conocimiento',h:'70 min',lv:'Intermedio',i:'📚',c:'RAG|Búsqueda híbrida|Reordenación|Citas|Alucinación|Contexto insuficiente'},
+  {n:9,s:'Evaluación y regresiones',t:'Evaluación: cómo saber si un cambio mejora o empeora tu sistema',m:'Módulo 3 · Memoria y conocimiento',h:'65 min',lv:'Intermedio',i:'🎯',c:'Dataset de evaluación|Métricas|LLM como juez|Regresión|Calibración|CI'},
+  {n:10,s:'Herramientas (tool use)',t:'Herramientas: cuando el modelo llama a tu propio código',m:'Módulo 4 · Agentes y herramientas',h:'65 min',lv:'Intermedio',i:'🛠',c:'Tool use|input_schema|tool_use|tool_result|Herramienta estricta|Efectos secundarios'},
+  {n:11,s:'El bucle del agente',t:'El bucle del agente: planificar, actuar, observar y saber parar',m:'Módulo 4 · Agentes y herramientas',h:'70 min',lv:'Intermedio',i:'🤖',c:'Agente|Bucle|Flujo fijo|Límites|Traza|Presupuesto|Human-in-the-loop'},
+  {n:12,s:'MCP · Model Context Protocol',t:'MCP: el enchufe estándar entre la IA y tus sistemas',m:'Módulo 4 · Agentes y herramientas',h:'65 min',lv:'Avanzado',i:'🔌',c:'MCP|Servidor|Cliente|stdio|Recursos|Prompts|Credenciales'},
+  {n:13,s:'Skills',t:'Skills: empaquetar los procedimientos de tu equipo como conocimiento reutilizable',m:'Módulo 4 · Agentes y herramientas',h:'60 min',lv:'Avanzado',i:'🎒',c:'Skill|SKILL.md|Divulgación progresiva|Frontmatter|Disparador|Skill vs RAG'},
+  {n:14,s:'API y webhooks',t:'Automatización con Python: la API, los webhooks y el trabajo en segundo plano',m:'Módulo 5 · Automatización',h:'70 min',lv:'Intermedio',i:'⚙️',c:'FastAPI|Webhook|Cola|Idempotencia|Reintentos|Trabajo programado|Firma HMAC'},
+  {n:15,s:'n8n',t:'n8n: automatización visual que conecta NakaDesk con el mundo',m:'Módulo 5 · Automatización',h:'70 min',lv:'Intermedio',i:'🔗',c:'n8n|Nodo|Disparador|Credenciales|Expresiones|Manejo de errores|Nodo de IA'},
+  {n:16,s:'Power Automate',t:'Power Automate: aprobaciones, Teams y el mundo corporativo',m:'Módulo 5 · Automatización',h:'65 min',lv:'Intermedio',i:'🏢',c:'Power Automate|Conector|Aprobaciones|Teams|Tarjeta adaptable|AI Builder|Gobernanza'},
+  {n:17,s:'Arquitectura de la automatización',t:'Elegir la herramienta correcta: Python, n8n o Power Automate',m:'Módulo 5 · Automatización',h:'55 min',lv:'Intermedio',i:'🧱',c:'Arquitectura|Coste total|Acoplamiento|Contrato|Idempotencia end-to-end|Trazabilidad'},
+  {n:18,s:'Programar con IA',t:'Programar con IA: el asistente en tu editor y cómo no dejar que te estropee el código',m:'Módulo 6 · Producción y responsabilidad',h:'60 min',lv:'Intermedio',i:'👨‍💻',c:'Asistente de código|Contexto|CLAUDE.md|Revisión|Deuda técnica|Verificación'},
+  {n:19,s:'Seguridad y riesgos',t:'Seguridad: inyección de prompts, fuga de datos y el permiso que nunca debiste dar',m:'Módulo 6 · Producción y responsabilidad',h:'70 min',lv:'Avanzado',i:'🛡',c:'Inyección de prompts|Inyección indirecta|PII|Mínimo privilegio|Exfiltración|Sesgo|Cumplimiento'},
+  {n:20,s:'Observabilidad y costes',t:'Observabilidad: saber qué pasa, cuánto cuesta y qué hacer cuando falla',m:'Módulo 6 · Producción y responsabilidad',h:'70 min',lv:'Avanzado',i:'📊',c:'Trazas|Métricas|Caché de prompts|Modelo de respaldo|Presupuesto|Degradación|Alertas'},
+  {n:21,s:'Despliegue y cierre',t:'Desplegar NakaDesk, mantenerlo vivo y saber apagarlo',m:'Módulo 6 · Producción y responsabilidad',h:'65 min',lv:'Avanzado',i:'🚀',c:'Docker|Despliegue|Secretos|Lanzamiento gradual|Mantenimiento|Apagado|Hoja de ruta'}
+ ],
+ java: [
+  {n:0,s:'Preparación del entorno',t:'El ecosistema Java y tu entorno de trabajo',m:'Módulo 1 · El lenguaje',h:'45 min',lv:'Principiante',i:'☕',c:'JDK|JVM|Bytecode|LTS|IDE'},
+  {n:1,s:'Tipos y memoria',t:'Tipos, variables y cómo Java gestiona la memoria',m:'Módulo 1 · El lenguaje',h:'55 min',lv:'Principiante',i:'🔢',c:'Primitivos|Wrappers|Casting|Stack y Heap|var'},
+  {n:2,s:'Control de flujo y arrays',t:'Control de flujo: decisiones, bucles, arrays y matrices',m:'Módulo 1 · El lenguaje',h:'60 min',lv:'Principiante',i:'🔀',c:'if/else|switch moderno|Bucles|Arrays|Matrices'},
+  {n:3,s:'Métodos y Scanner',t:'Métodos, String y entrada de datos por teclado',m:'Módulo 1 · El lenguaje',h:'55 min',lv:'Principiante',i:'🧮',c:'Métodos|Sobrecarga|String|StringBuilder|Scanner'},
+  {n:4,s:'Clases y encapsulamiento',t:'Clases y objetos: nace la clase Libro',m:'Módulo 2 · Programación orientada a objetos',h:'60 min',lv:'Principiante',i:'📕',c:'Clase|Objeto|Constructor|Encapsulamiento|this|Paquetes'},
+  {n:5,s:'Herencia y polimorfismo',t:'Herencia, polimorfismo, clases abstractas e interfaces',m:'Módulo 2 · Programación orientada a objetos',h:'65 min',lv:'Intermedio',i:'🧬',c:'extends|super|abstract|interface|Polimorfismo|default'},
+  {n:6,s:'Java moderno (records, enums)',t:'Java moderno: records, enums, sealed y pattern matching',m:'Módulo 2 · Programación orientada a objetos',h:'60 min',lv:'Intermedio',i:'🧊',c:'record|enum|sealed|Pattern matching|equals/hashCode'},
+  {n:7,s:'Colecciones y genéricos',t:'Colecciones y genéricos: el catálogo dinámico',m:'Módulo 3 · Java robusto',h:'65 min',lv:'Intermedio',i:'📦',c:'List|Set|Map|Genéricos|Comparator|Sequenced'},
+  {n:8,s:'Excepciones y archivos',t:'Excepciones y persistencia en archivos',m:'Módulo 3 · Java robusto',h:'60 min',lv:'Intermedio',i:'🛡',c:'try-catch|checked|Excepciones propias|try-with-resources|Files'},
+  {n:9,s:'Lambdas y Streams',t:'Programación funcional: lambdas, Streams y Optional',m:'Módulo 3 · Java robusto',h:'65 min',lv:'Intermedio',i:'🌊',c:'Lambda|Interfaz funcional|Stream|Collectors|Optional'},
+  {n:10,s:'Maven y el pom.xml',t:'Maven: del javac manual al proyecto industrial',m:'Módulo 4 · Ingeniería de software',h:'55 min',lv:'Intermedio',i:'🏭',c:'pom.xml|Dependencias|Ciclo de vida|JAR|Plugins'},
+  {n:11,s:'JDBC y patrón DAO',t:'JDBC y el patrón DAO: una base de datos real',m:'Módulo 4 · Ingeniería de software',h:'65 min',lv:'Intermedio',i:'💾',c:'JDBC|PreparedStatement|DAO|SQL Injection|Transacciones'},
+  {n:12,s:'Arquitectura MVC',t:'Arquitectura en capas: el patrón MVC',m:'Módulo 4 · Ingeniería de software',h:'55 min',lv:'Intermedio',i:'🏗',c:'MVC|Capas|Acoplamiento|DTO|Inyección manual'},
+  {n:13,s:'Testing con JUnit y Mockito',t:'Testing automatizado con JUnit 5 y Mockito',m:'Módulo 4 · Ingeniería de software',h:'60 min',lv:'Intermedio',i:'🧪',c:'JUnit 5|Assertions|Mockito|AAA|Cobertura'},
+  {n:14,s:'Spring Boot: IoC y DI',t:'Spring Boot: inversión de control y primer endpoint',m:'Módulo 5 · Spring Boot',h:'60 min',lv:'Intermedio',i:'🌱',c:'IoC|Beans|@Service|Inyección|Autoconfiguración'},
+  {n:15,s:'REST y Spring Data JPA',t:'API REST y persistencia con Spring Data JPA',m:'Módulo 5 · Spring Boot',h:'65 min',lv:'Intermedio',i:'🔗',c:'REST|@Entity|JpaRepository|ResponseEntity|Códigos HTTP'},
+  {n:16,s:'Relaciones, Flyway y N+1',t:'Relaciones JPA, migraciones con Flyway y el problema N+1',m:'Módulo 5 · Spring Boot',h:'65 min',lv:'Avanzado',i:'🗄',c:'@ManyToOne|@OneToMany|Flyway|N+1|@EntityGraph|Soft delete'},
+  {n:17,s:'DTOs, validación y errores',t:'DTOs, MapStruct, validación y manejo global de errores',m:'Módulo 5 · Spring Boot',h:'60 min',lv:'Avanzado',i:'📤',c:'DTO|MapStruct|@Valid|@RestControllerAdvice|Problem Details'},
+  {n:18,s:'Paginación y Swagger',t:'Paginación, búsqueda dinámica y documentación con Swagger',m:'Módulo 5 · Spring Boot',h:'55 min',lv:'Intermedio',i:'🔎',c:'Pageable|Page vs Slice|Specification|OpenAPI|Swagger UI'},
+  {n:19,s:'Vistas con Thymeleaf',t:'Vistas con Thymeleaf: formularios, PRG y fragmentos',m:'Módulo 5 · Spring Boot',h:'60 min',lv:'Intermedio',i:'🖥',c:'Thymeleaf|Model|PRG|Fragmentos|Flash attributes'},
+  {n:20,s:'Spring Security y JWT',t:'Seguridad: Spring Security, JWT y autorización por roles',m:'Módulo 5 · Spring Boot',h:'70 min',lv:'Avanzado',i:'🔐',c:'Autenticación|JWT|BCrypt|Roles|SecurityFilterChain'},
+  {n:21,s:'Testing en Spring Boot',t:'Testing en Spring Boot: la pirámide completa',m:'Módulo 5 · Spring Boot',h:'65 min',lv:'Avanzado',i:'✅',c:'@DataJpaTest|@WebMvcTest|MockMvc|@SpringBootTest|Testcontainers'},
+  {n:22,s:'Docker y CI/CD',t:'Observabilidad, Docker y CI/CD con GitHub Actions',m:'Módulo 5 · Spring Boot',h:'65 min',lv:'Avanzado',i:'🐳',c:'Actuator|Perfiles|Dockerfile|Compose|GitHub Actions'},
+  {n:23,s:'Hexagonal y microservicios',t:'Arquitectura hexagonal y microservicios',m:'Módulo 6 · Arquitectura avanzada',h:'70 min',lv:'Avanzado',i:'🏛',c:'Puertos y adaptadores|BFF|Eureka|API Gateway|RestClient'},
+  {n:24,s:'Spring AI y cierre',t:'Bonus: un asistente inteligente con Spring AI',m:'Módulo 6 · Arquitectura avanzada',h:'60 min',lv:'Avanzado',i:'🤖',c:'ChatClient|Structured output|RAG|Tools|Streaming'}
+ ],
+ python: [
+  {n:0,s:'Entorno y plano del proyecto',t:'Python, tu entorno de trabajo y el plano de NakaData',m:'Módulo 1 · Fundamentos de Python',h:'55 min',lv:'Principiante',i:'🐍',c:'Intérprete|CPython|REPL|PATH|Entorno virtual|pip|Script .py'},
+  {n:1,s:'Variables, tipos y texto',t:'Variables, tipos de datos y texto: la primera venta de NakaData',m:'Módulo 1 · Fundamentos de Python',h:'65 min',lv:'Principiante',i:'🔢',c:'Variables|int/float/str/bool|None|Conversión de tipos|Operadores|f-strings|Métodos de cadena|Slicing'},
+  {n:2,s:'Listas, diccionarios y conjuntos',t:'Colecciones: el catálogo y el ticket de Naka en memoria',m:'Módulo 1 · Fundamentos de Python',h:'70 min',lv:'Principiante',i:'📦',c:'Lista|Tupla|Diccionario|Conjunto|Índices|Mutabilidad|Aliasing|Anidamiento'},
+  {n:3,s:'Condicionales y bucles',t:'Condicionales y bucles: las reglas de negocio de Naka',m:'Módulo 1 · Fundamentos de Python',h:'65 min',lv:'Principiante',i:'🔀',c:'if/elif/else|Indentación|and/or/not|Truthiness|for|range|enumerate|while|break/continue'},
+  {n:4,s:'Funciones',t:'Funciones: el motor de cálculo reutilizable de NakaData',m:'Módulo 1 · Fundamentos de Python',h:'65 min',lv:'Principiante',i:'🧩',c:'def|return|Parámetros|Argumentos por nombre|Valores por defecto|*args/**kwargs|Docstring|Ámbito|Función pura'},
+  {n:5,s:'Módulos, paquetes y pip',t:'Módulos, paquetes y dependencias: NakaData se convierte en un proyecto',m:'Módulo 2 · Código organizado',h:'65 min',lv:'Principiante',i:'🧱',c:'import|Módulo|Paquete|__init__.py|__main__|sys.path|pip|PyPI|requirements.txt'},
+  {n:6,s:'Excepciones y logging',t:'Errores, excepciones y registro de actividad en NakaData',m:'Módulo 2 · Código organizado',h:'60 min',lv:'Intermedio',i:'🛡',c:'Traceback|try/except/else/finally|raise|Excepciones propias|EAFP|logging|Niveles de log|Handlers'},
+  {n:7,s:'Clases y dataclasses',t:'Clases y dataclasses: el modelo de dominio de NakaData',m:'Módulo 2 · Código organizado',h:'70 min',lv:'Intermedio',i:'🧬',c:'class|__init__|self|Métodos|@dataclass|frozen|__post_init__|@property|classmethod|Composición'},
+  {n:8,s:'Comprensiones y generadores',t:'Comprensiones, generadores y funciones de orden superior',m:'Módulo 3 · Python idiomático',h:'65 min',lv:'Intermedio',i:'⚡',c:'List comprehension|dict/set comprehension|Generador|yield|lambda|map/filter|sorted(key=)|Counter|itertools'},
+  {n:9,s:'Archivos, CSV y JSON',t:'Archivos: rutas con pathlib, CSV y JSON en NakaData',m:'Módulo 3 · Python idiomático',h:'70 min',lv:'Intermedio',i:'📂',c:'pathlib|open()|with|encoding UTF-8|csv.DictReader|DictWriter|json|JSON Lines|Streaming'},
+  {n:10,s:'Fechas y expresiones regulares',t:'Fechas, horas y expresiones regulares: normalizar los datos sucios',m:'Módulo 3 · Python idiomático',h:'70 min',lv:'Intermedio',i:'📅',c:'datetime|strptime/strftime|timedelta|Zona horaria|re|Grupos|Validación|Normalización'},
+  {n:11,s:'NumPy y vectorización',t:'NumPy: cálculo vectorizado sobre las 60.000 ventas',m:'Módulo 4 · Análisis de datos',h:'65 min',lv:'Intermedio',i:'🧮',c:'ndarray|dtype|Vectorización|Broadcasting|Máscaras booleanas|axis|Percentiles|NaN'},
+  {n:12,s:'pandas I · Cargar y explorar',t:'pandas I · El DataFrame de ventas: cargar y explorar',m:'Módulo 4 · Análisis de datos',h:'70 min',lv:'Intermedio',i:'🐼',c:'Series|DataFrame|read_csv|dtype|head/info/describe|loc/iloc|Filtros booleanos|value_counts|Columnas calculadas'},
+  {n:13,s:'pandas II · Limpieza y merge',t:'pandas II · Limpieza, tipos y combinación de tablas',m:'Módulo 4 · Análisis de datos',h:'75 min',lv:'Intermedio',i:'🧽',c:'NaN|isna/fillna/dropna|to_numeric|Accesor .str|Duplicados|merge|validate|concat|Pipeline'},
+  {n:14,s:'pandas III · Agregación y tiempo',t:'pandas III · groupby, tablas dinámicas y series temporales',m:'Módulo 4 · Análisis de datos',h:'75 min',lv:'Avanzado',i:'📊',c:'groupby|agg|MultiIndex|pivot_table|resample|rolling|pct_change|Top N por grupo'},
+  {n:15,s:'Visualización con Matplotlib',t:'Visualización: los gráficos del informe con Matplotlib',m:'Módulo 4 · Análisis de datos',h:'65 min',lv:'Intermedio',i:'📈',c:'Figure/Axes|plot/bar/hist|imshow|Subplots|savefig|Backend Agg|Ética visual'},
+  {n:16,s:'Archivos, sistema y CLI',t:'Automatizar el sistema de archivos y construir la CLI de NakaData',m:'Módulo 5 · Automatización',h:'70 min',lv:'Intermedio',i:'⚙️',c:'argparse|Subcomandos|Códigos de salida|pathlib|shutil|glob|subprocess|os.environ'},
+  {n:17,s:'Informes Excel y correo',t:'Informes automáticos: Excel con formato y envío por correo',m:'Módulo 5 · Automatización',h:'70 min',lv:'Intermedio',i:'📤',c:'openpyxl|ExcelWriter|Formato de celdas|smtplib|EmailMessage|MIME|Adjuntos|Contraseña de aplicación'},
+  {n:18,s:'HTTP y APIs con requests',t:'HTTP y APIs REST: traer datos de fuera con requests',m:'Módulo 5 · Automatización',h:'70 min',lv:'Intermedio',i:'🌐',c:'HTTP|Códigos de estado|requests|JSON|Cabeceras|Autenticación|Timeout|Reintentos|Paginación'},
+  {n:19,s:'Web scraping',t:'Web scraping con BeautifulSoup: los precios de la competencia',m:'Módulo 5 · Automatización',h:'70 min',lv:'Avanzado',i:'🕷',c:'HTML/DOM|BeautifulSoup|Selectores CSS|robots.txt|Ética y límites|Paginación|Fragilidad|A DataFrame'},
+  {n:20,s:'Tareas programadas',t:'Ejecución desatendida: configuración, reintentos y tareas programadas',m:'Módulo 5 · Automatización',h:'70 min',lv:'Avanzado',i:'⏰',c:'Variables de entorno|.env|Idempotencia|Bloqueo|Reintentos|Logs rotativos|cron|Programador de tareas'},
+  {n:21,s:'SQLite y SQL',t:'Bases de datos: SQLite y SQL desde Python',m:'Módulo 6 · Datos que perduran e inteligencia',h:'75 min',lv:'Avanzado',i:'🗄',c:'SQLite|sqlite3|SQL|Consultas parametrizadas|Transacciones|Índices|JOIN|to_sql/read_sql'},
+  {n:22,s:'Machine learning práctico',t:'Machine learning con scikit-learn: predecir la demanda',m:'Módulo 6 · Datos que perduran e inteligencia',h:'75 min',lv:'Avanzado',i:'🤖',c:'Aprendizaje supervisado|Features|Train/test temporal|Pipeline|MAE y R²|Modelo de referencia|Sobreajuste|joblib'},
+  {n:23,s:'API REST con FastAPI',t:'Servir NakaData: API REST con FastAPI',m:'Módulo 7 · Entrega',h:'75 min',lv:'Avanzado',i:'🚀',c:'FastAPI|Uvicorn|Rutas|Pydantic|Validación automática|Códigos HTTP|/docs|lifespan|async'},
+  {n:24,s:'Pruebas, calidad y entrega',t:'Calidad y entrega: pytest, tipado, ruff y empaquetado',m:'Módulo 7 · Entrega',h:'80 min',lv:'Avanzado',i:'🎓',c:'pytest|fixtures|parametrize|Cobertura|Type hints|ruff|pyproject.toml|Entry point|Docker|Cierre'}
+ ],
+ react: [
+  {n:0,s:'Preparación del entorno',t:'Qué es React de verdad y cómo preparar tu entorno',m:'Módulo 1 · Tus primeros componentes',h:'45 min',lv:'Principiante',i:'⚛',c:'React|SPA|Node y npm|Vite|Componente|DevTools'},
+  {n:1,s:'JSX y JavaScript moderno',t:'JSX a fondo y el JavaScript moderno que React exige',m:'Módulo 1 · Tus primeros componentes',h:'1 h 10 min',lv:'Principiante',i:'🧩',c:'JSX|Expresiones {}|className|Fragment|Desestructuración|Spread'},
+  {n:2,s:'Componentes y props',t:'Componentes y props: partir la interfaz en piezas reutilizables',m:'Módulo 1 · Tus primeros componentes',h:'1 h 10 min',lv:'Principiante',i:'🎴',c:'Props|children|Composición|Props por defecto|import/export|Componente puro'},
+  {n:3,s:'Estado y eventos',t:'Estado con useState: hacer que la interfaz reaccione',m:'Módulo 1 · Tus primeros componentes',h:'1 h 20 min',lv:'Principiante',i:'🎚',c:'useState|Eventos|Re-render|Estado vs variable|Actualización funcional|Inmutabilidad'},
+  {n:4,s:'Listas y keys',t:'Listas y keys: pintar el catálogo entero sin escribirlo a mano',m:'Módulo 2 · El catálogo vivo',h:'1 h 5 min',lv:'Principiante',i:'📃',c:'map|key|Índice como key|Reconciliación|toSorted|Fragment con key'},
+  {n:5,s:'Estados de la interfaz',t:'Renderizado condicional: cargando, vacío, error y con datos',m:'Módulo 2 · El catálogo vivo',h:'55 min',lv:'Principiante',i:'🚦',c:'Ternario|Cortocircuito|Early return|Estado vacío|Skeleton|null'},
+  {n:6,s:'Formularios y validación',t:'Formularios controlados: añadir una película a CineNaka',m:'Módulo 2 · El catálogo vivo',h:'1 h 15 min',lv:'Principiante',i:'📝',c:'value/onChange|onSubmit|Validación|Estado en objeto|No controlado|FormData'},
+  {n:7,s:'Estado compartido y derivado',t:'Elevar el estado: compartir datos entre componentes',m:'Módulo 2 · El catálogo vivo',h:'1 h 10 min',lv:'Intermedio',i:'🔗',c:'Lifting state up|Estado derivado|Fuente única de verdad|Componente controlado|Prop drilling'},
+  {n:8,s:'Efectos y persistencia',t:'useEffect: sincronizar tu componente con el mundo exterior',m:'Módulo 3 · Datos y comportamiento real',h:'1 h 20 min',lv:'Intermedio',i:'🌀',c:'useEffect|Dependencias|Limpieza|StrictMode|localStorage|Debounce'},
+  {n:9,s:'Consumir una API',t:'Datos remotos: consumir una API con fetch sin dispararte en el pie',m:'Módulo 3 · Datos y comportamiento real',h:'1 h 30 min',lv:'Intermedio',i:'🌐',c:'fetch|async/await|response.ok|AbortController|Race condition|VITE_'},
+  {n:10,s:'Custom hooks',t:'Custom hooks: empaquetar lógica para reutilizarla',m:'Módulo 3 · Datos y comportamiento real',h:'1 h 10 min',lv:'Intermedio',i:'🪝',c:'Custom hook|Convención use|Reutilizar lógica|API del hook|Composición'},
+  {n:11,s:'Rendimiento y refs',t:'Rendimiento: medir antes de optimizar, y memorizar sólo lo necesario',m:'Módulo 3 · Datos y comportamiento real',h:'1 h 15 min',lv:'Avanzado',i:'⚡',c:'Re-render|memo|useMemo|useCallback|useRef|Profiler|React Compiler'},
+  {n:12,s:'React Router y páginas',t:'React Router: convertir CineNaka en una aplicación con páginas',m:'Módulo 4 · Arquitectura de la aplicación',h:'1 h 20 min',lv:'Intermedio',i:'🧭',c:'BrowserRouter|Routes|Link|useParams|useNavigate|404'},
+  {n:13,s:'Rutas anidadas y query params',t:'Layouts anidados y la URL como estado: filtros compartibles',m:'Módulo 4 · Arquitectura de la aplicación',h:'1 h 15 min',lv:'Intermedio',i:'🗺',c:'Outlet|Layout|NavLink|useSearchParams|Scroll|Rutas relativas'},
+  {n:14,s:'Context y useReducer',t:'Context y useReducer: una sola watchlist para toda la aplicación',m:'Módulo 4 · Arquitectura de la aplicación',h:'1 h 25 min',lv:'Avanzado',i:'🌍',c:'createContext|Provider|useContext|useReducer|Acciones|Estado global'},
+  {n:15,s:'TanStack Query',t:'TanStack Query: el estado de servidor no es estado global',m:'Módulo 4 · Arquitectura de la aplicación',h:'1 h 30 min',lv:'Avanzado',i:'📡',c:'Estado de servidor|useQuery|queryKey|Caché|useMutation|Optimista'},
+  {n:16,s:'TypeScript',t:'TypeScript en React: que el editor te avise antes del navegador',m:'Módulo 5 · Calidad de producto',h:'1 h 30 min',lv:'Avanzado',i:'🔷',c:'type/interface|Props tipadas|Genéricos|Uniones|Migración|tsconfig'},
+  {n:17,s:'Estilos y tema',t:'Estilos que escalan: CSS Modules, design tokens y modo claro',m:'Módulo 5 · Calidad de producto',h:'1 h 15 min',lv:'Intermedio',i:'🎨',c:'CSS Modules|Design tokens|Tema|clsx|Variantes|Tailwind'},
+  {n:18,s:'Accesibilidad y modal',t:'Accesibilidad: teclado, foco, semántica y un modal que no atrapa a nadie',m:'Módulo 5 · Calidad de producto',h:'1 h 20 min',lv:'Avanzado',i:'♿',c:'Semántica|Foco|Teclado|ARIA|Portal|Anuncios'},
+  {n:19,s:'Formularios pro con Zod',t:'React Hook Form y Zod: validación de esquema y un solo tipo para todo',m:'Módulo 5 · Calidad de producto',h:'1 h 20 min',lv:'Avanzado',i:'✅',c:'React Hook Form|Zod|register|resolver|Inferencia de tipos|Validación'},
+  {n:20,s:'Testing',t:'Tests con Vitest y Testing Library: probar lo que el usuario ve',m:'Módulo 6 · Producción',h:'1 h 30 min',lv:'Avanzado',i:'🧪',c:'Vitest|Testing Library|Queries por rol|user-event|MSW|Cobertura'},
+  {n:21,s:'Autenticación',t:'Autenticación: sesión, rutas protegidas y roles',m:'Módulo 6 · Producción',h:'1 h 25 min',lv:'Avanzado',i:'🔐',c:'JWT|Sesión|Rutas protegidas|Roles|Interceptor|401 vs 403'},
+  {n:22,s:'Build y despliegue',t:'Del localhost a Internet: build, code splitting y despliegue continuo',m:'Módulo 6 · Producción',h:'1 h 30 min',lv:'Avanzado',i:'🚀',c:'Build de producción|Bundle|Hash de contenido|Variables de entorno|Code splitting|lazy y Suspense|Fallback de la SPA|CI/CD|GitHub Actions|Sourcemaps'},
+  {n:23,s:'Arquitectura y patrones',t:'Arquitectura por features, patrones de composición y Error Boundaries',m:'Módulo 7 · Nivel profesional',h:'1 h 30 min',lv:'Avanzado',i:'🏛',c:'Organización por features|Reglas de dependencia|Barrel|Alias de importación|Componentes compuestos|Slots|Control invertido|Error Boundary|Regla de tres'},
+  {n:24,s:'Server Components y cierre',t:'React del futuro: Server Components, Next.js y hacia dónde seguir',m:'Módulo 7 · Nivel profesional',h:'1 h 30 min',lv:'Avanzado',i:'🔮',c:'CSR SSR SSG|Server Component|use client|Server Action|Streaming|App Router|useActionState|useOptimistic|Hidratación|Cuándo no usar Next.js'}
+ ],
+};
+/* __CAPS_FIN__ */
+
+/** Devuelve los capítulos de un curso; si no están en CAPS, genera una lista mínima. */
+function capsDe(c){
+  if(CAPS[c.id] && CAPS[c.id].length) return CAPS[c.id];
+  const n = c.caps || 0, out = [];
+  for(let i=0;i<n;i++) out.push({n:i,s:'Capítulo '+i,t:'Capítulo '+i,m:'Temario',h:'',lv:'',i:'📘',c:''});
+  return out;
+}
+
+/* ---------- 2. ESTADO Y PERSISTENCIA ---------- */
+const STORE_KEY = 'cursos-panel-v1';
+const defaultState = { theme:'dark', ultimoCurso:null, vista:'panel' };
+let lsOk = true;   /* false si el navegador bloquea localStorage */
+let state = loadState();   /* va DESPUÉS de lsOk: loadState() lo escribe si falla */
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return {...defaultState};
+    return Object.assign({}, defaultState, JSON.parse(raw));
+  }catch(e){ lsOk = false; return {...defaultState}; }
+}
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+/* ---------- 3. LECTURA DEL PROGRESO DE CADA CURSO ---------- */
+/* Los cursos guardan su estado con dos esquemas distintos:
+     { completed:['cap-0',…], last:'cap-3' }   · azure, java, ia, react
+     { hechos:['cap-0',…],    ultimo:'cap-3' } · angular
+   Aquí se normalizan los dos a { hechos:Set de números, ultimo:número|null }. */
+let PROG = {};   /* id de curso -> progreso normalizado */
+
+function numDe(id){
+  const m = /(\d+)/.exec(String(id || ''));
+  return m ? parseInt(m[1],10) : null;
+}
+
+function leerProgreso(c){
+  const total = capsDe(c).length;
+  const vacio = { hechos:[], set:new Set(), ultimo:null, total, pct:0, tocado:false };
+  let raw = null;
+  try{ raw = localStorage.getItem(c.key); }
+  catch(e){ lsOk = false; return vacio; }
+  if(!raw) return vacio;
+
+  let d;
+  try{ d = JSON.parse(raw); }catch(e){ return vacio; }
+  const arr = Array.isArray(d.completed) ? d.completed
+            : Array.isArray(d.hechos)    ? d.hechos : [];
+  const validos = new Set(capsDe(c).map(k => k.n));
+  const set = new Set();
+  arr.forEach(id => { const n = numDe(id); if(n !== null && validos.has(n)) set.add(n); });
+
+  const ultRaw = typeof d.last === 'string' ? d.last
+               : typeof d.ultimo === 'string' ? d.ultimo : null;
+  let ultimo = numDe(ultRaw);
+  if(ultimo !== null && !validos.has(ultimo)) ultimo = null;
+
+  return {
+    hechos: [...set].sort((a,b)=>a-b),
+    set, ultimo, total,
+    pct: total ? Math.round(set.size / total * 100) : 0,
+    tocado: true
+  };
+}
+
+function releerTodo(){
+  PROG = {};
+  CURSOS.forEach(c => { PROG[c.id] = leerProgreso(c); });
+}
+
+/** Primer capítulo sin completar; si están todos, el último del curso. */
+function siguienteCap(c){
+  const p = PROG[c.id], caps = capsDe(c);
+  const pend = caps.find(k => !p.set.has(k.n));
+  return pend || caps[caps.length - 1] || null;
+}
+
+/** Capítulo al que lleva el botón «Continuar» de un curso. */
+function capContinuar(c){
+  const p = PROG[c.id];
+  if(p.ultimo !== null && !p.set.has(p.ultimo)) return p.ultimo;
+  const sig = siguienteCap(c);
+  return sig ? sig.n : 0;
+}
+
+function urlCap(c, n){ return c.file + '#cap-' + n; }
+
+function estadoCurso(c){
+  const p = PROG[c.id];
+  if(p.total && p.set.size >= p.total) return { txt:'Completado', cls:'ok' };
+  if(p.set.size > 0 || p.ultimo !== null) return { txt:'En curso', cls:'doing' };
+  return { txt:'Sin empezar', cls:'pend' };
+}
+
+/* ---------- 4. TEMA CLARO / OSCURO ---------- */
+const themeBtn = document.getElementById('themeBtn');
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  themeBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+  themeBtn.setAttribute('aria-label', theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro');
+  state.theme = theme; saveState();
+}
+themeBtn.addEventListener('click', () => {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+/* ---------- 5. MENÚ LATERAL ---------- */
+const nav = document.getElementById('nav');
+const sidebar = document.getElementById('sidebar');
+const backdrop = document.getElementById('backdrop');
+
+function varsDe(c){
+  return '--cb:var(--b-'+c.id+');--cs:var(--s-'+c.id+');--ct:var(--c-'+c.id+')';
+}
+
+function buildNav(){
+  let h = '<div class="nav-group">';
+  h += '<a class="nav-item special" data-view="panel" href="#panel"><span class="ico">🏠</span><span class="txt">Panel de cursos</span></a>';
+  h += '<a class="nav-item special" data-view="progreso" href="#progreso"><span class="ico">📊</span><span class="txt">Progreso global</span></a>';
+  h += '</div>';
+  h += '<div class="nav-label">Cursos</div>';
+  CURSOS.forEach(c => {
+    h += '<a class="nav-item" data-view="curso-'+c.id+'" href="#curso-'+c.id+'" style="'+varsDe(c)+'">' +
+         '<span class="ico">'+c.icon+'</span>' +
+         '<span class="txt"><span class="ttl">'+c.name+'</span>' +
+         '<span class="n" id="navN-'+c.id+'"></span>' +
+         '<span class="minibar"><i id="navBar-'+c.id+'" style="width:0%"></i></span>' +
+         '</span></a>';
+  });
+  nav.innerHTML = h;
+}
+
+function pintarNav(){
+  CURSOS.forEach(c => {
+    const p = PROG[c.id];
+    const n = document.getElementById('navN-'+c.id);
+    const b = document.getElementById('navBar-'+c.id);
+    if(n) n.innerHTML = p.set.size + '/' + p.total + ' capítulos · ' + p.pct + '%' +
+      (p.total && p.set.size >= p.total ? ' <span class="done-mark">✓</span>' : '');
+    if(b) b.style.width = p.pct + '%';
+  });
+}
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  backdrop.classList.toggle('show', sidebar.classList.contains('open'));
+});
+backdrop.addEventListener('click', () => {
+  sidebar.classList.remove('open'); backdrop.classList.remove('show');
+});
+function cerrarMenuMovil(){
+  if(window.innerWidth <= 900){ sidebar.classList.remove('open'); backdrop.classList.remove('show'); }
+}
+
+/* ---------- 6. VISTAS: FICHAS DE CURSO, PANEL Y PROGRESO ---------- */
+const main = document.getElementById('main');
+const toTop = document.getElementById('toTop');
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function lvClass(lv){
+  const l = (lv || '').toLowerCase();
+  return l.indexOf('princip') === 0 ? 'lv1' : l.indexOf('inter') === 0 ? 'lv2' : l.indexOf('avan') === 0 ? 'lv3' : '';
+}
+
+/** Crea una <section class="view" id="curso-<id>"> por cada curso del catálogo. */
+function buildFichas(){
+  CURSOS.forEach(c => {
+    const sec = document.createElement('section');
+    sec.className = 'view';
+    sec.id = 'curso-' + c.id;
+    sec.setAttribute('style', varsDe(c));
+    sec.innerHTML =
+      '<div class="crumb">Curso · '+esc(c.tech)+'</div>' +
+      '<h2 class="ch-title"><span class="ico">'+c.icon+'</span>'+esc(c.name)+'</h2>' +
+      '<p class="lead">Un solo proyecto continuo: <strong>'+esc(c.proyecto)+'</strong>, '+esc(c.proyectoDesc)+'. ' +
+        'Cada capítulo añade una pieza y reutiliza todo lo anterior.</p>' +
+      '<div class="chips">' +
+        '<span class="chip course">📚 '+capsDe(c).length+' capítulos</span>' +
+        '<span class="chip">⏱ ~'+c.horas+' h de estudio</span>' +
+        '<span class="chip">🎚 '+esc(c.nivel)+'</span>' +
+        '<span class="chip">🏗 Proyecto '+esc(c.proyecto)+'</span>' +
+      '</div>' +
+      '<p>'+c.desc+'</p>' +
+      '<div class="side-block" style="max-width:none;">' +
+        '<div class="pct"><span>Progreso del curso</span><b id="fPct-'+c.id+'">0%</b></div>' +
+        '<div class="bar lg c"><i id="fBar-'+c.id+'" style="width:0%"></i></div>' +
+        '<div class="sub" id="fSub-'+c.id+'"></div>' +
+        '<div class="side-actions" id="fAct-'+c.id+'"></div>' +
+      '</div>' +
+      '<h3>Temario completo</h3>' +
+      '<p>Haz clic en cualquier capítulo para abrirlo directamente dentro del curso. Los capítulos con ' +
+      '<span style="color:var(--ok)">✓</span> son los que ya marcaste como completados.</p>' +
+      '<div id="fCaps-'+c.id+'"></div>' +
+      '<div class="note">' +
+        '<b class="t">Atajos dentro de <code>'+esc(c.file)+'</code></b>' +
+        '<p>Una vez dentro del curso: <code>/</code> enfoca su buscador, <code>←</code> y <code>→</code> ' +
+        'saltan entre capítulos, y el menú lateral tiene su propio botón <b>▶ Continuar</b>.</p>' +
+      '</div>';
+    main.insertBefore(sec, toTop);
+  });
+}
+
+/** Pinta la lista de capítulos agrupada por módulos, con su estado. */
+function pintarFicha(c){
+  const p = PROG[c.id], caps = capsDe(c);
+
+  const pct = document.getElementById('fPct-'+c.id);
+  const bar = document.getElementById('fBar-'+c.id);
+  const sub = document.getElementById('fSub-'+c.id);
+  const act = document.getElementById('fAct-'+c.id);
+  if(pct) pct.textContent = p.pct + '%';
+  if(bar) bar.style.width = p.pct + '%';
+  if(sub) sub.textContent = p.set.size + ' de ' + p.total + ' capítulos completados' +
+    (p.ultimo !== null ? ' · último visitado: capítulo ' + p.ultimo : '');
+
+  if(act){
+    const n = capContinuar(c);
+    const verbo = p.set.size ? '▶ Continuar en el capítulo ' + n : '▶ Empezar por el capítulo ' + n;
+    act.innerHTML =
+      '<a class="btn course sm wide" href="'+c.file+'#cap-'+n+'" data-abrir="'+c.id+'">'+verbo+'</a>' +
+      '<a class="btn sm" href="'+c.file+'" data-abrir="'+c.id+'" title="Portada del curso">Portada</a>' +
+      '<a class="btn sm" href="'+c.file+'#estado" data-abrir="'+c.id+'" title="Panel del proyecto">Proyecto</a>' +
+      '<a class="btn sm" href="'+c.file+'#glosario" data-abrir="'+c.id+'" title="Glosario del curso">Glosario</a>';
+  }
+
+  const cont = document.getElementById('fCaps-'+c.id);
+  if(!cont) return;
+  let h = '', mod = null, buf = '', hechosMod = 0, totalMod = 0;
+
+  const cerrar = () => {
+    if(mod === null) return;
+    h += '<div class="mod-block"><div class="mod-head"><span>'+esc(mod)+'</span>' +
+         '<span class="m-count">'+hechosMod+'/'+totalMod+'</span></div>' + buf + '</div>';
+    buf = ''; hechosMod = 0; totalMod = 0;
+  };
+
+  caps.forEach(k => {
+    if(k.m !== mod){ cerrar(); mod = k.m; }
+    const done = p.set.has(k.n);
+    totalMod++; if(done) hechosMod++;
+    buf += '<a class="ch-row'+(done ? ' done' : '')+'" href="'+c.file+'#cap-'+k.n+'" data-abrir="'+c.id+'">' +
+      '<span class="dot">✓</span>' +
+      '<span class="num">'+k.n+'</span>' +
+      '<span class="ico">'+k.i+'</span>' +
+      '<span class="name">'+esc(k.s)+'<small>'+esc(k.t)+'</small></span>' +
+      (k.h ? '<span class="meta">'+esc(k.h)+'</span>' : '') +
+      (k.lv ? '<span class="chip '+lvClass(k.lv)+'" style="padding:2px 8px;font-size:11px;">'+esc(k.lv)+'</span>' : '') +
+      '<span class="go">↗</span></a>';
+  });
+  cerrar();
+  cont.innerHTML = h;
+}
+
+/** Tarjetas de la portada. */
+function pintarCursos(){
+  const grid = document.getElementById('cursosGrid');
+  let h = '';
+  CURSOS.forEach(c => {
+    const p = PROG[c.id], st = estadoCurso(c), sig = siguienteCap(c), n = capContinuar(c);
+    const completo = p.total && p.set.size >= p.total;
+    h += '<article class="course" style="'+varsDe(c)+'">' +
+      '<div class="c-head">' +
+        '<div class="c-ico">'+c.icon+'</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<h3>'+esc(c.name)+'</h3>' +
+          '<div class="c-tech">'+esc(c.tech)+' · proyecto '+esc(c.proyecto)+'</div>' +
+        '</div>' +
+        '<span class="badge '+st.cls+'">'+st.txt+'</span>' +
+      '</div>' +
+      '<p class="c-desc">'+c.desc+'</p>' +
+      '<div class="c-meta">' +
+        '<span class="chip">📚 '+p.total+' capítulos</span>' +
+        '<span class="chip">⏱ ~'+c.horas+' h</span>' +
+        c.temas.slice(0,3).map(t => '<span class="chip key">'+esc(t)+'</span>').join('') +
+      '</div>' +
+      '<div class="c-prog">' +
+        '<div class="lbl"><span>'+p.set.size+' de '+p.total+' capítulos</span><b>'+p.pct+'%</b></div>' +
+        '<div class="bar c"><i style="width:'+p.pct+'%"></i></div>' +
+      '</div>' +
+      '<div class="c-next">' +
+        (completo
+          ? '🏁 <b>Curso terminado.</b> Puedes volver a cualquier capítulo cuando lo necesites.'
+          : (sig ? 'Siguiente: <b>'+sig.n+' · '+esc(sig.s)+'</b>' : '')) +
+      '</div>' +
+      '<div class="c-actions">' +
+        '<a class="btn course sm" href="'+c.file+'#cap-'+n+'" data-abrir="'+c.id+'">' +
+          (p.set.size ? '▶ Continuar' : '▶ Empezar') + '</a>' +
+        '<a class="btn sm" href="#curso-'+c.id+'">Ver capítulos</a>' +
+        '<a class="btn sm ghost" href="'+c.file+'" data-abrir="'+c.id+'" title="Abrir la portada del curso">Portada ↗</a>' +
+      '</div>' +
+    '</article>';
+  });
+  grid.innerHTML = h;
+}
+
+/** Diagrama de la ruta recomendada; se genera del catálogo para no desincronizarse. */
+function pintarRuta(){
+  const nom = id => (CURSOS.find(c => c.id === id) || {name:id}).name;
+  const pctDe = id => (PROG[id] ? PROG[id].pct : 0);
+  const linea = (id, texto) => {
+    const c = CURSOS.find(x => x.id === id);
+    if(!c) return '';
+    const p = String(pctDe(id)).padStart(3,' ');
+    return '  ' + (c.icon + '  ').slice(0,3) + ' ' + (c.name + '                        ').slice(0,26) +
+           '│ ' + p + ' %  │ ' + texto + '\n';
+  };
+  document.getElementById('rutaDiagram').textContent =
+    '  RUTA RECOMENDADA                    │ AVANCE │ POR QUÉ EN ESTE ORDEN\n' +
+    '  ────────────────────────────────────┼────────┼──────────────────────────────────\n' +
+    linea('java',   'Enseña a programar y a pensar en objetos.') +
+    '           ↓                          │        │\n' +
+    linea('react',  'La interfaz: ya sabes lógica, ahora píntala.') +
+    '           ↓                          │        │\n' +
+    linea('angular','El mismo problema con otra filosofía.') +
+    '           ↓                          │        │\n' +
+    linea('azure',  'Dónde vive lo que has construido.') +
+    '           ↓                          │        │\n' +
+    linea('ia',     'Se apoya en todo lo anterior: API, datos y nube.') +
+    '\n  Ninguno es obligatorio antes que otro: Azure e IA se pueden hacer sueltos.';
+}
+
+/** Tabla y mapa de la vista de progreso global. */
+function pintarProgreso(){
+  let filas = '';
+  CURSOS.forEach(c => {
+    const p = PROG[c.id], st = estadoCurso(c);
+    filas += '<tr style="'+varsDe(c)+'">' +
+      '<td><b>'+c.icon+' '+esc(c.name)+'</b><br><span style="font-size:12px;color:var(--muted)">'+esc(c.tech)+'</span></td>' +
+      '<td>'+esc(c.proyecto)+'</td>' +
+      '<td>'+p.set.size+' / '+p.total+'</td>' +
+      '<td style="min-width:130px;"><div class="bar c"><i style="width:'+p.pct+'%"></i></div>' +
+        '<span style="font-size:12px;color:var(--muted)">'+p.pct+'%</span></td>' +
+      '<td><span class="badge '+st.cls+'">'+st.txt+'</span></td>' +
+      '<td><a class="btn sm" href="'+c.file+'#cap-'+capContinuar(c)+'" data-abrir="'+c.id+'">Ir ↗</a></td>' +
+    '</tr>';
+  });
+  document.getElementById('progTable').innerHTML = filas;
+
+  let heat = '';
+  CURSOS.forEach(c => {
+    const p = PROG[c.id];
+    let cells = '';
+    capsDe(c).forEach(k => {
+      const on = p.set.has(k.n), last = p.ultimo === k.n;
+      cells += '<a class="cell'+(on ? ' on' : '')+(last ? ' last' : '')+'" href="'+c.file+'#cap-'+k.n+'" ' +
+        'data-abrir="'+c.id+'" title="Capítulo '+k.n+' · '+esc(k.s).replace(/"/g,'')+
+        (on ? ' · completado' : ' · pendiente')+'">'+k.n+'</a>';
+    });
+    heat += '<div class="heat-row" style="'+varsDe(c)+'">' +
+      '<span class="h-name">'+c.icon+' '+esc(c.name)+'</span>' +
+      '<span class="heat-cells">'+cells+'</span>' +
+      '<span style="font-size:12.5px;color:var(--muted);white-space:nowrap;">'+p.set.size+'/'+p.total+'</span>' +
+    '</div>';
+  });
+  document.getElementById('heat').innerHTML = heat;
+}
+
+/* ---------- 7. NAVEGACIÓN ENTRE VISTAS ---------- */
+function vistas(){ return [...document.querySelectorAll('.view')]; }
+
+function mostrar(id, push){
+  const v = document.getElementById(id);
+  if(!v || !v.classList.contains('view')) return mostrar('panel', push);
+  vistas().forEach(s => s.classList.remove('active'));
+  v.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(a =>
+    a.classList.toggle('active', a.dataset.view === id));
+  state.vista = id; saveState();
+  if(push !== false && location.hash !== '#' + id) location.hash = id;
+  window.scrollTo({top:0, behavior:'auto'});
+  cerrarMenuMovil();
+}
+
+window.addEventListener('hashchange', () => {
+  const id = location.hash.replace('#','');
+  if(id) mostrar(id, false);
+});
+
+/* Cualquier enlace a un curso deja registrado cuál fue el último abierto,
+   para que «Continuar» sepa a dónde volver. */
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-abrir]');
+  if(!a) return;
+  state.ultimoCurso = a.dataset.abrir;
+  saveState();
+});
+
+/* Volver arriba */
+window.addEventListener('scroll', () => {
+  toTop.classList.toggle('show', window.scrollY > 500);
+});
+toTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+
+/* ---------- 8. PROGRESO (ANILLO, BARRAS Y ESTADÍSTICAS) ---------- */
+function totales(){
+  let caps = 0, hechos = 0, horas = 0;
+  CURSOS.forEach(c => {
+    const p = PROG[c.id];
+    caps += p.total; hechos += p.set.size; horas += (c.horas || 0);
+  });
+  return { caps, hechos, horas, pct: caps ? Math.round(hechos / caps * 100) : 0 };
+}
+
+function pintarGlobal(){
+  const t = totales();
+
+  const ring = document.getElementById('ring');
+  ring.style.background = 'conic-gradient(var(--accent) ' + (t.pct * 3.6) + 'deg, var(--border) 0deg)';
+  document.getElementById('ringTxt').textContent = t.pct + '%';
+
+  document.getElementById('pctTxt').textContent = t.pct + '%';
+  document.getElementById('pctBar').style.width = t.pct + '%';
+  document.getElementById('pctSub').textContent = t.hechos + ' de ' + t.caps + ' capítulos completados';
+
+  document.getElementById('statCursos').textContent = CURSOS.length;
+  document.getElementById('statCaps').textContent = t.caps;
+  document.getElementById('statHoras').textContent = '~' + t.horas + ' h';
+  document.getElementById('statHechos').textContent = t.hechos;
+  document.getElementById('miniCaps').textContent = t.caps;
+
+  document.getElementById('gPct').textContent = t.pct + '%';
+  document.getElementById('gBar').style.width = t.pct + '%';
+  document.getElementById('gSub').textContent =
+    t.hechos + ' de ' + t.caps + ' capítulos · ' + CURSOS.filter(c => PROG[c.id].pct === 100).length +
+    ' de ' + CURSOS.length + ' cursos terminados';
+
+  /* Botón «Continuar»: el último curso abierto; si no hay, el más avanzado sin terminar. */
+  let c = CURSOS.find(x => x.id === state.ultimoCurso);
+  if(!c || PROG[c.id].pct === 100){
+    const enCurso = CURSOS.filter(x => PROG[x.id].set.size > 0 && PROG[x.id].pct < 100)
+                          .sort((a,b) => PROG[b.id].pct - PROG[a.id].pct);
+    c = enCurso[0] || CURSOS.find(x => PROG[x.id].pct < 100) || CURSOS[0];
+  }
+  const n = capContinuar(c);
+  [['continueBtn', '▶ Continuar'], ['heroContinue', '▶ Continuar: ' + c.name + ' · cap. ' + n]]
+    .forEach(([id, txt]) => {
+      const b = document.getElementById(id);
+      if(!b) return;
+      b.textContent = txt;
+      b.href = c.file + '#cap-' + n;
+      b.title = c.name + ' · capítulo ' + n;
+      b.dataset.abrir = c.id;
+    });
+}
+
+function refrescar(){
+  releerTodo();
+  pintarNav();
+  pintarCursos();
+  pintarRuta();
+  pintarProgreso();
+  CURSOS.forEach(pintarFicha);
+  pintarGlobal();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  refrescar();
+  const b = document.getElementById('refreshBtn');
+  b.textContent = '✓'; setTimeout(() => { b.textContent = '↻'; }, 900);
+});
+
+/* Al volver del curso a esta pestaña, releer el progreso automáticamente. */
+window.addEventListener('focus', refrescar);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) refrescar(); });
+window.addEventListener('storage', refrescar);
+window.addEventListener('pageshow', refrescar);
+
+/* ---------- 9. BUSCADOR GLOBAL ---------- */
+const inputBusca = document.getElementById('search');
+const cajaRes = document.getElementById('results');
+let INDICE = [], sel = -1;
+
+function norm(s){
+  return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+
+function buildIndice(){
+  INDICE = [];
+  CURSOS.forEach(c => {
+    INDICE.push({
+      tipo:'curso', c, url:'#curso-'+c.id,
+      titulo:c.name, ctx:c.tech + ' · proyecto ' + c.proyecto,
+      snip:c.desc.replace(/<[^>]+>/g,''),
+      hay: norm([c.name, c.tech, c.proyecto, c.proyectoDesc, c.temas.join(' '), c.id].join(' '))
+    });
+    capsDe(c).forEach(k => {
+      INDICE.push({
+        tipo:'cap', c, cap:k, url:c.file + '#cap-' + k.n, externo:true,
+        titulo:k.n + ' · ' + k.s, ctx:k.m + (k.h ? ' · ' + k.h : ''),
+        snip:k.t + (k.c ? ' — ' + k.c.split('|').join(' · ') : ''),
+        hay: norm([k.s, k.t, k.m, k.c.split('|').join(' '), c.name, c.proyecto].join(' '))
+      });
+    });
+  });
+}
+
+function marcar(texto, terminos){
+  let out = esc(texto);
+  terminos.forEach(t => {
+    if(t.length < 2) return;
+    const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'ig');
+    /* se marca sobre el texto normalizado sólo si coincide literalmente */
+    out = out.replace(re, '<mark>$1</mark>');
+  });
+  return out;
+}
+
+function buscar(q){
+  const terminos = norm(q).split(/\s+/).filter(Boolean);
+  if(!terminos.length) return [];
+  return INDICE
+    .map(it => {
+      let puntos = 0;
+      for(const t of terminos){
+        if(it.hay.indexOf(t) === -1) return null;
+        puntos += norm(it.titulo).indexOf(t) !== -1 ? 3 : 1;
+      }
+      if(it.tipo === 'curso') puntos += 1;   /* la ficha del curso empata sólo si nada la supera */
+      return { it, puntos };
+    })
+    .filter(Boolean)
+    .sort((a,b) => b.puntos - a.puntos)
+    .slice(0, 30)
+    .map(r => r.it);
+}
+
+function pintarResultados(q){
+  const res = buscar(q);
+  sel = -1;
+  if(!q.trim()){ cajaRes.classList.remove('open'); cajaRes.innerHTML = ''; return; }
+  if(!res.length){
+    cajaRes.innerHTML = '<div class="r-empty">Sin resultados para «' + esc(q) + '»</div>';
+    cajaRes.classList.add('open'); return;
+  }
+  const terminos = q.split(/\s+/).filter(Boolean);
+  cajaRes.innerHTML = res.map(it =>
+    '<a class="r-item" href="'+it.url+'" style="--cc:var(--c-'+it.c.id+')"' +
+      (it.externo ? ' data-abrir="'+it.c.id+'"' : '') + '>' +
+      '<div class="r-course">'+it.c.icon+' '+esc(it.c.name)+(it.tipo === 'curso' ? ' · ficha del curso' : '')+'</div>' +
+      '<div class="r-title">'+marcar(it.titulo, terminos)+'</div>' +
+      '<div class="r-ctx">'+esc(it.ctx)+'</div>' +
+      '<div class="r-snip">'+marcar(it.snip.slice(0,160), terminos)+'</div>' +
+    '</a>').join('');
+  cajaRes.classList.add('open');
+}
+
+inputBusca.addEventListener('input', () => pintarResultados(inputBusca.value));
+inputBusca.addEventListener('focus', () => { if(inputBusca.value) pintarResultados(inputBusca.value); });
+
+inputBusca.addEventListener('keydown', e => {
+  const items = [...cajaRes.querySelectorAll('.r-item')];
+  if(e.key === 'Escape'){ inputBusca.value = ''; cajaRes.classList.remove('open'); inputBusca.blur(); return; }
+  if(!items.length) return;
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((el,i) => el.classList.toggle('sel', i === sel));
+    items[sel].scrollIntoView({block:'nearest'});
+  }
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    (items[sel] || items[0]).click();
+  }
+});
+
+document.addEventListener('click', e => {
+  if(!e.target.closest('.search-wrap')) cajaRes.classList.remove('open');
+});
+
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && document.activeElement !== inputBusca &&
+     !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)){
+    e.preventDefault(); inputBusca.focus(); inputBusca.select();
+  }
+  if(e.key === 'Escape'){ cajaRes.classList.remove('open'); }
+});
+
+/* ---------- 10. COPIA DE SEGURIDAD ---------- */
+const ioBox = document.getElementById('ioBox');
+const ioMsg = document.getElementById('ioMsg');
+
+function aviso(txt, clase){
+  ioMsg.className = 'note ' + (clase || '');
+  ioMsg.innerHTML = txt;
+  ioMsg.style.display = 'block';
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const dump = { panel:'cursos-panel-v1', fecha:new Date().toISOString(), datos:{} };
+  CURSOS.forEach(c => {
+    try{ const v = localStorage.getItem(c.key); if(v) dump.datos[c.key] = v; }catch(e){}
+  });
+  ioBox.value = JSON.stringify(dump);
+  ioBox.classList.add('show');
+  ioBox.select();
+  let copiado = false;
+  try{ copiado = document.execCommand('copy'); }catch(e){}
+  aviso('<b class="t">Progreso exportado</b><p>' +
+    (copiado ? 'Ya está copiado al portapapeles. ' : '') +
+    'Pega el texto en un archivo <code>.txt</code> y guárdalo. Contiene el progreso de ' +
+    Object.keys(dump.datos).length + ' curso(s).</p>', 'good');
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  ioBox.classList.add('show');
+  const txt = ioBox.value.trim();
+  if(!txt){
+    aviso('<b class="t">Pega aquí tu copia</b><p>Pega en el cuadro de abajo el texto que exportaste y ' +
+      'vuelve a pulsar <b>Importar progreso</b>.</p>', 'tip');
+    ioBox.focus(); return;
+  }
+  let dump;
+  try{ dump = JSON.parse(txt); }catch(e){
+    aviso('<b class="t">Ese texto no es una copia válida</b><p>Debe ser el JSON completo que generó ' +
+      '<b>Exportar progreso</b>, sin recortar.</p>', 'bad'); return;
+  }
+  if(!dump || !dump.datos){
+    aviso('<b class="t">Falta el bloque <code>datos</code></b><p>La copia no tiene el formato esperado.</p>', 'bad');
+    return;
+  }
+  if(!confirm('Vas a sobrescribir el progreso guardado en este navegador con el de la copia. ¿Continuar?')) return;
+  let n = 0;
+  Object.keys(dump.datos).forEach(k => {
+    if(!CURSOS.some(c => c.key === k)) return;   /* sólo claves de cursos conocidos */
+    try{ localStorage.setItem(k, dump.datos[k]); n++; }catch(e){}
+  });
+  refrescar();
+  aviso('<b class="t">Progreso importado</b><p>Se restauraron ' + n + ' curso(s). ' +
+    'Abre cualquiera para comprobarlo.</p>', 'good');
+});
+
+document.getElementById('wipeBtn').addEventListener('click', () => {
+  if(!confirm('Esto borra el progreso de TODOS los cursos en este navegador. No se puede deshacer. ¿Seguro?')) return;
+  if(!confirm('Última confirmación: se perderán todos los capítulos marcados como completados.')) return;
+  CURSOS.forEach(c => { try{ localStorage.removeItem(c.key); }catch(e){} });
+  refrescar();
+  aviso('<b class="t">Progreso borrado</b><p>Todos los cursos vuelven a estar a 0 %. Si tenías una ' +
+    'copia exportada, puedes recuperarla con <b>Importar progreso</b>.</p>', 'warn');
+});
+
+/* ---------- 11. ARRANQUE ---------- */
+(function init(){
+  applyTheme(state.theme === 'light' ? 'light' : 'dark');
+  buildNav();
+  buildFichas();
+  refrescar();
+  buildIndice();
+
+  const hash = location.hash.replace('#','');
+  mostrar(hash || state.vista || 'panel', false);
+
+  if(!lsOk){
+    const p = document.querySelector('#panel .hero');
+    const d = document.createElement('div');
+    d.className = 'note bad';
+    d.innerHTML = '<b class="t">Este navegador no deja leer el almacenamiento local</b>' +
+      '<p>El panel funciona igual como índice, pero mostrará 0 % en todos los cursos. Suele pasar en ' +
+      'ventanas de incógnito o con el almacenamiento de sitios bloqueado.</p>';
+    p.parentNode.insertBefore(d, p.nextSibling);
+  }
+})();
+</script>
+</body>
+</html>

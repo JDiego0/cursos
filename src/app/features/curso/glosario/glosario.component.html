@@ -1,0 +1,53 @@
+@if (curso(); as c) {
+  <div class="crumb">Anexo del curso</div>
+  <h1 class="page-title">📚 Glosario y comandos de {{ c.proyecto }}</h1>
+  <p class="lead">
+    Todo el vocabulario que aparece en los {{ c.capitulos.length }} capítulos, en el orden en que
+    se va introduciendo, más los comandos que sirven en cualquier punto del curso.
+  </p>
+
+  <div class="filtro">
+    <span aria-hidden="true">🔍</span>
+    <input
+      type="search"
+      [formControl]="filtro"
+      placeholder="Filtrar término o comando…"
+      aria-label="Filtrar el glosario"
+    />
+  </div>
+
+  <h2 class="sec">Glosario · {{ terminos().length }} de {{ c.glosario.length }} términos</h2>
+  @if (terminos().length) {
+    <dl class="glosario">
+      @for (t of terminos(); track t.termino) {
+        <div class="entrada">
+          <dt>{{ t.termino }}</dt>
+          <dd [innerHTML]="t.definicion | htmlSeguro"></dd>
+        </div>
+      }
+    </dl>
+  } @else {
+    <p class="vacio">Ningún término coincide con el filtro.</p>
+  }
+
+  <h2 class="sec">Chuleta de comandos · {{ comandos().length }} de {{ c.chuleta.length }}</h2>
+  @if (comandos().length) {
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Comando o atajo</th><th>Para qué sirve</th></tr>
+        </thead>
+        <tbody>
+          @for (cmd of comandos(); track cmd.clave) {
+            <tr>
+              <td><code>{{ cmd.clave }}</code></td>
+              <td [innerHTML]="cmd.para | htmlSeguro"></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="vacio">Ningún comando coincide con el filtro.</p>
+  }
+}

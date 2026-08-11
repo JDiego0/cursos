@@ -1,0 +1,131 @@
+<div class="crumb">Panel · Seguimiento</div>
+<h2 class="ch-title"><span class="ico">📊</span>Progreso global</h2>
+<p class="lead">
+  Todo lo que llevas hecho, curso por curso y capítulo por capítulo. Cada cuadrito es un capítulo:
+  haz clic para abrirlo directamente.
+</p>
+
+<div class="side-block" style="max-width: none">
+  <div class="pct">
+    <span>Capítulos completados en total</span>
+    <b>{{ global().pct }}%</b>
+  </div>
+  <div class="bar lg"><i [style.width.%]="global().pct"></i></div>
+  <div class="sub">
+    {{ global().capitulosHechos }} de {{ global().capitulosTotales }} capítulos ·
+    {{ global().cursosCompletados }} curso(s) terminados · {{ global().cursosEnCurso }} a medias
+  </div>
+</div>
+
+<h3>Resumen por curso</h3>
+<div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Curso</th>
+        <th>Proyecto</th>
+        <th>Capítulos</th>
+        <th>Progreso</th>
+        <th>Estado</th>
+        <th>Ir</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (ficha of catalogo.fichas(); track ficha.id) {
+        @let p = progreso.porCurso()[ficha.id];
+        @let estado = progreso.estadoDe(ficha.id);
+        <tr [style.--cb]="'var(--b-' + ficha.id + ')'" [style.--cs]="'var(--s-' + ficha.id + ')'">
+          <td>
+            <b>{{ ficha.icono }} {{ ficha.nombre }}</b>
+            <br />
+            <span class="tec">{{ ficha.tecnologia }}</span>
+          </td>
+          <td>{{ ficha.proyecto }}</td>
+          <td>{{ p.set.size }} / {{ p.total }}</td>
+          <td class="celda-barra">
+            <div class="bar curso"><i [style.width.%]="p.pct"></i></div>
+            <span class="tec">{{ p.pct }}%</span>
+          </td>
+          <td>
+            <span class="badge {{ (estado | estadoCurso).clase }}">
+              {{ (estado | estadoCurso).texto }}
+            </span>
+          </td>
+          <td>
+            <a class="btn sm" [routerLink]="RUTAS.capitulo(ficha.id, progreso.capituloParaContinuar(ficha.id))">
+              Abrir
+            </a>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<h3>Mapa de capítulos</h3>
+<div class="legend">
+  <span><i class="on"></i>Completado</span>
+  <span><i class="off"></i>Pendiente</span>
+  <span><i class="off marco"></i>Último capítulo visitado</span>
+</div>
+
+<div class="mapa">
+  @for (ficha of catalogo.fichas(); track ficha.id) {
+    @let p = progreso.porCurso()[ficha.id];
+    <div class="fila" [style.--cb]="'var(--b-' + ficha.id + ')'" [style.--ct]="'var(--c-' + ficha.id + ')'">
+      <span class="nombre">{{ ficha.icono }} {{ ficha.nombre }}</span>
+      <div class="celdas">
+        @for (cap of ficha.capitulos; track cap.num) {
+          <a
+            class="celda"
+            [class.hecho]="p.set.has(cap.num)"
+            [class.ultimo]="p.ultimo === cap.num"
+            [routerLink]="RUTAS.capitulo(ficha.id, cap.num)"
+            [title]="'Capítulo ' + cap.num + ' · ' + cap.corto"
+          >
+            {{ cap.num }}
+          </a>
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<h3>Copia de seguridad del progreso</h3>
+<p>
+  El progreso vive en el navegador, y el navegador se puede reinstalar o limpiar. Exporta el texto,
+  guárdalo en un archivo y podrás recuperar tu avance en otro equipo o en otro navegador.
+</p>
+
+<div class="acciones">
+  <button class="btn" type="button" (click)="exportar()">⬇ Exportar progreso</button>
+  <button class="btn" type="button" (click)="importar()">⬆ Importar progreso</button>
+  <button class="btn" type="button" title="Borra el progreso de todos los cursos" (click)="reiniciar()">
+    ↺ Reiniciar todo
+  </button>
+</div>
+
+@if (cajaVisible()) {
+  <textarea
+    class="caja"
+    [formControl]="copia"
+    spellcheck="false"
+    aria-label="Texto del progreso exportado, o para importar"
+  ></textarea>
+}
+
+@if (aviso(); as a) {
+  <div class="note {{ a.clase }}">
+    <b class="t">{{ a.titulo }}</b>
+    <p>{{ a.texto }}</p>
+  </div>
+}
+
+<div class="note good">
+  <b class="t">✅ Sabrás que todo funciona si…</b>
+  <p>
+    Abres un curso, marcas un capítulo como completado, vuelves a esta vista y el porcentaje ha
+    subido solo. Si siempre marca 0 %, es que el navegador tiene bloqueado el almacenamiento: lo
+    verás avisado arriba del todo.
+  </p>
+</div>

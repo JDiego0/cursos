@@ -1,0 +1,219 @@
+:host {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 16px 0 18px;
+  background: var(--surface);
+}
+
+/* --- Barra de herramientas --- */
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.titulo {
+  font-size: 13px;
+  font-weight: 640;
+  color: var(--text);
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.firma {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.lenguaje {
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Interruptor del modo servidor real. */
+.remoto {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color var(--t), border-color var(--t), background var(--t);
+}
+
+.remoto:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.remoto input {
+  accent-color: var(--tip);
+  cursor: pointer;
+  margin: 0;
+}
+
+.remoto.activo {
+  color: var(--tip);
+  border-color: var(--tip);
+  background: rgba(163, 113, 247, 0.1);
+}
+
+/* --- Editor --- */
+.editor {
+  display: flex;
+  background: var(--code-bg);
+  max-height: 460px;
+  overflow: auto;
+}
+
+.numeros {
+  flex: none;
+  padding: 12px 8px 12px 12px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4d6660;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.03);
+  white-space: pre;
+}
+
+.editor textarea {
+  flex: 1;
+  min-height: 210px;
+  border: none;
+  outline: none;
+  resize: vertical;
+  padding: 12px 14px;
+  background: transparent;
+  color: #dde5ee;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 4;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* --- Panel de resultados --- */
+.resultado {
+  border-top: 1px solid var(--border);
+  background: var(--code-bg);
+}
+
+.resultado .cabecera {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border);
+}
+
+.resultado .ms {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.resultado pre {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: #dde5ee;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.resultado pre.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.resultado pre.err {
+  color: #ff9a90;
+}
+
+.resultado pre.good {
+  color: #7ee59a;
+}
+
+.marcador {
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.marcador.ok {
+  color: var(--ok);
+}
+
+.marcador.ko {
+  color: var(--warn);
+}
+
+.caso {
+  display: flex;
+  gap: 8px;
+  padding: 6px 14px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--border-soft);
+  color: #c3d0cb;
+  align-items: flex-start;
+}
+
+.caso .marca {
+  flex: none;
+  width: 16px;
+}
+
+.caso.ok .marca {
+  color: var(--ok);
+}
+
+.caso.ko .marca {
+  color: var(--danger);
+}
+
+.caso .detalle {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.caso .esperado {
+  color: var(--muted);
+}

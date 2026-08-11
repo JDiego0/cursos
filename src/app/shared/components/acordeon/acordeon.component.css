@@ -1,0 +1,57 @@
+.acc {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.acc > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 640;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  transition: background var(--t);
+}
+
+.acc > summary::-webkit-details-marker {
+  display: none;
+}
+
+.acc > summary:hover {
+  background: var(--surface-2);
+}
+
+/* La flecha gira al abrir. */
+.acc > summary::after {
+  content: "›";
+  margin-left: auto;
+  font-size: 22px;
+  color: var(--muted);
+  transform: rotate(90deg);
+  transition: transform var(--t);
+  line-height: 1;
+}
+
+.acc[open] > summary::after {
+  transform: rotate(-90deg);
+}
+
+.acc[open] > summary {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.acc .acc-body {
+  padding: 18px 18px 22px;
+}
+
+.tick {
+  font-size: 11px;
+  color: var(--ok);
+  font-weight: 500;
+}
