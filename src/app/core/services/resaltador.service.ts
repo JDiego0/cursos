@@ -131,7 +131,9 @@ const PERFILES: Record<string, PerfilLenguaje> = {
 const REGLAS: [RegExp, keyof typeof PERFILES][] = [
   [/salida|resultado|texto|comparaci|entorno|pedido/i, 'ninguno'],
   [/xml|pom\b|html|thymeleaf|jsx|tsx|angular|svg/i, 'marcado'],
-  [/json|yaml|yml|properties|toml|ini|package\.json/i, 'configuracion'],
+  /* `ini` con límites de palabra: si no, se lleva por delante cualquier
+     ruta o título que contenga «init», «inicial» o «administrador». */
+  [/json|yaml|yml|properties|toml|\bini\b|package\.json/i, 'configuracion'],
   [/terminal|bash|shell|consola|cli|dockerfile|nginx|crontab|windows|macos|linux|vercel|npm/i, 'consola'],
   [/sql|cosmos/i, 'sql'],
   [/python|\bpy\b|django|fastapi|pandas/i, 'python'],

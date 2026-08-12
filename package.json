@@ -1,7 +1,7 @@
 {
   "name": "cursos",
   "version": "1.0.0",
-  "description": "Panel de cursos interactivos: siete cursos, un proyecto continuo en cada uno.",
+  "description": "Panel de cursos interactivos: ocho cursos, un proyecto continuo en cada uno.",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

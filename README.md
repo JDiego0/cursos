@@ -1,6 +1,6 @@
 # CURSOS
 
-Aplicación **Angular** que reúne siete cursos interactivos. Cada curso construye **un solo
+Aplicación **Angular** que reúne ocho cursos interactivos. Cada curso construye **un solo
 proyecto** de principio a fin, capítulo a capítulo, y guarda tu progreso en el navegador.
 
 | Curso | Proyecto | Capítulos |
@@ -11,9 +11,10 @@ proyecto** de principio a fin, capítulo a capítulo, y guarda tu progreso en el
 | Python desde Cero · pandas · FastAPI | **NakaData**, plataforma de datos | 25 |
 | Angular desde Cero · TypeScript · RxJS | **NakaGym**, gestión de un gimnasio | 24 |
 | IA para Desarrolladores · LLMs · n8n | **NakaDesk**, copiloto de un equipo | 22 |
+| Docker y Kubernetes · Compose · Helm | **NakaTicket**, venta de entradas | 22 |
 | Azure desde Cero · CLI | **NakaShop**, tienda en la nube | 12 |
 
-**158 capítulos · ~188 horas de estudio.**
+**180 capítulos · ~209 horas de estudio.**
 
 ---
 

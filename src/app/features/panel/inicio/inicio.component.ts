@@ -56,6 +56,7 @@ export class InicioComponent {
     { cursoId: 'java', porque: 'Enseña a programar y a pensar en objetos.' },
     { cursoId: 'react', porque: 'La interfaz: ya sabes lógica, ahora píntala.' },
     { cursoId: 'angular', porque: 'El mismo problema con otra filosofía.' },
+    { cursoId: 'docker', porque: 'Cómo se empaqueta y se ejecuta lo que escribes.' },
     { cursoId: 'azure', porque: 'Dónde vive lo que has construido.' },
     { cursoId: 'ia', porque: 'Se apoya en todo lo anterior: API, datos y nube.' },
   ];

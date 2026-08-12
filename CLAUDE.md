@@ -1,6 +1,6 @@
 # CURSOS · Guía de construcción
 
-Este repositorio es una **aplicación Angular** que sirve siete cursos interactivos. Un curso = un
+Este repositorio es una **aplicación Angular** que sirve ocho cursos interactivos. Un curso = un
 proyecto continuo repartido en capítulos, con teoría y práctica en el mismo sitio.
 
 La guía tiene dos mitades y conviene no mezclarlas:
@@ -45,6 +45,7 @@ Cursos existentes:
 | `python` | **NakaData**, plataforma de datos | 25 |
 | `angular` | **NakaGym**, gestión de gimnasio | 24 |
 | `ia` | **NakaDesk**, copiloto interno | 22 |
+| `docker` | **NakaTicket**, venta de entradas | 22 |
 | `azure` | **NakaShop**, tienda online | 12 |
 
 ---
@@ -73,7 +74,7 @@ Cursos existentes:
 
 ## 2. El motor · qué te da ya hecho
 
-Nada de esto se reimplementa por curso. Existe una sola vez y sirve para los siete:
+Nada de esto se reimplementa por curso. Existe una sola vez y sirve para los ocho:
 
 | Pieza | Dónde |
 |---|---|

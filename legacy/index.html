@@ -36,6 +36,7 @@
   --b-algoritmia:#0fa678; --s-algoritmia:#45dcae;
   --b-angular:#dd0031;  --s-angular:#ff6b8a;
   --b-azure:#0078d4;    --s-azure:#4aa3e0;
+  --b-docker:#2496ed;   --s-docker:#7cc4f5;
   --b-ia:#7c5cff;       --s-ia:#a894ff;
   --b-java:#e76f00;     --s-java:#ffa64d;
   --b-python:#3776ab;   --s-python:#6bb3e8;
@@ -62,6 +63,7 @@ html[data-theme="dark"]{
   --c-algoritmia:#45dcae;
   --c-angular:#ff6b8a;
   --c-azure:#4aa3e0;
+  --c-docker:#7cc4f5;
   --c-ia:#a894ff;
   --c-java:#ffa64d;
   --c-python:#6bb3e8;
@@ -88,6 +90,7 @@ html[data-theme="light"]{
   --c-algoritmia:#0a7355;
   --c-angular:#a6002a;
   --c-azure:#005a9e;
+  --c-docker:#10608f;
   --c-ia:#5b3fd6;
   --c-java:#a34f00;
   --c-python:#1f5f8b;
@@ -704,6 +707,13 @@ const CURSOS = [
     horas:24, caps:22, nivel:'Principiante → Avanzado',
     desc:'De una llamada de veinte líneas a un modelo a un sistema con RAG, agentes con herramientas, MCP, evaluación, automatización con n8n y Power Automate, observabilidad y control de costes.',
     temas:['Prompting','Embeddings','RAG','Agentes','MCP','n8n'] },
+
+  { id:'docker', file:'docker.html', key:'docker-nakaticket-v1',
+    name:'Docker y Kubernetes', tech:'Docker · Compose · Kubernetes', icon:'🐳',
+    proyecto:'NakaTicket', proyectoDesc:'una plataforma de venta de entradas',
+    horas:21, caps:22, nivel:'Principiante → Avanzado',
+    desc:'De <code>docker run hello-world</code> a un clúster con autoescalado: imágenes, Dockerfiles multi-stage, volúmenes, redes, Docker Compose, Kubernetes, Ingress, probes, HPA, Helm y CI/CD. Todo en tu propia máquina y <strong>sin coste</strong>.',
+    temas:['Imágenes','Dockerfile','Volúmenes','Compose','Pods','Services','Ingress','Helm'] },
 
   { id:'azure', file:'azure.html', key:'azure-nakashop-v1',
     name:'Azure desde Cero', tech:'Microsoft Azure · CLI', icon:'☁',
