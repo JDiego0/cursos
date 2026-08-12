@@ -9,6 +9,7 @@ import {
   input,
   numberAttribute,
   signal,
+  untracked,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
@@ -67,19 +68,29 @@ export class CapituloComponent {
 
   constructor() {
     /* Al cambiar de capítulo: se anota la visita y se reinicia el
-       estado de los acordeones al que trae el contenido. */
+       estado de los acordeones al que trae el contenido.
+
+       Todo lo que toca `ProgresoStore` va dentro de `untracked`: sus
+       lecturas dependen de `revision`, que se incrementa al volver a
+       la pestaña (`visibilitychange`) o al escribir otra pestaña. Sin
+       aislarlas, el efecto se reejecutaba en cada regreso y cerraba
+       los acordeones que el alumno tenía abiertos. La única
+       dependencia legítima aquí es el capítulo. */
     effect(() => {
       const cap = this.capitulo();
       if (!cap) return;
-      this.progreso.marcarVisitado(this.cursoId(), cap.num);
 
-      const inicial: Record<number, boolean> = {};
-      cap.acordeones.forEach((acc, i) => (inicial[i] = acc.abiertoPorDefecto));
-      this.abiertos.set(inicial);
+      untracked(() => {
+        this.progreso.marcarVisitado(this.cursoId(), cap.num);
 
-      /* El primero viene abierto, así que cuenta como leído. */
-      cap.acordeones.forEach((acc, i) => {
-        if (acc.abiertoPorDefecto) this.progreso.marcarAcordeonLeido(this.cursoId(), cap.num, i);
+        const inicial: Record<number, boolean> = {};
+        cap.acordeones.forEach((acc, i) => (inicial[i] = acc.abiertoPorDefecto));
+        this.abiertos.set(inicial);
+
+        /* El primero viene abierto, así que cuenta como leído. */
+        cap.acordeones.forEach((acc, i) => {
+          if (acc.abiertoPorDefecto) this.progreso.marcarAcordeonLeido(this.cursoId(), cap.num, i);
+        });
       });
     });
 

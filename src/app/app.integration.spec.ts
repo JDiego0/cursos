@@ -203,6 +203,45 @@ describe('Aplicación · navegación y visor de cursos', () => {
     expect(texto()).toContain('1 / 8 secciones');
   });
 
+  /* El regreso a la pestaña hace que `ProgresoStore` relea el
+     almacenamiento. Eso no puede arrastrar consigo el estado de los
+     acordeones: el alumno se encontraba el capítulo replegado hasta
+     la teoría y perdía el punto donde iba. */
+  it('conserva los acordeones abiertos al volver a la pestaña', async () => {
+    /* Un capítulo que el alumno ya venía leyendo: así abrir un
+       acordeón no escribe nada y se aísla lo que hace el regreso a
+       la pestaña. */
+    const progreso = TestBed.inject(ProgresoStore);
+    progreso.marcarVisitado('demo', 1);
+    progreso.marcarAcordeonLeido('demo', 1, 0);
+    progreso.marcarAcordeonLeido('demo', 1, 1);
+
+    await harness.navigateByUrl('/curso/demo/capitulo/1');
+
+    const abiertos = () =>
+      Array.from(harness.routeNativeElement!.querySelectorAll<HTMLDetailsElement>('details.acc')).map(
+        (d) => d.open,
+      );
+
+    /* El alumno abre «Implementación» y cierra la teoría. Se hace por
+       el modelo del acordeón, que es lo que mueve el clic real: tocar
+       `details.open` a mano dejaría el DOM y el enlace descuadrados. */
+    const acordeones = harness.fixture.debugElement
+      .queryAll((de) => de.nativeElement?.tagName === 'APP-ACORDEON')
+      .map((de) => de.componentInstance as { abierto: { set(v: boolean): void } });
+
+    acordeones[1].abierto.set(true);
+    acordeones[0].abierto.set(false);
+    TestBed.tick();
+    expect(abiertos()).toEqual([false, true, false, false, false, false, false, false]);
+
+    /* Se va a otra pestaña y vuelve: `ProgresoStore` relee. */
+    document.dispatchEvent(new Event('visibilitychange'));
+    TestBed.tick();
+
+    expect(abiertos()).toEqual([false, true, false, false, false, false, false, false]);
+  });
+
   it('marca el capítulo como completado y lo guarda', async () => {
     await harness.navigateByUrl('/curso/demo/capitulo/0');
 
