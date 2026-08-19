@@ -37,6 +37,7 @@
   --b-angular:#dd0031;  --s-angular:#ff6b8a;
   --b-azure:#0078d4;    --s-azure:#4aa3e0;
   --b-docker:#2496ed;   --s-docker:#7cc4f5;
+  --b-entrevistas:#b5179e; --s-entrevistas:#e879f9;
   --b-ia:#7c5cff;       --s-ia:#a894ff;
   --b-java:#e76f00;     --s-java:#ffa64d;
   --b-python:#3776ab;   --s-python:#6bb3e8;
@@ -64,6 +65,7 @@ html[data-theme="dark"]{
   --c-angular:#ff6b8a;
   --c-azure:#4aa3e0;
   --c-docker:#7cc4f5;
+  --c-entrevistas:#e879f9;
   --c-ia:#a894ff;
   --c-java:#ffa64d;
   --c-python:#6bb3e8;
@@ -91,6 +93,7 @@ html[data-theme="light"]{
   --c-angular:#a6002a;
   --c-azure:#005a9e;
   --c-docker:#10608f;
+  --c-entrevistas:#9d1d8a;
   --c-ia:#5b3fd6;
   --c-java:#a34f00;
   --c-python:#1f5f8b;
@@ -714,6 +717,13 @@ const CURSOS = [
     horas:21, caps:22, nivel:'Principiante → Avanzado',
     desc:'De <code>docker run hello-world</code> a un clúster con autoescalado: imágenes, Dockerfiles multi-stage, volúmenes, redes, Docker Compose, Kubernetes, Ingress, probes, HPA, Helm y CI/CD. Todo en tu propia máquina y <strong>sin coste</strong>.',
     temas:['Imágenes','Dockerfile','Volúmenes','Compose','Pods','Services','Ingress','Helm'] },
+
+  { id:'entrevistas', file:'entrevistas.html', key:'entrevistas-nakahire-v1',
+    name:'Entrevistas Full Stack', tech:'Java · Spring · React · SQL', icon:'🎯',
+    proyecto:'NakaHire', proyectoDesc:'tu dossier de entrevista técnica',
+    horas:38, caps:35, nivel:'Junior → Senior',
+    desc:'Preparación para <strong>entrevistas técnicas</strong> de desarrollador Full Stack. Cada tema empieza explicando el concepto y sigue con las <strong>preguntas reales</strong>: respuesta corta, explicación profunda, ejemplo y nivel Básico / Intermedio / Avanzado. De fundamentos y Java a Spring, SQL, React, seguridad, arquitectura e IA.',
+    temas:['Java','Spring','SQL','React','HTTP','Seguridad','SOLID','IA'] },
 
   { id:'azure', file:'azure.html', key:'azure-nakashop-v1',
     name:'Azure desde Cero', tech:'Microsoft Azure · CLI', icon:'☁',

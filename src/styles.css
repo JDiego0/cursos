@@ -45,6 +45,7 @@
   --b-angular:    #dd0031;  --s-angular:    #ff6b8a;
   --b-azure:      #0078d4;  --s-azure:      #4aa3e0;
   --b-docker:     #2496ed;  --s-docker:     #7cc4f5;
+  --b-entrevistas:#b5179e;  --s-entrevistas:#e879f9;
   --b-ia:         #7c5cff;  --s-ia:         #a894ff;
   --b-java:       #e76f00;  --s-java:       #ffa64d;
   --b-python:     #3776ab;  --s-python:     #6bb3e8;
@@ -87,6 +88,7 @@ html[data-theme="dark"] {
   --c-angular: #ff6b8a;     --c-angular-rgb: 255, 107, 138;
   --c-azure: #4aa3e0;       --c-azure-rgb: 74, 163, 224;
   --c-docker: #7cc4f5;      --c-docker-rgb: 124, 196, 245;
+  --c-entrevistas: #e879f9; --c-entrevistas-rgb: 232, 121, 249;
   --c-ia: #a894ff;          --c-ia-rgb: 168, 148, 255;
   --c-java: #ffa64d;        --c-java-rgb: 255, 166, 77;
   --c-python: #6bb3e8;      --c-python-rgb: 107, 179, 232;
@@ -129,6 +131,7 @@ html[data-theme="light"] {
   --c-angular: #a6002a;     --c-angular-rgb: 166, 0, 42;
   --c-azure: #005a9e;       --c-azure-rgb: 0, 90, 158;
   --c-docker: #10608f;      --c-docker-rgb: 16, 96, 143;
+  --c-entrevistas: #9d1d8a; --c-entrevistas-rgb: 157, 29, 138;
   --c-ia: #5b3fd6;          --c-ia-rgb: 91, 63, 214;
   --c-java: #a34f00;        --c-java-rgb: 163, 79, 0;
   --c-python: #1f5f8b;      --c-python-rgb: 31, 95, 139;
@@ -148,6 +151,7 @@ html[data-curso="algoritmia"] { --accent: var(--c-algoritmia); --accent-rgb: var
 html[data-curso="angular"]    { --accent: var(--c-angular);    --accent-rgb: var(--c-angular-rgb); }
 html[data-curso="azure"]      { --accent: var(--c-azure);      --accent-rgb: var(--c-azure-rgb); }
 html[data-curso="docker"]     { --accent: var(--c-docker);     --accent-rgb: var(--c-docker-rgb); }
+html[data-curso="entrevistas"]{ --accent: var(--c-entrevistas);--accent-rgb: var(--c-entrevistas-rgb); }
 html[data-curso="ia"]         { --accent: var(--c-ia);         --accent-rgb: var(--c-ia-rgb); }
 html[data-curso="java"]       { --accent: var(--c-java);       --accent-rgb: var(--c-java-rgb); }
 html[data-curso="python"]     { --accent: var(--c-python);     --accent-rgb: var(--c-python-rgb); }
