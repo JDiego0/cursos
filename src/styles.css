@@ -50,6 +50,7 @@
   --b-java:       #e76f00;  --s-java:       #ffa64d;
   --b-python:     #3776ab;  --s-python:     #6bb3e8;
   --b-react:      #61dafb;  --s-react:      #9becff;
+  --b-reactnative:#84cc16;  --s-reactnative:#bef264;
 }
 
 html[data-theme="dark"] {
@@ -93,6 +94,7 @@ html[data-theme="dark"] {
   --c-java: #ffa64d;        --c-java-rgb: 255, 166, 77;
   --c-python: #6bb3e8;      --c-python-rgb: 107, 179, 232;
   --c-react: #61dafb;       --c-react-rgb: 97, 218, 251;
+  --c-reactnative: #a3e635; --c-reactnative-rgb: 163, 230, 53;
 }
 
 html[data-theme="light"] {
@@ -136,6 +138,7 @@ html[data-theme="light"] {
   --c-java: #a34f00;        --c-java-rgb: 163, 79, 0;
   --c-python: #1f5f8b;      --c-python-rgb: 31, 95, 139;
   --c-react: #0a7ea4;       --c-react-rgb: 10, 126, 164;
+  --c-reactnative: #4d7c0f; --c-reactnative-rgb: 77, 124, 15;
 }
 
 /* ------------------------------------------------------------
@@ -156,6 +159,7 @@ html[data-curso="ia"]         { --accent: var(--c-ia);         --accent-rgb: var
 html[data-curso="java"]       { --accent: var(--c-java);       --accent-rgb: var(--c-java-rgb); }
 html[data-curso="python"]     { --accent: var(--c-python);     --accent-rgb: var(--c-python-rgb); }
 html[data-curso="react"]      { --accent: var(--c-react);      --accent-rgb: var(--c-react-rgb); }
+html[data-curso="reactnative"]{ --accent: var(--c-reactnative);--accent-rgb: var(--c-reactnative-rgb); }
 
 /* ============================================================
    2. RESET Y BASE

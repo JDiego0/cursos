@@ -42,6 +42,7 @@
   --b-java:#e76f00;     --s-java:#ffa64d;
   --b-python:#3776ab;   --s-python:#6bb3e8;
   --b-react:#61dafb;    --s-react:#9becff;
+  --b-reactnative:#84cc16; --s-reactnative:#bef264;
 }
 html[data-theme="dark"]{
   --bg:#111114;
@@ -70,6 +71,7 @@ html[data-theme="dark"]{
   --c-java:#ffa64d;
   --c-python:#6bb3e8;
   --c-react:#61dafb;
+  --c-reactnative:#a3e635;
 }
 html[data-theme="light"]{
   --bg:#ffffff;
@@ -98,6 +100,7 @@ html[data-theme="light"]{
   --c-java:#a34f00;
   --c-python:#1f5f8b;
   --c-react:#0a7ea4;
+  --c-reactnative:#4d7c0f;
 }
 
 /* ============================================================
@@ -689,6 +692,13 @@ const CURSOS = [
     horas:34, caps:25, nivel:'Principiante → Avanzado',
     desc:'De un componente que muestra un título a una aplicación profesional: JSX, estado, efectos, custom hooks, React Router, Context, TanStack Query, TypeScript, accesibilidad, tests y despliegue.',
     temas:['JSX','Hooks','Router','TanStack Query','TypeScript','Vitest'] },
+
+  { id:'reactnative', file:'reactnative.html', key:'reactnative-nakatrip-v1',
+    name:'React Native desde Cero', tech:'React Native · Expo · TypeScript', icon:'📱',
+    proyecto:'NakaTrip', proyectoDesc:'un diario de viajes para el móvil',
+    horas:32, caps:25, nivel:'Principiante → Avanzado',
+    desc:'La misma idea de React, pero pintando <strong>interfaz nativa</strong> en iOS y Android. De tu primera pantalla en el móvil a una aplicación publicada: Flexbox sin CSS, <code>FlatList</code>, Expo Router, datos sin conexión, cámara, GPS, notificaciones, animaciones, tests y <em>builds</em> con EAS.',
+    temas:['Expo','Expo Router','FlatList','SQLite','Cámara','Reanimated','EAS Build'] },
 
   { id:'python', file:'python.html', key:'python-nakadata-v1',
     name:'Python desde Cero', tech:'Python · pandas · FastAPI', icon:'🐍',
