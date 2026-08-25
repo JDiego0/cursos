@@ -48,6 +48,7 @@
   --b-entrevistas:#b5179e;  --s-entrevistas:#e879f9;
   --b-ia:         #7c5cff;  --s-ia:         #a894ff;
   --b-java:       #e76f00;  --s-java:       #ffa64d;
+  --b-nextjs:     #64748b;  --s-nextjs:     #b6c2d1;
   --b-python:     #3776ab;  --s-python:     #6bb3e8;
   --b-react:      #61dafb;  --s-react:      #9becff;
   --b-reactnative:#84cc16;  --s-reactnative:#bef264;
@@ -92,6 +93,7 @@ html[data-theme="dark"] {
   --c-entrevistas: #e879f9; --c-entrevistas-rgb: 232, 121, 249;
   --c-ia: #a894ff;          --c-ia-rgb: 168, 148, 255;
   --c-java: #ffa64d;        --c-java-rgb: 255, 166, 77;
+  --c-nextjs: #a5b4c4;      --c-nextjs-rgb: 165, 180, 196;
   --c-python: #6bb3e8;      --c-python-rgb: 107, 179, 232;
   --c-react: #61dafb;       --c-react-rgb: 97, 218, 251;
   --c-reactnative: #a3e635; --c-reactnative-rgb: 163, 230, 53;
@@ -136,6 +138,7 @@ html[data-theme="light"] {
   --c-entrevistas: #9d1d8a; --c-entrevistas-rgb: 157, 29, 138;
   --c-ia: #5b3fd6;          --c-ia-rgb: 91, 63, 214;
   --c-java: #a34f00;        --c-java-rgb: 163, 79, 0;
+  --c-nextjs: #334155;      --c-nextjs-rgb: 51, 65, 85;
   --c-python: #1f5f8b;      --c-python-rgb: 31, 95, 139;
   --c-react: #0a7ea4;       --c-react-rgb: 10, 126, 164;
   --c-reactnative: #4d7c0f; --c-reactnative-rgb: 77, 124, 15;
@@ -157,6 +160,7 @@ html[data-curso="docker"]     { --accent: var(--c-docker);     --accent-rgb: var
 html[data-curso="entrevistas"]{ --accent: var(--c-entrevistas);--accent-rgb: var(--c-entrevistas-rgb); }
 html[data-curso="ia"]         { --accent: var(--c-ia);         --accent-rgb: var(--c-ia-rgb); }
 html[data-curso="java"]       { --accent: var(--c-java);       --accent-rgb: var(--c-java-rgb); }
+html[data-curso="nextjs"]     { --accent: var(--c-nextjs);     --accent-rgb: var(--c-nextjs-rgb); }
 html[data-curso="python"]     { --accent: var(--c-python);     --accent-rgb: var(--c-python-rgb); }
 html[data-curso="react"]      { --accent: var(--c-react);      --accent-rgb: var(--c-react-rgb); }
 html[data-curso="reactnative"]{ --accent: var(--c-reactnative);--accent-rgb: var(--c-reactnative-rgb); }

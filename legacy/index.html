@@ -40,6 +40,7 @@
   --b-entrevistas:#b5179e; --s-entrevistas:#e879f9;
   --b-ia:#7c5cff;       --s-ia:#a894ff;
   --b-java:#e76f00;     --s-java:#ffa64d;
+  --b-nextjs:#64748b;   --s-nextjs:#b6c2d1;
   --b-python:#3776ab;   --s-python:#6bb3e8;
   --b-react:#61dafb;    --s-react:#9becff;
   --b-reactnative:#84cc16; --s-reactnative:#bef264;
@@ -69,6 +70,7 @@ html[data-theme="dark"]{
   --c-entrevistas:#e879f9;
   --c-ia:#a894ff;
   --c-java:#ffa64d;
+  --c-nextjs:#a5b4c4;
   --c-python:#6bb3e8;
   --c-react:#61dafb;
   --c-reactnative:#a3e635;
@@ -98,6 +100,7 @@ html[data-theme="light"]{
   --c-entrevistas:#9d1d8a;
   --c-ia:#5b3fd6;
   --c-java:#a34f00;
+  --c-nextjs:#334155;
   --c-python:#1f5f8b;
   --c-react:#0a7ea4;
   --c-reactnative:#4d7c0f;
@@ -700,6 +703,13 @@ const CURSOS = [
     desc:'La misma idea de React, pero pintando <strong>interfaz nativa</strong> en iOS y Android. De tu primera pantalla en el móvil a una aplicación publicada: Flexbox sin CSS, <code>FlatList</code>, Expo Router, datos sin conexión, cámara, GPS, notificaciones, animaciones, tests y <em>builds</em> con EAS.',
     temas:['Expo','Expo Router','FlatList','SQLite','Cámara','Reanimated','EAS Build'] },
 
+  { id:'nextjs', file:'nextjs.html', key:'nextjs-nakaeats-v1',
+    name:'Next.js desde Cero', tech:'Next.js · React · TypeScript', icon:'▲',
+    proyecto:'NakaEats', proyectoDesc:'la guía gastronómica de tu ciudad',
+    horas:31, caps:25, nivel:'Principiante → Avanzado',
+    desc:'React con todo lo que React no trae: enrutado por archivos, <strong>Server Components</strong>, Server Actions, base de datos, caché y SEO en un mismo proyecto. De tu primera página a una aplicación <strong>full-stack</strong> desplegada, con usuarios, panel privado, API y tests.',
+    temas:['App Router','Server Components','Server Actions','Caché','Postgres','SEO','Vercel'] },
+
   { id:'python', file:'python.html', key:'python-nakadata-v1',
     name:'Python desde Cero', tech:'Python · pandas · FastAPI', icon:'🐍',
     proyecto:'NakaData', proyectoDesc:'la plataforma de datos de una cadena de tiendas',
@@ -819,18 +829,79 @@ const CAPS = {
   {n:10,s:'Seguridad: Key Vault y APIM',t:'Key Vault, Managed Identity y API Management',m:'Módulo 5 · Seguridad y entrega',h:'60 min',lv:'Avanzado',i:'🔑',c:'Key Vault|Managed Identity|Key Vault References|APIM|Policies'},
   {n:11,s:'CI/CD y cierre',t:'CI/CD con GitHub Actions, IaC y cierre del proyecto',m:'Módulo 5 · Seguridad y entrega',h:'60 min',lv:'Avanzado',i:'🔄',c:'CI/CD|GitHub Actions|OIDC|Environments|Bicep|Limpieza'}
  ],
+ docker: [
+  {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano de NakaTicket',m:'Módulo 1 · Fundamentos de contenedores',h:'40 min',lv:'Principiante',i:'🧰',c:'Docker Engine|Docker Desktop|Terminal|Estructura del proyecto|Editor'},
+  {n:1,s:'El primer contenedor',t:'Tu primer contenedor: la web de NakaTicket servida por Nginx',m:'Módulo 1 · Fundamentos de contenedores',h:'50 min',lv:'Principiante',i:'📦',c:'docker run|Publicar puertos|Primer plano y segundo plano|Nginx|Imagen oficial'},
+  {n:2,s:'Ciclo de vida y diagnóstico',t:'El ciclo de vida de un contenedor: logs, consola dentro y limpieza',m:'Módulo 1 · Fundamentos de contenedores',h:'55 min',lv:'Principiante',i:'🔄',c:'Estados|docker logs|docker exec|stop y kill|Efímero|docker inspect'},
+  {n:3,s:'Imágenes, capas y tags',t:'Imágenes, capas y tags: la primera imagen propia de NakaTicket',m:'Módulo 1 · Fundamentos de contenedores',h:'55 min',lv:'Principiante',i:'🧱',c:'Capas|Union filesystem|Tag|Digest|Registro|docker build'},
+  {n:4,s:'Dockerfile de la API',t:'El Dockerfile de la API de NakaTicket',m:'Módulo 2 · Construir tus propias imágenes',h:'65 min',lv:'Principiante',i:'📄',c:'WORKDIR|RUN|COPY|ENV|EXPOSE|CMD y ENTRYPOINT'},
+  {n:5,s:'Caché y .dockerignore',t:'Builds rápidos: caché de capas y .dockerignore en NakaTicket',m:'Módulo 2 · Construir tus propias imágenes',h:'50 min',lv:'Intermedio',i:'⚡',c:'Contexto de build|.dockerignore|Invalidación de caché|BuildKit|Tamaño de imagen'},
+  {n:6,s:'Multi-stage y seguridad',t:'La imagen de producción: multi-stage y usuario no root',m:'Módulo 2 · Construir tus propias imágenes',h:'60 min',lv:'Intermedio',i:'🪜',c:'Multi-stage|COPY --from|USER|HEALTHCHECK|LABEL|Superficie de ataque'},
+  {n:7,s:'Publicar en un registro',t:'Publicar las imágenes de NakaTicket en un registro',m:'Módulo 2 · Construir tus propias imágenes',h:'50 min',lv:'Intermedio',i:'🚀',c:'Registro|docker login|push y pull|Versionado semántico|Multiarquitectura|Escaneo'},
+  {n:8,s:'Volúmenes y persistencia',t:'Volúmenes: la base de datos de NakaTicket que no pierde los datos',m:'Módulo 3 · Datos, redes y configuración',h:'60 min',lv:'Intermedio',i:'💾',c:'Volumen nombrado|Bind mount|tmpfs|PostgreSQL|Copias de seguridad|Scripts de inicialización'},
+  {n:9,s:'Redes y DNS interno',t:'Redes: que la API de NakaTicket encuentre a la base de datos por su nombre',m:'Módulo 3 · Datos, redes y configuración',h:'60 min',lv:'Intermedio',i:'🌐',c:'Red bridge|DNS interno|Aislamiento|Puertos internos|host.docker.internal'},
+  {n:10,s:'Variables y secretos',t:'Configuración y secretos fuera de la imagen de NakaTicket',m:'Módulo 3 · Datos, redes y configuración',h:'50 min',lv:'Intermedio',i:'🔑',c:'Doce factores|Archivo .env|--env-file|Secretos|Precedencia|gitignore'},
+  {n:11,s:'Docker Compose',t:'Docker Compose: NakaTicket entero con un solo comando',m:'Módulo 4 · Orquestación local con Compose',h:'65 min',lv:'Intermedio',i:'🎼',c:'docker-compose.yml|Servicios|Redis|Worker|up y down|Escalado local'},
+  {n:12,s:'Compose avanzado',t:'Compose en el día a día: healthchecks, override y perfiles',m:'Módulo 4 · Orquestación local con Compose',h:'55 min',lv:'Intermedio',i:'🩺',c:'healthcheck|service_healthy|Archivo override|Perfiles|Límites de recursos|watch'},
+  {n:13,s:'Kubernetes y tu clúster',t:'Por qué Kubernetes: arquitectura del clúster y tu primer nodo',m:'Módulo 5 · Kubernetes: primeros pasos',h:'60 min',lv:'Intermedio',i:'☸',c:'Orquestador|Plano de control|Nodo|kubectl|kind|Estado deseado'},
+  {n:14,s:'Pods y Deployments',t:'Pods y Deployments: la API de NakaTicket dentro del clúster',m:'Módulo 5 · Kubernetes: primeros pasos',h:'65 min',lv:'Intermedio',i:'🚢',c:'Manifiesto|Pod|ReplicaSet|Deployment|Etiquetas y selectores|kubectl apply'},
+  {n:15,s:'Services y DNS',t:'Services: nombres estables y balanceo dentro del clúster',m:'Módulo 5 · Kubernetes: primeros pasos',h:'60 min',lv:'Intermedio',i:'🔌',c:'ClusterIP|NodePort|Endpoints|CoreDNS|port y targetPort|port-forward'},
+  {n:16,s:'ConfigMaps y Secrets',t:'ConfigMaps y Secrets: configurar NakaTicket sin reconstruir imágenes',m:'Módulo 5 · Kubernetes: primeros pasos',h:'55 min',lv:'Intermedio',i:'⚙️',c:'ConfigMap|Secret|envFrom|Montaje como volumen|base64|Rollout por cambio de configuración'},
+  {n:17,s:'PV, PVC y StatefulSet',t:'Almacenamiento: la base de datos de NakaTicket con disco propio',m:'Módulo 6 · NakaTicket en producción',h:'65 min',lv:'Avanzado',i:'🗄',c:'PersistentVolume|PVC|StorageClass|StatefulSet|Service headless|Job de migración'},
+  {n:18,s:'Ingress y exposición',t:'Ingress: una sola URL de entrada para NakaTicket',m:'Módulo 6 · NakaTicket en producción',h:'60 min',lv:'Avanzado',i:'🚪',c:'Ingress|Ingress Controller|Reglas por host y ruta|IngressClass|TLS|Anotaciones'},
+  {n:19,s:'Probes y rolling updates',t:'Salud y actualizaciones: probes, recursos y despliegues sin corte',m:'Módulo 6 · NakaTicket en producción',h:'70 min',lv:'Avanzado',i:'🩹',c:'Liveness|Readiness|Startup|Rolling update|Rollback|QoS y OOMKilled'},
+  {n:20,s:'HPA, Jobs y CronJobs',t:'Escalado automático y tareas programadas en NakaTicket',m:'Módulo 6 · NakaTicket en producción',h:'65 min',lv:'Avanzado',i:'📈',c:'HPA|Metrics Server|Estabilización|CronJob|Suspensión|Concurrencia'},
+  {n:21,s:'Helm, CI/CD y cierre',t:'Empaquetar y entregar: Helm, CI/CD y limpieza final',m:'Módulo 6 · NakaTicket en producción',h:'70 min',lv:'Avanzado',i:'🎁',c:'Helm|Chart y values|Plantillas|GitHub Actions|GitOps|Limpieza'}
+ ],
+ entrevistas: [
+  {n:0,s:'El método y el dossier',t:'Cómo es de verdad una entrevista técnica y cómo montar tu dossier',m:'Módulo 1 · El método y los fundamentos',h:'45 min',lv:'Principiante',i:'🎯',c:'Fases de la entrevista|Dossier|Señales del entrevistador|Pensar en voz alta|Junior Mid Senior|Ruta de estudio'},
+  {n:1,s:'Tipos, memoria y referencias',t:'Fundamentos: tipos, memoria, valor y referencia',m:'Módulo 1 · El método y los fundamentos',h:'60 min',lv:'Principiante',i:'🧱',c:'Tipado estático|Stack y heap|Valor vs referencia|Mutabilidad|Null|Ámbito'},
+  {n:2,s:'Big O y razonamiento',t:'Complejidad y pensar en voz alta: Big O y el método de los 5 pasos',m:'Módulo 1 · El método y los fundamentos',h:'60 min',lv:'Principiante',i:'⏱',c:'Big O|Peor caso|Coste espacial|Amortizado|Casos borde|Compromiso tiempo-memoria'},
+  {n:3,s:'POO y encapsulamiento',t:'Java · POO: clases, objetos, encapsulamiento y constructores',m:'Módulo 2 · Java: los cimientos',h:'65 min',lv:'Principiante',i:'☕',c:'Clase y objeto|Encapsulamiento|Constructor|static|final|record'},
+  {n:4,s:'Herencia y polimorfismo',t:'Java · Herencia, polimorfismo, clases abstractas e interfaces',m:'Módulo 2 · Java: los cimientos',h:'70 min',lv:'Intermedio',i:'🧬',c:'Herencia|Polimorfismo|Clase abstracta|Interfaz|Sobrecarga vs sobreescritura|Composición'},
+  {n:5,s:'equals(), hashCode() y String',t:'Java · String, == vs equals(), hashCode() y el contrato de igualdad',m:'Módulo 2 · Java: los cimientos',h:'65 min',lv:'Intermedio',i:'🔤',c:'== vs equals|hashCode|Contrato de igualdad|Pool de Strings|StringBuilder|Clave mutable'},
+  {n:6,s:'Colecciones',t:'Java · Colecciones: List, Set, Map y cuál elegir',m:'Módulo 2 · Java: los cimientos',h:'70 min',lv:'Intermedio',i:'📦',c:'List|Set|Map|ArrayList vs LinkedList|HashMap por dentro|ConcurrentModificationException'},
+  {n:7,s:'Excepciones',t:'Java · Excepciones: checked, unchecked y cómo se manejan bien',m:'Módulo 3 · Java: errores y programación funcional',h:'60 min',lv:'Intermedio',i:'⚠',c:'Checked vs unchecked|Jerarquía Throwable|try-with-resources|finally|Excepciones propias|Antipatrones'},
+  {n:8,s:'Streams y lambdas',t:'Java · Streams, lambdas y programación funcional',m:'Módulo 3 · Java: errores y programación funcional',h:'65 min',lv:'Intermedio',i:'🌊',c:'Lambda|Interfaz funcional|Operación intermedia y terminal|Evaluación perezosa|Collectors|Optional'},
+  {n:9,s:'JVM, memoria y GC',t:'La JVM por dentro: bytecode, JIT, memoria y garbage collector',m:'Módulo 4 · La JVM y la concurrencia',h:'65 min',lv:'Avanzado',i:'⚙',c:'JVM|JIT|Heap y stack|Garbage collector|Generaciones|Fuga de memoria'},
+  {n:10,s:'Concurrencia',t:'Concurrencia: hilos, condiciones de carrera, sincronización y pools',m:'Módulo 4 · La JVM y la concurrencia',h:'70 min',lv:'Avanzado',i:'🧵',c:'Condición de carrera|Atomicidad|Visibilidad|volatile|synchronized|Deadlock'},
+  {n:11,s:'Spring · IoC y beans',t:'Spring Core: inversión de control, inyección de dependencias y beans',m:'Módulo 5 · Spring y persistencia',h:'65 min',lv:'Intermedio',i:'🍃',c:'IoC|Inyección de dependencias|Bean|Scope singleton|Proxy|Anotaciones'},
+  {n:12,s:'Spring Boot y REST',t:'Spring Boot y REST: capas, validación y manejo de errores',m:'Módulo 5 · Spring y persistencia',h:'70 min',lv:'Intermedio',i:'🌐',c:'Arquitectura por capas|DTO|Validación|ControllerAdvice|Autoconfiguración|ResponseEntity'},
+  {n:13,s:'JPA y el N+1',t:'JPA e Hibernate: contexto de persistencia, lazy y el problema N+1',m:'Módulo 5 · Spring y persistencia',h:'70 min',lv:'Avanzado',i:'🗄',c:'JPA vs Hibernate|Contexto de persistencia|Dirty checking|Lazy vs eager|N+1|Entidad vs DTO'},
+  {n:14,s:'Transacciones y ACID',t:'Transacciones: ACID, niveles de aislamiento y bloqueos',m:'Módulo 6 · Bases de datos',h:'65 min',lv:'Avanzado',i:'🔒',c:'ACID|Aislamiento|Lectura sucia|Bloqueo optimista|Bloqueo pesimista|Propagación'},
+  {n:15,s:'SQL: consultas y joins',t:'SQL: joins, agregación, subconsultas y el manejo de NULL',m:'Módulo 6 · Bases de datos',h:'65 min',lv:'Intermedio',i:'🧮',c:'INNER y LEFT JOIN|Anti-join|GROUP BY|WHERE vs HAVING|NULL|Orden de ejecución'},
+  {n:16,s:'Índices y modelado',t:'Índices, claves, normalización y lectura de planes de ejecución',m:'Módulo 6 · Bases de datos',h:'70 min',lv:'Avanzado',i:'📇',c:'Índice B-tree|Clave primaria y foránea|Índice compuesto|Normalización|EXPLAIN ANALYZE|Sargable'},
+  {n:17,s:'NoSQL y modelado',t:'NoSQL, SQL vs NoSQL y cómo se modela cada uno',m:'Módulo 6 · Bases de datos',h:'60 min',lv:'Intermedio',i:'🗃',c:'Documental|Clave-valor|Teorema CAP|Consistencia eventual|Desnormalización|Sharding'},
+  {n:18,s:'HTML y CSS',t:'HTML semántico, el modelo de caja, Flexbox, Grid y especificidad',m:'Módulo 7 · El navegador',h:'60 min',lv:'Principiante',i:'🎨',c:'HTML semántico|Modelo de caja|Especificidad|Flexbox|Grid|Contexto de apilamiento'},
+  {n:19,s:'DOM y eventos',t:'El DOM, la propagación de eventos y la delegación',m:'Módulo 7 · El navegador',h:'60 min',lv:'Intermedio',i:'🌳',c:'DOM|Captura y burbujeo|Delegación|Reflow y repaint|DOMContentLoaded|Debounce'},
+  {n:20,s:'JS: ámbitos y closures',t:'JavaScript: ámbitos, hoisting, closures, this y prototipos',m:'Módulo 8 · JavaScript a fondo',h:'65 min',lv:'Intermedio',i:'🔮',c:'var let const|Hoisting|Closure|this|Prototipos|== vs ==='},
+  {n:21,s:'Asincronía y promesas',t:'Asincronía: el bucle de eventos, promesas y async/await',m:'Módulo 8 · JavaScript a fondo',h:'65 min',lv:'Avanzado',i:'⏳',c:'Event loop|Microtareas|Promesas|async await|Promise.all|AbortController'},
+  {n:22,s:'TypeScript',t:'TypeScript: tipos, interfaces, genéricos y estrechamiento',m:'Módulo 9 · TypeScript y React',h:'60 min',lv:'Intermedio',i:'🔷',c:'Tipado estructural|interface vs type|Genéricos|any vs unknown|Estrechamiento|Uniones discriminadas'},
+  {n:23,s:'React y hooks',t:'React: componentes, estado, hooks y renderizado',m:'Módulo 9 · TypeScript y React',h:'70 min',lv:'Avanzado',i:'⚛',c:'Estado vs props|useState|useEffect|key|Renderizado|useMemo|Estado elevado'},
+  {n:24,s:'HTTP y REST',t:'HTTP y REST: métodos, códigos, headers, idempotencia y CORS',m:'Módulo 10 · Comunicación y seguridad',h:'65 min',lv:'Intermedio',i:'🔌',c:'Métodos HTTP|Idempotencia|Códigos de estado|Headers|CORS|Sin estado'},
+  {n:25,s:'Autenticación y JWT',t:'Autenticación y autorización: contraseñas, sesiones, JWT y OAuth',m:'Módulo 10 · Comunicación y seguridad',h:'65 min',lv:'Avanzado',i:'🔑',c:'Autenticación vs autorización|bcrypt y sal|JWT|Sesión con cookie|Refresh token|OAuth2'},
+  {n:26,s:'Vulnerabilidades web',t:'Vulnerabilidades web: inyección SQL, XSS, CSRF, CORS y OWASP',m:'Módulo 10 · Comunicación y seguridad',h:'70 min',lv:'Avanzado',i:'🛡',c:'Inyección SQL|XSS|CSRF|CORS|IDOR|OWASP Top 10'},
+  {n:27,s:'Git y flujos',t:'Git y GitHub: merge, rebase, conflictos y flujos de trabajo',m:'Módulo 11 · Del código a producción',h:'60 min',lv:'Intermedio',i:'🌿',c:'Merge vs rebase|Conflictos|reset vs revert|cherry-pick|Git Flow|Pull request'},
+  {n:28,s:'Docker y despliegue',t:'Docker y despliegue: imágenes, contenedores y Compose',m:'Módulo 11 · Del código a producción',h:'65 min',lv:'Intermedio',i:'🐳',c:'Imagen vs contenedor|Capas|Dockerfile|Volúmenes|Redes|Compose'},
+  {n:29,s:'CI/CD y entornos',t:'CI/CD: integración continua, entornos, secretos y despliegues',m:'Módulo 11 · Del código a producción',h:'60 min',lv:'Intermedio',i:'🔄',c:'Integración continua|Pipeline|Variables de entorno|Secretos|Blue-green|Rollback'},
+  {n:30,s:'Observabilidad e infra',t:'Observabilidad e infraestructura: logs, métricas, trazas, DNS y proxy inverso',m:'Módulo 11 · Del código a producción',h:'65 min',lv:'Intermedio',i:'📡',c:'Logs métricas trazas|Percentiles|DNS|Proxy inverso|Balanceo|Caché'},
+  {n:31,s:'SOLID y patrones',t:'SOLID, principios de diseño y patrones que sí se preguntan',m:'Módulo 12 · Diseño, IA y cierre',h:'65 min',lv:'Avanzado',i:'🧱',c:'SOLID|Inversión de dependencias|DRY y KISS|Patrones|Acoplamiento|Deuda técnica'},
+  {n:32,s:'Arquitectura y escalado',t:'Arquitectura: capas, hexagonal, monolito contra microservicios y escalabilidad',m:'Módulo 12 · Diseño, IA y cierre',h:'70 min',lv:'Avanzado',i:'🏛',c:'Arquitectura en capas|Hexagonal|Microservicios|Consistencia eventual|Saga|Teorema CAP'},
+  {n:33,s:'IA para desarrolladores',t:'IA para full stack: LLMs, tokens, embeddings, RAG y prompting',m:'Módulo 12 · Diseño, IA y cierre',h:'65 min',lv:'Intermedio',i:'🤖',c:'LLM|Token|Alucinación|Embedding|RAG|Prompting'},
+  {n:34,s:'Simulacro y cierre',t:'El simulacro: lógica, diseño de sistemas y cómo cerrar la entrevista',m:'Módulo 12 · Diseño, IA y cierre',h:'70 min',lv:'Avanzado',i:'🎤',c:'Preguntas de lógica|Diseño de sistemas|Simulacro|Plan de repaso|Cierre|Negociación técnica'}
+ ],
  ia: [
   {n:0,s:'Preparación del entorno',t:'Qué es de verdad la IA que vas a usar y cómo preparar tu entorno',m:'Módulo 1 · Fundamentos de la IA',h:'50 min',lv:'Principiante',i:'🧠',c:'IA|LLM|API|Entorno virtual|Variable de entorno|Token'},
   {n:1,s:'Aprendizaje y marco de decisión',t:'Cómo aprenden las máquinas y cuándo NO deberías usar IA',m:'Módulo 1 · Fundamentos de la IA',h:'55 min',lv:'Principiante',i:'🎓',c:'Aprendizaje supervisado|No supervisado|Refuerzo|Entrenamiento|Inferencia|Dataset|Marco de decisión'},
   {n:2,s:'Tokens, contexto y coste',t:'Qué hay dentro de un LLM: tokens, contexto y el precio de cada palabra',m:'Módulo 1 · Fundamentos de la IA',h:'55 min',lv:'Principiante',i:'🔢',c:'Token|Tokenizador|Ventana de contexto|Atención|Muestreo|Coste por token|Presupuesto'},
-  {n:3,s:'El cliente de LLM',t:'La API por dentro y un cliente de LLM que no se cae',m:'Módulo 1 · Fundamentos de la IA',h:'60 min',lv:'Principiante',i:'🔌',c:'Roles|Streaming|stop_reason|Reintentos|Backoff|Timeout|Razonamiento|Esfuerzo'},
+  {n:3,s:'El cliente de LLM',t:'La API por dentro y un cliente de LLM que no se cae',m:'Módulo 1 · Fundamentos de la IA',h:'60 min',lv:'Principiante',i:'🔌',c:'Roles|Streaming|finish_reason|Reintentos|Backoff|Timeout|Razonamiento|Esfuerzo'},
   {n:4,s:'Prompting profesional',t:'Prompting: cómo se le pide bien las cosas a un modelo',m:'Módulo 2 · Hablar con el modelo',h:'60 min',lv:'Principiante',i:'✍️',c:'Prompt de sistema|Contexto|Few-shot|Delimitadores|Cadena de pensamiento|Iteración'},
   {n:5,s:'Salidas estructuradas',t:'Salidas estructuradas: del texto libre al JSON que tu código puede usar',m:'Módulo 2 · Hablar con el modelo',h:'60 min',lv:'Intermedio',i:'🧩',c:'JSON Schema|Pydantic|Validación|Enum|Confianza|Reintento correctivo'},
   {n:6,s:'Machine learning clásico',t:'Machine learning clásico: cuando un modelo pequeño le gana al grande',m:'Módulo 2 · Hablar con el modelo',h:'70 min',lv:'Intermedio',i:'📈',c:'scikit-learn|TF-IDF|Train/test|Precisión y recall|F1|Matriz de confusión|Sobreajuste'},
   {n:7,s:'Embeddings y búsqueda',t:'Embeddings: buscar por significado en lugar de por palabras',m:'Módulo 3 · Memoria y conocimiento',h:'60 min',lv:'Intermedio',i:'🧭',c:'Embedding|Vector|Similitud coseno|Espacio semántico|Chunking|Índice vectorial'},
   {n:8,s:'RAG con citas',t:'RAG: responder con la documentación de tu empresa y citar la fuente',m:'Módulo 3 · Memoria y conocimiento',h:'70 min',lv:'Intermedio',i:'📚',c:'RAG|Búsqueda híbrida|Reordenación|Citas|Alucinación|Contexto insuficiente'},
   {n:9,s:'Evaluación y regresiones',t:'Evaluación: cómo saber si un cambio mejora o empeora tu sistema',m:'Módulo 3 · Memoria y conocimiento',h:'65 min',lv:'Intermedio',i:'🎯',c:'Dataset de evaluación|Métricas|LLM como juez|Regresión|Calibración|CI'},
-  {n:10,s:'Herramientas (tool use)',t:'Herramientas: cuando el modelo llama a tu propio código',m:'Módulo 4 · Agentes y herramientas',h:'65 min',lv:'Intermedio',i:'🛠',c:'Tool use|input_schema|tool_use|tool_result|Herramienta estricta|Efectos secundarios'},
+  {n:10,s:'Herramientas (tool use)',t:'Herramientas: cuando el modelo llama a tu propio código',m:'Módulo 4 · Agentes y herramientas',h:'65 min',lv:'Intermedio',i:'🛠',c:'Tool use|parameters|tool_calls|Rol tool|Herramienta estricta|Efectos secundarios'},
   {n:11,s:'El bucle del agente',t:'El bucle del agente: planificar, actuar, observar y saber parar',m:'Módulo 4 · Agentes y herramientas',h:'70 min',lv:'Intermedio',i:'🤖',c:'Agente|Bucle|Flujo fijo|Límites|Traza|Presupuesto|Human-in-the-loop'},
   {n:12,s:'MCP · Model Context Protocol',t:'MCP: el enchufe estándar entre la IA y tus sistemas',m:'Módulo 4 · Agentes y herramientas',h:'65 min',lv:'Avanzado',i:'🔌',c:'MCP|Servidor|Cliente|stdio|Recursos|Prompts|Credenciales'},
   {n:13,s:'Skills',t:'Skills: empaquetar los procedimientos de tu equipo como conocimiento reutilizable',m:'Módulo 4 · Agentes y herramientas',h:'60 min',lv:'Avanzado',i:'🎒',c:'Skill|SKILL.md|Divulgación progresiva|Frontmatter|Disparador|Skill vs RAG'},
@@ -840,7 +911,7 @@ const CAPS = {
   {n:17,s:'Arquitectura de la automatización',t:'Elegir la herramienta correcta: Python, n8n o Power Automate',m:'Módulo 5 · Automatización',h:'55 min',lv:'Intermedio',i:'🧱',c:'Arquitectura|Coste total|Acoplamiento|Contrato|Idempotencia end-to-end|Trazabilidad'},
   {n:18,s:'Programar con IA',t:'Programar con IA: el asistente en tu editor y cómo no dejar que te estropee el código',m:'Módulo 6 · Producción y responsabilidad',h:'60 min',lv:'Intermedio',i:'👨‍💻',c:'Asistente de código|Contexto|CLAUDE.md|Revisión|Deuda técnica|Verificación'},
   {n:19,s:'Seguridad y riesgos',t:'Seguridad: inyección de prompts, fuga de datos y el permiso que nunca debiste dar',m:'Módulo 6 · Producción y responsabilidad',h:'70 min',lv:'Avanzado',i:'🛡',c:'Inyección de prompts|Inyección indirecta|PII|Mínimo privilegio|Exfiltración|Sesgo|Cumplimiento'},
-  {n:20,s:'Observabilidad y costes',t:'Observabilidad: saber qué pasa, cuánto cuesta y qué hacer cuando falla',m:'Módulo 6 · Producción y responsabilidad',h:'70 min',lv:'Avanzado',i:'📊',c:'Trazas|Métricas|Caché de prompts|Modelo de respaldo|Presupuesto|Degradación|Alertas'},
+  {n:20,s:'Observabilidad y costes',t:'Observabilidad: saber qué pasa, cuánto cuesta y qué hacer cuando falla',m:'Módulo 6 · Producción y responsabilidad',h:'70 min',lv:'Avanzado',i:'📊',c:'Trazas|Métricas|Caché de respuestas|Modelo de respaldo|Presupuesto|Degradación|Alertas'},
   {n:21,s:'Despliegue y cierre',t:'Desplegar NakaDesk, mantenerlo vivo y saber apagarlo',m:'Módulo 6 · Producción y responsabilidad',h:'65 min',lv:'Avanzado',i:'🚀',c:'Docker|Despliegue|Secretos|Lanzamiento gradual|Mantenimiento|Apagado|Hoja de ruta'}
  ],
  java: [
@@ -869,6 +940,33 @@ const CAPS = {
   {n:22,s:'Docker y CI/CD',t:'Observabilidad, Docker y CI/CD con GitHub Actions',m:'Módulo 5 · Spring Boot',h:'65 min',lv:'Avanzado',i:'🐳',c:'Actuator|Perfiles|Dockerfile|Compose|GitHub Actions'},
   {n:23,s:'Hexagonal y microservicios',t:'Arquitectura hexagonal y microservicios',m:'Módulo 6 · Arquitectura avanzada',h:'70 min',lv:'Avanzado',i:'🏛',c:'Puertos y adaptadores|BFF|Eureka|API Gateway|RestClient'},
   {n:24,s:'Spring AI y cierre',t:'Bonus: un asistente inteligente con Spring AI',m:'Módulo 6 · Arquitectura avanzada',h:'60 min',lv:'Avanzado',i:'🤖',c:'ChatClient|Structured output|RAG|Tools|Streaming'}
+ ],
+ nextjs: [
+  {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano de NakaEats',m:'Módulo 1 · Fundamentos del App Router',h:'55 min',lv:'Principiante',i:'▲',c:'Next.js|App Router|Node.js|create-next-app|Turbopack|Estructura del proyecto'},
+  {n:1,s:'Cómo funciona por dentro',t:'Cómo funciona Next.js por dentro: servidor, cliente e hidratación',m:'Módulo 1 · Fundamentos del App Router',h:'65 min',lv:'Principiante',i:'⚙',c:'Servidor vs cliente|Hidratación|RSC payload|Repaso de React|TypeScript exprés|console.log'},
+  {n:2,s:'Rutas, layouts y Link',t:'Enrutado por archivos: páginas, layouts y navegación',m:'Módulo 1 · Fundamentos del App Router',h:'70 min',lv:'Principiante',i:'🗺',c:'page.tsx|layout.tsx|Rutas anidadas|Link|usePathname|Grupos de rutas'},
+  {n:3,s:'Servidor y cliente',t:'Server Components y Client Components: la frontera use client',m:'Módulo 1 · Fundamentos del App Router',h:'70 min',lv:'Principiante',i:'🧩',c:'Server Component|use client|Frontera|Props serializables|children como hueco|server-only'},
+  {n:4,s:'Estilos y fuentes',t:'Estilos: Tailwind CSS, CSS Modules y fuentes',m:'Módulo 1 · Fundamentos del App Router',h:'60 min',lv:'Principiante',i:'🎨',c:'Tailwind CSS|CSS Modules|Tokens de diseño|next/font|Tema oscuro|clsx'},
+  {n:5,s:'Datos en el servidor',t:'Datos en el servidor: componentes async, fetch y la capa de datos',m:'Módulo 2 · La guía pública',h:'70 min',lv:'Principiante',i:'🍽',c:'Componente async|await en el componente|Capa de datos|fetch en el servidor|Cascada|Promise.all'},
+  {n:6,s:'Rutas dinámicas',t:'Rutas dinámicas: la ficha de cada restaurante',m:'Módulo 2 · La guía pública',h:'70 min',lv:'Intermedio',i:'🔗',c:'[slug]|params asíncronos|generateStaticParams|notFound()|Catch-all|dynamicParams'},
+  {n:7,s:'Streaming y errores',t:'Carga, streaming y errores: loading.tsx, Suspense y error.tsx',m:'Módulo 2 · La guía pública',h:'70 min',lv:'Intermedio',i:'⏳',c:'loading.tsx|Suspense|Streaming|error.tsx|global-error|Esqueletos de carga'},
+  {n:8,s:'Búsqueda y filtros',t:'Búsqueda y filtros con la URL: el estado que se puede compartir',m:'Módulo 2 · La guía pública',h:'70 min',lv:'Intermedio',i:'🔎',c:'searchParams|useSearchParams|useRouter|Debounce|useTransition|Paginación'},
+  {n:9,s:'Base de datos y Drizzle',t:'Base de datos: PostgreSQL, Drizzle y migraciones',m:'Módulo 3 · Datos de verdad',h:'75 min',lv:'Intermedio',i:'🗄',c:'PostgreSQL|Docker Compose|Drizzle ORM|Esquema|Migraciones|Seed|Variables de entorno'},
+  {n:10,s:'Server Actions',t:'Server Actions: formularios que escriben en la base de datos',m:'Módulo 3 · Datos de verdad',h:'75 min',lv:'Intermedio',i:'✍',c:'use server|Server Action|FormData|useActionState|Zod|Mejora progresiva'},
+  {n:11,s:'Caché y revalidación',t:'Caché y revalidación: por qué tu página no se actualiza',m:'Módulo 3 · Datos de verdad',h:'75 min',lv:'Intermedio',i:'♻',c:'Caché de datos|revalidatePath|revalidateTag|ISR|use cache|Router Cache|Dinámico vs estático'},
+  {n:12,s:'UI optimista',t:'Interfaz optimista y estados pendientes: que responda antes que el servidor',m:'Módulo 3 · Datos de verdad',h:'65 min',lv:'Intermedio',i:'⚡',c:'useOptimistic|useFormStatus|useTransition|Estado pendiente|Reversión|aria-live'},
+  {n:13,s:'Autenticación',t:'Autenticación: registro, login y sesiones con cookies',m:'Módulo 4 · Usuarios y áreas privadas',h:'80 min',lv:'Avanzado',i:'🔐',c:'Cookie httpOnly|Sesión|Hash de contraseña|JWT firmado|cookies()|Grupo de rutas'},
+  {n:14,s:'Autorización',t:'Autorización: proteger rutas con proxy, layouts y DAL',m:'Módulo 4 · Usuarios y áreas privadas',h:'70 min',lv:'Avanzado',i:'🛡',c:'Autorización|Proxy (antes middleware)|Capa de acceso a datos (DAL)|Defensa en profundidad|Roles|redirect()'},
+  {n:15,s:'Panel y rutas paralelas',t:'El panel del restaurante: rutas paralelas y dashboard',m:'Módulo 4 · Usuarios y áreas privadas',h:'75 min',lv:'Avanzado',i:'📊',c:'Ruta paralela|Slot|default.tsx|Carga independiente|Suspense por sección|Panel'},
+  {n:16,s:'Rutas interceptadas',t:'Rutas interceptadas: el modal de la galería',m:'Módulo 4 · Usuarios y áreas privadas',h:'65 min',lv:'Avanzado',i:'🪟',c:'Ruta interceptada|Navegación suave y dura|Modal con URL|Slot @modal|router.back()|dialog'},
+  {n:17,s:'Imágenes y activos',t:'Imágenes y activos: next/image sin sorpresas',m:'Módulo 5 · La web pública en serio',h:'65 min',lv:'Intermedio',i:'🖼',c:'next/image|CLS|sizes|priority|placeholder blur|remotePatterns'},
+  {n:18,s:'SEO y metadatos',t:'SEO: Metadata API, sitemap, robots y datos estructurados',m:'Módulo 5 · La web pública en serio',h:'70 min',lv:'Intermedio',i:'🔍',c:'Metadata API|generateMetadata|metadataBase|Canonical|sitemap.ts|robots.ts|JSON-LD'},
+  {n:19,s:'Tarjetas sociales',t:'Tarjetas sociales: imágenes Open Graph dinámicas',m:'Módulo 5 · La web pública en serio',h:'60 min',lv:'Avanzado',i:'🃏',c:'Open Graph|ImageResponse|opengraph-image|Satori|Fuentes en binario|twitter-image'},
+  {n:20,s:'Rendimiento',t:'Rendimiento: Core Web Vitals, bundle y Cache Components',m:'Módulo 5 · La web pública en serio',h:'75 min',lv:'Avanzado',i:'📈',c:'LCP|INP|CLS|next/dynamic|Bundle analyzer|use cache|Datos de campo'},
+  {n:21,s:'Route Handlers y API',t:'Route Handlers: API pública, webhooks y streaming',m:'Módulo 6 · Integraciones',h:'70 min',lv:'Avanzado',i:'🔌',c:'Route Handler|route.ts|Request y Response|Webhook|Firma HMAC|Límite de frecuencia|CORS'},
+  {n:22,s:'Subida de ficheros',t:'Subida de fotos y almacenamiento de ficheros',m:'Módulo 6 · Integraciones',h:'70 min',lv:'Avanzado',i:'📤',c:'File y FormData|Números mágicos|Almacenamiento de objetos|URL prefirmada|sharp|EXIF'},
+  {n:23,s:'Tests',t:'Tests: Vitest, Testing Library y Playwright',m:'Módulo 7 · Calidad y entrega',h:'70 min',lv:'Avanzado',i:'🧪',c:'Vitest|Testing Library|Playwright|Consultas por rol|storageState|Test de extremo a extremo'},
+  {n:24,s:'Despliegue y cierre',t:'Despliegue y vida en producción: Vercel, Docker y observabilidad',m:'Módulo 7 · Calidad y entrega',h:'75 min',lv:'Avanzado',i:'🚀',c:'next build|Salida standalone|Dockerfile|Vercel|Integración continua|instrumentation.ts|Migraciones'}
  ],
  python: [
   {n:0,s:'Entorno y plano del proyecto',t:'Python, tu entorno de trabajo y el plano de NakaData',m:'Módulo 1 · Fundamentos de Python',h:'55 min',lv:'Principiante',i:'🐍',c:'Intérprete|CPython|REPL|PATH|Entorno virtual|pip|Script .py'},
@@ -923,6 +1021,33 @@ const CAPS = {
   {n:22,s:'Build y despliegue',t:'Del localhost a Internet: build, code splitting y despliegue continuo',m:'Módulo 6 · Producción',h:'1 h 30 min',lv:'Avanzado',i:'🚀',c:'Build de producción|Bundle|Hash de contenido|Variables de entorno|Code splitting|lazy y Suspense|Fallback de la SPA|CI/CD|GitHub Actions|Sourcemaps'},
   {n:23,s:'Arquitectura y patrones',t:'Arquitectura por features, patrones de composición y Error Boundaries',m:'Módulo 7 · Nivel profesional',h:'1 h 30 min',lv:'Avanzado',i:'🏛',c:'Organización por features|Reglas de dependencia|Barrel|Alias de importación|Componentes compuestos|Slots|Control invertido|Error Boundary|Regla de tres'},
   {n:24,s:'Server Components y cierre',t:'React del futuro: Server Components, Next.js y hacia dónde seguir',m:'Módulo 7 · Nivel profesional',h:'1 h 30 min',lv:'Avanzado',i:'🔮',c:'CSR SSR SSG|Server Component|use client|Server Action|Streaming|App Router|useActionState|useOptimistic|Hidratación|Cuándo no usar Next.js'}
+ ],
+ reactnative: [
+  {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano de NakaTrip',m:'Módulo 1 · Fundamentos de React Native',h:'55 min',lv:'Principiante',i:'📱',c:'React Native|Expo|Node.js|Expo Go|Metro|Estructura del proyecto'},
+  {n:1,s:'El motor por dentro',t:'Cómo funciona React Native por dentro',m:'Módulo 1 · Fundamentos de React Native',h:'60 min',lv:'Principiante',i:'⚙',c:'Metro|Hermes|Puente y JSI|Nueva Arquitectura|Fabric|Hilo de JavaScript|Fast Refresh'},
+  {n:2,s:'Componentes nativos',t:'La portada de NakaTrip con View, Text, Image y ScrollView',m:'Módulo 1 · Fundamentos de React Native',h:'60 min',lv:'Principiante',i:'🧱',c:'View|Text|Image|ScrollView|Área segura|StatusBar'},
+  {n:3,s:'Estilos y Flexbox',t:'Estilos de NakaTrip: StyleSheet, Flexbox y tokens de diseño',m:'Módulo 1 · Fundamentos de React Native',h:'65 min',lv:'Principiante',i:'🎨',c:'StyleSheet|Flexbox|Puntos y densidad|Sombras y elevación|Tokens de diseño|Platform.select'},
+  {n:4,s:'Props y componentes',t:'TripCard: props, composición y componentes reutilizables',m:'Módulo 2 · La interfaz de NakaTrip',h:'60 min',lv:'Principiante',i:'🎴',c:'Props|Props tipadas|children|Composición|Valores por defecto|Componentes de presentación'},
+  {n:5,s:'Estado y toques',t:'Estado y toques: useState, Pressable y feedback táctil',m:'Módulo 2 · La interfaz de NakaTrip',h:'60 min',lv:'Principiante',i:'🎚',c:'useState|Pressable|onPress|onLongPress|hitSlop|Elevar el estado|Haptics'},
+  {n:6,s:'Listas con FlatList',t:'La lista de viajes de NakaTrip con FlatList',m:'Módulo 2 · La interfaz de NakaTrip',h:'65 min',lv:'Principiante',i:'📃',c:'FlatList|Virtualización|keyExtractor|renderItem|ListEmptyComponent|RefreshControl|SectionList'},
+  {n:7,s:'Formularios y teclado',t:'El formulario de nuevo viaje: TextInput, teclado y validación',m:'Módulo 2 · La interfaz de NakaTrip',h:'70 min',lv:'Principiante',i:'📝',c:'TextInput|keyboardType|KeyboardAvoidingView|returnKeyType|Refs y foco|Validación|Alert'},
+  {n:8,s:'Expo Router y Stack',t:'Expo Router: navegación basada en archivos en NakaTrip',m:'Módulo 3 · Navegación',h:'65 min',lv:'Intermedio',i:'🧭',c:'Expo Router|Enrutado por archivos|Stack|_layout|Link|useRouter|Deep links'},
+  {n:9,s:'Pestañas y detalle',t:'Pestañas y la pantalla de detalle /viaje/[id]',m:'Módulo 3 · Navegación',h:'65 min',lv:'Intermedio',i:'🗂',c:'Tabs|Grupos de rutas|Ruta dinámica|useLocalSearchParams|Layouts anidados|Iconos'},
+  {n:10,s:'Modales y cabeceras',t:'Modales, layouts anidados y cabeceras con acciones',m:'Módulo 3 · Navegación',h:'60 min',lv:'Intermedio',i:'🪟',c:'presentation modal|headerRight|useImperativeHandle|Modal|router.dismiss|Share'},
+  {n:11,s:'API y estados de carga',t:'Datos de verdad: efectos, fetch y estados de carga',m:'Módulo 4 · Datos, estado y sincronización',h:'65 min',lv:'Intermedio',i:'🌐',c:'useEffect|fetch|AbortController|Estados de carga y error|Timeout|Custom hook'},
+  {n:12,s:'Almacenamiento local',t:'Que no se pierda nada: AsyncStorage y almacenamiento local',m:'Módulo 4 · Datos, estado y sincronización',h:'60 min',lv:'Intermedio',i:'💾',c:'AsyncStorage|SecureStore|Caché local|Hook genérico|Serialización|Migraciones'},
+  {n:13,s:'Estado global',t:'Una sola verdad para toda la app: Context y useReducer',m:'Módulo 4 · Datos, estado y sincronización',h:'65 min',lv:'Intermedio',i:'🌍',c:'Context|Provider|useReducer|Acciones|Reducer puro|Renderizados del contexto'},
+  {n:14,s:'TanStack Query',t:'TanStack Query: caché, reintentos y mutaciones optimistas',m:'Módulo 4 · Datos, estado y sincronización',h:'70 min',lv:'Intermedio',i:'📡',c:'Estado del servidor|queryKey|staleTime|Invalidación|useMutation|Mutación optimista|NetInfo'},
+  {n:15,s:'SQLite y sin conexión',t:'SQLite y modo sin conexión: NakaTrip en el avión',m:'Módulo 4 · Datos, estado y sincronización',h:'75 min',lv:'Avanzado',i:'🗄',c:'expo-sqlite|Migraciones|Offline-first|Cola de sincronización|Transacciones|Conflictos'},
+  {n:16,s:'Permisos y cámara',t:'Permisos y cámara: las fotos de cada viaje',m:'Módulo 5 · El dispositivo',h:'70 min',lv:'Intermedio',i:'📷',c:'Permisos|expo-image-picker|expo-camera|FileSystem|app.json|Compresión'},
+  {n:17,s:'Ubicación y mapas',t:'Dónde fue el viaje: ubicación y mapas',m:'Módulo 5 · El dispositivo',h:'70 min',lv:'Avanzado',i:'🗺',c:'expo-location|Precisión y batería|Permiso en segundo plano|react-native-maps|Geocodificación|Marcadores'},
+  {n:18,s:'Notificaciones',t:'Que la app te avise: notificaciones locales y push',m:'Módulo 5 · El dispositivo',h:'70 min',lv:'Avanzado',i:'🔔',c:'expo-notifications|Notificación local|Push|Canales de Android|Enlaces profundos|Development build'},
+  {n:19,s:'Animaciones y gestos',t:'Que se mueva bien: animaciones y gestos con Reanimated',m:'Módulo 6 · Calidad de producto',h:'70 min',lv:'Avanzado',i:'✨',c:'Reanimated|Worklets|useSharedValue|withSpring|Gesture Handler|Animaciones de layout|Reducir movimiento'},
+  {n:20,s:'Accesibilidad y tema',t:'Para todo el mundo: accesibilidad, tema oscuro y plataformas',m:'Módulo 6 · Calidad de producto',h:'65 min',lv:'Avanzado',i:'♿',c:'accessibilityLabel|accessibilityRole|Lector de pantalla|Tamaño de letra|Contraste|useColorScheme|Platform'},
+  {n:21,s:'Rendimiento',t:'Que vaya rápida: rendimiento, listas grandes e imágenes',m:'Módulo 6 · Calidad de producto',h:'70 min',lv:'Avanzado',i:'⚡',c:'Perfilado|React.memo|useMemo|getItemLayout|expo-image|Arranque|Modo producción'},
+  {n:22,s:'Tests',t:'Que no se rompa: tests con Jest y Testing Library',m:'Módulo 6 · Calidad de producto',h:'70 min',lv:'Avanzado',i:'🧪',c:'Jest|React Native Testing Library|Consultas accesibles|jest.mock|waitFor|Cobertura|CI'},
+  {n:23,s:'Development build y EAS',t:'Salir de Expo Go: development builds y EAS Build',m:'Módulo 7 · Entrega',h:'70 min',lv:'Avanzado',i:'🏗',c:'Development build|Prebuild|Config plugins|EAS Build|eas.json|Credenciales|Variables de entorno'},
+  {n:24,s:'Publicación y OTA',t:'Publicar NakaTrip: tiendas, actualizaciones OTA y CI/CD',m:'Módulo 7 · Entrega',h:'75 min',lv:'Avanzado',i:'🚀',c:'EAS Submit|TestFlight|Google Play|Revisión|EAS Update|Canales|CI/CD|Dar de baja'}
  ],
 };
 /* __CAPS_FIN__ */
