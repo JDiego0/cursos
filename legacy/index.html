@@ -44,6 +44,7 @@
   --b-python:#3776ab;   --s-python:#6bb3e8;
   --b-react:#61dafb;    --s-react:#9becff;
   --b-reactnative:#84cc16; --s-reactnative:#bef264;
+  --b-ciberseguridad:#22d34c; --s-ciberseguridad:#86efac;
 }
 html[data-theme="dark"]{
   --bg:#111114;
@@ -74,6 +75,7 @@ html[data-theme="dark"]{
   --c-python:#6bb3e8;
   --c-react:#61dafb;
   --c-reactnative:#a3e635;
+  --c-ciberseguridad:#4ade80;
 }
 html[data-theme="light"]{
   --bg:#ffffff;
@@ -104,6 +106,7 @@ html[data-theme="light"]{
   --c-python:#1f5f8b;
   --c-react:#0a7ea4;
   --c-reactnative:#4d7c0f;
+  --c-ciberseguridad:#15803d;
 }
 
 /* ============================================================
@@ -750,7 +753,14 @@ const CURSOS = [
     proyecto:'NakaShop', proyectoDesc:'una tienda online en la nube',
     horas:9, caps:12, nivel:'Principiante → Avanzado',
     desc:'La nube explicada construyendo una tienda: Resource Groups, identidad y RBAC, redes y máquinas virtuales, App Service, Storage, Azure SQL, Cosmos DB, Functions, mensajería, Key Vault y CI/CD.',
-    temas:['RBAC','App Service','Storage','Azure SQL','Functions','CI/CD'] }
+    temas:['RBAC','App Service','Storage','Azure SQL','Functions','CI/CD'] },
+
+  { id:'ciberseguridad', file:'ciberseguridad.html', key:'ciberseguridad-nakashield-v1',
+    name:'Ciberseguridad desde Cero', tech:'Kali Linux · OWASP · SIEM', icon:'🛡',
+    proyecto:'NakaShield', proyectoDesc:'el programa de seguridad de una empresa, de atacante a defensor',
+    horas:30, caps:25, nivel:'Principiante → Avanzado',
+    desc:'De montar un laboratorio aislado a dirigir un programa de seguridad completo. <strong>Atacas para saber defender</strong>: reconocimiento, OWASP Top 10, contraseñas y redes; y luego fortificas, detectas y respondes: criptografía, hardening, MFA, SIEM, respuesta a incidentes y DevSecOps. Todo en tu propio laboratorio, legal y gratuito, con una práctica <strong>ofensiva</strong> y otra <strong>defensiva</strong> en cada capítulo.',
+    temas:['Laboratorio','OWASP Top 10','Redes','Criptografía','Hardening','SIEM','Respuesta a incidentes','DevSecOps'] }
 ];
 
 /* La ruta real de cada curso es BASE + su nombre de archivo. Se resuelve una sola
@@ -828,6 +838,33 @@ const CAPS = {
   {n:9,s:'Service Bus y Event Grid',t:'Mensajería: que NakaShop no se bloquee nunca',m:'Módulo 4 · Serverless e integración',h:'60 min',lv:'Intermedio',i:'📨',c:'Service Bus|Queue vs Topic|Dead-letter|Event Grid|Logic Apps'},
   {n:10,s:'Seguridad: Key Vault y APIM',t:'Key Vault, Managed Identity y API Management',m:'Módulo 5 · Seguridad y entrega',h:'60 min',lv:'Avanzado',i:'🔑',c:'Key Vault|Managed Identity|Key Vault References|APIM|Policies'},
   {n:11,s:'CI/CD y cierre',t:'CI/CD con GitHub Actions, IaC y cierre del proyecto',m:'Módulo 5 · Seguridad y entrega',h:'60 min',lv:'Avanzado',i:'🔄',c:'CI/CD|GitHub Actions|OIDC|Environments|Bicep|Limpieza'}
+ ],
+ ciberseguridad: [
+  {n:0,s:'Preparación del laboratorio',t:'Preparación del laboratorio y plano de NakaShield',m:'Módulo 1 · Fundamentos y laboratorio',h:'60 min',lv:'Principiante',i:'🧪',c:'Laboratorio aislado|Máquina virtual|Kali Linux|Red host-only|Instantáneas|Ética y legalidad'},
+  {n:1,s:'CIA y modelo de amenazas',t:'Qué protegemos y de quién: la tríada CIA y el modelo de amenazas de NakaShield',m:'Módulo 1 · Fundamentos y laboratorio',h:'55 min',lv:'Principiante',i:'🎯',c:'Tríada CIA|Amenaza|Vulnerabilidad|Riesgo|Superficie de ataque|Modelo de amenazas|STRIDE'},
+  {n:2,s:'Redes para seguridad',t:'Cómo viajan los datos: TCP/IP, puertos y captura de tráfico en NakaShield',m:'Módulo 1 · Fundamentos y laboratorio',h:'65 min',lv:'Principiante',i:'🌐',c:'TCP/IP|Puertos|Protocolos|Wireshark|Captura de paquetes|Tráfico en claro|Modelo OSI'},
+  {n:3,s:'Linux para seguridad',t:'La caja de herramientas: Linux y línea de comandos para NakaShield',m:'Módulo 1 · Fundamentos y laboratorio',h:'60 min',lv:'Principiante',i:'🐧',c:'Terminal|Sistema de archivos|Permisos|Usuario root|Tuberías y grep|Bash|SSH'},
+  {n:4,s:'Reconocimiento y OSINT',t:'Reconocimiento y OSINT: lo que se averigua de NakaShield sin tocarlo',m:'Módulo 2 · Red team · reconocimiento y acceso',h:'55 min',lv:'Principiante',i:'🔎',c:'OSINT|Footprinting|Recon pasivo|Recon activo|Huella digital|Metadatos|Google dorks'},
+  {n:5,s:'Escaneo con Nmap',t:'Escaneo y enumeración con Nmap: qué escucha en NakaShield',m:'Módulo 2 · Red team · reconocimiento y acceso',h:'65 min',lv:'Intermedio',i:'📡',c:'Nmap|Escaneo de puertos|Enumeración de servicios|Detección de versiones|Scripts NSE|Barrido de red'},
+  {n:6,s:'Explotación con Metasploit',t:'De conocer a entrar: análisis de vulnerabilidades y primer acceso con Metasploit',m:'Módulo 2 · Red team · reconocimiento y acceso',h:'65 min',lv:'Intermedio',i:'💥',c:'Vulnerabilidad|CVE|Exploit|Payload|Metasploit|Shell inversa|Prueba de concepto'},
+  {n:7,s:'La web y Burp Suite',t:'Cómo funciona la web y por dónde se rompe: HTTP y Burp Suite en NakaShield',m:'Módulo 3 · Seguridad web (OWASP Top 10)',h:'60 min',lv:'Intermedio',i:'🕸',c:'HTTP|Petición y respuesta|Cookies|Burp Suite|Proxy interceptor|OWASP Top 10|Parámetros'},
+  {n:8,s:'Inyección SQL',t:'Inyección SQL: del login roto a la base de datos volcada en NakaShield',m:'Módulo 3 · Seguridad web (OWASP Top 10)',h:'70 min',lv:'Intermedio',i:'💉',c:'Inyección SQL|Consulta parametrizada|UNION|SQLi a ciegas|sqlmap|Mínimo privilegio en BBDD'},
+  {n:9,s:'XSS y CSRF',t:'Cross-Site Scripting (XSS) y CSRF: atacar al usuario de NakaShield',m:'Módulo 3 · Seguridad web (OWASP Top 10)',h:'70 min',lv:'Intermedio',i:'🧨',c:'XSS reflejado|XSS almacenado|Escape de salida|CSP|CSRF|Token anti-CSRF|SameSite'},
+  {n:10,s:'Autenticación y sesiones',t:'Autenticación rota y gestión de sesiones: quién eres en NakaShield',m:'Módulo 3 · Seguridad web (OWASP Top 10)',h:'65 min',lv:'Intermedio',i:'🔓',c:'Autenticación|Sesión|Fuerza bruta|Relleno de credenciales|Enumeración de usuarios|Bloqueo|MFA'},
+  {n:11,s:'Control de acceso roto',t:'Control de acceso roto: IDOR, path traversal y SSRF en NakaShield',m:'Módulo 3 · Seguridad web (OWASP Top 10)',h:'65 min',lv:'Intermedio',i:'🚪',c:'Autorización|IDOR|Path traversal|SSRF|Escalada de privilegios|Comprobación en servidor'},
+  {n:12,s:'OWASP y el informe',t:'El resto del OWASP Top 10 y el informe de pentest de NakaShield',m:'Módulo 3 · Seguridad web (OWASP Top 10)',h:'60 min',lv:'Intermedio',i:'📋',c:'OWASP Top 10|Configuración insegura|Componentes vulnerables|Informe de pentest|CVSS|Remediación'},
+  {n:13,s:'Contraseñas y hashing',t:'Contraseñas: hashing, cracking y políticas en NakaShield',m:'Módulo 4 · Credenciales y criptografía',h:'65 min',lv:'Intermedio',i:'🔑',c:'Hash|Sal (salt)|bcrypt|Cracking|Diccionario|Tabla arcoíris|Política de contraseñas'},
+  {n:14,s:'Criptografía aplicada',t:'Criptografía aplicada: cifrar, firmar y gestionar claves en NakaShield',m:'Módulo 4 · Credenciales y criptografía',h:'65 min',lv:'Intermedio',i:'🔐',c:'Simétrica|Asimétrica|Clave pública y privada|AES|RSA|Firma digital|Gestión de claves'},
+  {n:15,s:'TLS y certificados',t:'TLS, certificados y PKI: cerrar el HTTP en claro de NakaShield',m:'Módulo 4 · Credenciales y criptografía',h:'60 min',lv:'Intermedio',i:'🔏',c:'TLS|Certificado|Autoridad de certificación|PKI|Handshake|HSTS|Cadena de confianza'},
+  {n:16,s:'Hardening de sistemas',t:'Hardening de sistemas: fortificar el servidor de NakaShield',m:'Módulo 5 · Blue team · fortificación',h:'60 min',lv:'Intermedio',i:'🧱',c:'Hardening|Línea base CIS|Superficie de ataque|Servicios|Actualizaciones|Configuración segura|SSH'},
+  {n:17,s:'Identidad y MFA',t:'Identidad, MFA y gestión de accesos en NakaShield',m:'Módulo 5 · Blue team · fortificación',h:'60 min',lv:'Intermedio',i:'🪪',c:'IAM|MFA|Factores de autenticación|SSO|RBAC|Mínimo privilegio|Ciclo de vida de la cuenta'},
+  {n:18,s:'Seguridad de red',t:'Seguridad de red: firewalls, segmentación, VPN e IDS en NakaShield',m:'Módulo 5 · Blue team · fortificación',h:'65 min',lv:'Avanzado',i:'🛜',c:'Firewall|Segmentación|VLAN|VPN|IDS/IPS|Movimiento lateral|Filtrado de salida'},
+  {n:19,s:'Endpoint y malware',t:'Seguridad del endpoint y malware: proteger cada máquina de NakaShield',m:'Módulo 5 · Blue team · fortificación',h:'60 min',lv:'Avanzado',i:'🦠',c:'Malware|Ransomware|EDR|Antivirus|YARA|Persistencia|Indicadores de compromiso'},
+  {n:20,s:'Logging y SIEM',t:'Logging y SIEM: montar el centro de operaciones de NakaShield',m:'Módulo 6 · Detección y respuesta (SOC)',h:'65 min',lv:'Avanzado',i:'🛰',c:'Logging|SIEM|Wazuh|Correlación|Alerta|Centralización|Retención'},
+  {n:21,s:'Detección y hunting',t:'Ingeniería de detección y caza de amenazas con MITRE ATT&CK en NakaShield',m:'Módulo 6 · Detección y respuesta (SOC)',h:'60 min',lv:'Avanzado',i:'🏹',c:'MITRE ATT&CK|TTP|Ingeniería de detección|Threat hunting|Hipótesis|Pirámide del dolor'},
+  {n:22,s:'Respuesta a incidentes',t:'Respuesta a incidentes y forense básico en NakaShield',m:'Módulo 6 · Detección y respuesta (SOC)',h:'60 min',lv:'Avanzado',i:'🚑',c:'Respuesta a incidentes|Contención|Erradicación|Recuperación|Forense|Cadena de custodia|Lecciones aprendidas'},
+  {n:23,s:'DevSecOps',t:'DevSecOps: seguridad en el ciclo de desarrollo de NakaShield',m:'Módulo 7 · Construir seguridad y gobierno',h:'60 min',lv:'Avanzado',i:'🔁',c:'DevSecOps|Shift left|SAST|DAST|SCA|Secretos en CI|Seguridad de contenedores'},
+  {n:24,s:'Gobierno y cierre',t:'Gobierno, riesgo, cumplimiento y cierre del programa NakaShield',m:'Módulo 7 · Construir seguridad y gobierno',h:'55 min',lv:'Avanzado',i:'🏁',c:'Gobierno|Gestión de riesgos|Cumplimiento (RGPD/ISO 27001)|Métricas|Concienciación|Aprendizaje continuo'}
  ],
  docker: [
   {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano de NakaTicket',m:'Módulo 1 · Fundamentos de contenedores',h:'40 min',lv:'Principiante',i:'🧰',c:'Docker Engine|Docker Desktop|Terminal|Estructura del proyecto|Editor'},
