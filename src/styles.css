@@ -53,6 +53,7 @@
   --b-react:      #61dafb;  --s-react:      #9becff;
   --b-reactnative:#84cc16;  --s-reactnative:#bef264;
   --b-ciberseguridad:#22d34c; --s-ciberseguridad:#86efac;
+  --b-aws:        #ff9900;  --s-aws:        #ffb84d;
 }
 
 html[data-theme="dark"] {
@@ -99,6 +100,7 @@ html[data-theme="dark"] {
   --c-react: #61dafb;       --c-react-rgb: 97, 218, 251;
   --c-reactnative: #a3e635; --c-reactnative-rgb: 163, 230, 53;
   --c-ciberseguridad: #4ade80; --c-ciberseguridad-rgb: 74, 222, 128;
+  --c-aws: #ffb84d;         --c-aws-rgb: 255, 184, 77;
 }
 
 html[data-theme="light"] {
@@ -145,6 +147,7 @@ html[data-theme="light"] {
   --c-react: #0a7ea4;       --c-react-rgb: 10, 126, 164;
   --c-reactnative: #4d7c0f; --c-reactnative-rgb: 77, 124, 15;
   --c-ciberseguridad: #15803d; --c-ciberseguridad-rgb: 21, 128, 61;
+  --c-aws: #a35a00;         --c-aws-rgb: 163, 90, 0;
 }
 
 /* ------------------------------------------------------------
@@ -168,6 +171,7 @@ html[data-curso="python"]     { --accent: var(--c-python);     --accent-rgb: var
 html[data-curso="react"]      { --accent: var(--c-react);      --accent-rgb: var(--c-react-rgb); }
 html[data-curso="reactnative"]{ --accent: var(--c-reactnative);--accent-rgb: var(--c-reactnative-rgb); }
 html[data-curso="ciberseguridad"]{ --accent: var(--c-ciberseguridad); --accent-rgb: var(--c-ciberseguridad-rgb); }
+html[data-curso="aws"]        { --accent: var(--c-aws);        --accent-rgb: var(--c-aws-rgb); }
 
 /* ============================================================
    2. RESET Y BASE

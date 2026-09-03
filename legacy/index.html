@@ -45,6 +45,7 @@
   --b-react:#61dafb;    --s-react:#9becff;
   --b-reactnative:#84cc16; --s-reactnative:#bef264;
   --b-ciberseguridad:#22d34c; --s-ciberseguridad:#86efac;
+  --b-aws:#ff9900;      --s-aws:#ffb84d;
 }
 html[data-theme="dark"]{
   --bg:#111114;
@@ -76,6 +77,7 @@ html[data-theme="dark"]{
   --c-react:#61dafb;
   --c-reactnative:#a3e635;
   --c-ciberseguridad:#4ade80;
+  --c-aws:#ffb84d;
 }
 html[data-theme="light"]{
   --bg:#ffffff;
@@ -107,6 +109,7 @@ html[data-theme="light"]{
   --c-react:#0a7ea4;
   --c-reactnative:#4d7c0f;
   --c-ciberseguridad:#15803d;
+  --c-aws:#a35a00;
 }
 
 /* ============================================================
@@ -760,7 +763,14 @@ const CURSOS = [
     proyecto:'NakaShield', proyectoDesc:'el programa de seguridad de una empresa, de atacante a defensor',
     horas:30, caps:25, nivel:'Principiante → Avanzado',
     desc:'De montar un laboratorio aislado a dirigir un programa de seguridad completo. <strong>Atacas para saber defender</strong>: reconocimiento, OWASP Top 10, contraseñas y redes; y luego fortificas, detectas y respondes: criptografía, hardening, MFA, SIEM, respuesta a incidentes y DevSecOps. Todo en tu propio laboratorio, legal y gratuito, con una práctica <strong>ofensiva</strong> y otra <strong>defensiva</strong> en cada capítulo.',
-    temas:['Laboratorio','OWASP Top 10','Redes','Criptografía','Hardening','SIEM','Respuesta a incidentes','DevSecOps'] }
+    temas:['Laboratorio','OWASP Top 10','Redes','Criptografía','Hardening','SIEM','Respuesta a incidentes','DevSecOps'] },
+
+  { id:'aws', file:'aws.html', key:'aws-nakastream-v1',
+    name:'AWS desde Cero', tech:'Amazon Web Services · CLI', icon:'⛅',
+    proyecto:'NakaStream', proyectoDesc:'una plataforma de vídeo bajo demanda en la nube',
+    horas:28, caps:25, nivel:'Principiante → Avanzado',
+    desc:'La nube líder explicada construyendo una plataforma de streaming: cuenta e IAM, control de costes, S3 y CloudFront, dominio propio con HTTPS, VPC, EC2 y autoescalado, RDS y DynamoDB, Lambda, API Gateway, Cognito, mensajería, contenedores en Fargate, observabilidad, seguridad e infraestructura como código con CDK.',
+    temas:['IAM','S3','CloudFront','VPC','EC2','RDS','DynamoDB','Lambda','Fargate','CDK'] }
 ];
 
 /* La ruta real de cada curso es BASE + su nombre de archivo. Se resuelve una sola
