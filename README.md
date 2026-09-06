@@ -18,9 +18,9 @@ proyecto** de principio a fin, capítulo a capítulo, y guarda tu progreso en el
 | Ciberseguridad desde Cero · Kali · OWASP · SIEM | **NakaShield**, programa de seguridad | 25 |
 | Azure desde Cero · CLI | **NakaShop**, tienda en la nube | 12 |
 | AWS desde Cero · CLI | **NakaStream**, plataforma de vídeo | 25 |
-| Entrevistas Full Stack · Java · Spring · React · SQL | **NakaHire**, dossier de entrevista | 35 |
+| Entrevistas Full Stack · Java · Spring · React · SQL | **NakaHire**, dossier de entrevista | 37 |
 
-**340 capítulos · ~398 horas de estudio.**
+**342 capítulos · ~401 horas de estudio.**
 
 ---
 
@@ -107,7 +107,7 @@ capítulo es un objeto con sus metadatos, su caja de objetivo y sus **ocho acord
 
 ```
 public/contenido/
-├─ catalogo.json     112 kB   fichas de los 14 cursos + temario de los 340 capítulos
+├─ catalogo.json     113 kB   fichas de los 14 cursos + temario de los 342 capítulos
 ├─ java.json         950 kB   el curso entero
 ├─ react.json        1,2 MB
 └─ …

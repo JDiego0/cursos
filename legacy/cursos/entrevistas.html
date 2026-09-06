@@ -19802,7 +19802,7 @@ for i in $(seq 1 50); do curl -s -o /dev/null -w '%{http_code} ' localhost/api/p
     data-num="31"
     data-title="SOLID, principios de diseño y patrones que sí se preguntan"
     data-short="SOLID y patrones"
-    data-module="Módulo 12 · Diseño, IA y cierre"
+    data-module="Módulo 12 · Diseño e IA"
     data-time="65 min" data-level="Avanzado" data-icon="🧱"
     data-concepts="SOLID|Inversión de dependencias|DRY y KISS|Patrones|Acoplamiento|Deuda técnica">
 
@@ -20471,7 +20471,7 @@ git diff --stat    # → deberia mostrar UN archivo nuevo y cero modificados</co
     data-num="32"
     data-title="Arquitectura: capas, hexagonal, monolito contra microservicios y escalabilidad"
     data-short="Arquitectura y escalado"
-    data-module="Módulo 12 · Diseño, IA y cierre"
+    data-module="Módulo 12 · Diseño e IA"
     data-time="70 min" data-level="Avanzado" data-icon="🏛"
     data-concepts="Arquitectura en capas|Hexagonal|Microservicios|Consistencia eventual|Saga|Teorema CAP">
 
@@ -21185,7 +21185,7 @@ mvn -q test -Dtest=SagaPedidoTest</code></pre>
     data-num="33"
     data-title="IA para full stack: LLMs, tokens, embeddings, RAG y prompting"
     data-short="IA para desarrolladores"
-    data-module="Módulo 12 · Diseño, IA y cierre"
+    data-module="Módulo 12 · Diseño e IA"
     data-time="65 min" data-level="Intermedio" data-icon="🤖"
     data-concepts="LLM|Token|Alucinación|Embedding|RAG|Prompting">
 
@@ -21698,10 +21698,10 @@ public class ClasificadorTickets {
     │    └── 24-ia/            ▶ PuertoModelo · Clasificador · Test
     └── progreso.md
 
-  Siguiente pieza ▶ Capítulo 34: el simulacro · lógica, diseño y cierre</div>
+  Siguiente pieza ▶ Capítulo 34: pruebas, dobles de prueba y TDD</div>
 
         <h3>Por qué era necesario antes de continuar</h3>
-        <p>Con este capítulo, los trece temas del curso están cubiertos. El Capítulo 34 no añade materia: junta todo
+        <p>Con este capítulo se cierra el bloque de diseño. Quedan las dos piezas que más gente da por sabidas y peor prepara: las <strong>pruebas</strong> (Capítulo 34), que es la pregunta más repetida de todas, y la <strong>entrevista que no es de código</strong> (Capítulo 35). El Capítulo 36 no añade materia: junta todo
         en un <strong>simulacro completo</strong>, con preguntas de lógica, un ejercicio de diseño de sistemas y el
         plan de repaso para los días previos a una entrevista real.</p>
       </div>
@@ -21792,13 +21792,1475 @@ public class ClasificadorTickets {
   </section>
 
   <!-- =========================================================
-       CAPÍTULO 34 · EL SIMULACRO Y EL CIERRE
+       CAPÍTULO 34 · PRUEBAS
        ========================================================= -->
   <section class="view chapter" id="cap-34"
     data-num="34"
+    data-title="Pruebas: unitarias, dobles, TDD y qué se pregunta de verdad"
+    data-short="Pruebas y TDD"
+    data-module="Módulo 13 · Calidad y entrevista completa"
+    data-time="70 min" data-level="Avanzado" data-icon="🧪"
+    data-concepts="Pirámide de pruebas|Dobles de prueba|Mock vs stub|JUnit 5|Mockito|TDD|Cobertura|Tests frágiles">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Es la pregunta que aparece en <strong>casi todas</strong> las entrevistas de desarrollador y en la que más
+      gente responde con generalidades. Vas a poder explicar <strong>qué es una prueba unitaria de verdad</strong>,
+      la diferencia entre los cinco dobles de prueba —no sólo «mock»—, por qué el porcentaje de cobertura es una
+      métrica peligrosa, y qué contestar cuando te digan que <em>«no da tiempo a escribir tests»</em>.</p>
+      <p><strong>Qué construimos hoy:</strong> la ficha <code>34-pruebas.md</code> y el mismo caso probado tres
+      veces: una prueba unitaria pura, la misma con un doble, y una de integración con la base de datos real.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>📖 Teoría</summary>
+      <div class="acc-body">
+
+        <h3>1. La pirámide, y por qué casi todo el mundo la tiene invertida</h3>
+        <div class="diagram">            /\        E2E · pocas · lentas (minutos) · frágiles
+           /  \       abren un navegador, levantan todo el sistema
+          /────\
+         /      \     INTEGRACIÓN · algunas · segundos
+        /        \    tu código + una dependencia real (BD, HTTP)
+       /──────────\
+      /            \  UNITARIAS · muchísimas · milisegundos
+     /______________\ una unidad de lógica, sin nada levantado
+
+  La forma importa por una razón económica:
+    · cuanto más arriba, más TARDA y más CUESTA mantener
+    · cuanto más arriba, PEOR localiza el fallo
+      (una E2E roja dice "algo falla"; una unitaria roja dice QUÉ falla)
+
+  ❌ El antipatrón del cono de helado: pocas unitarias y muchas E2E.
+     Resultado: la suite tarda 40 minutos, falla de forma intermitente,
+     y el equipo acaba ignorándola — que es peor que no tenerla.</div>
+
+        <div class="note bad">
+          <b class="t">⚠ La respuesta que suspende</b>
+          <p>«Sí, escribo tests unitarios» y punto. <strong>No dice nada</strong>: todo el mundo dice lo mismo.
+          Lo que distingue es explicar <em>qué consideras una unidad</em>, <em>qué no pruebas y por qué</em>, y
+          <em>qué haces cuando una prueba falla de forma intermitente</em>. Esas tres cosas separan a quien ha
+          escrito tests de quien ha oído hablar de ellos.</p>
+        </div>
+
+        <h3>2. Qué es una prueba unitaria (y qué no)</h3>
+        <p>Una prueba es unitaria si cumple tres condiciones: es <strong>rápida</strong> (milisegundos),
+        <strong>aislada</strong> (no depende de red, disco, base de datos ni de otras pruebas) y
+        <strong>determinista</strong> (mismo resultado siempre, se ejecute sola o en cualquier orden).</p>
+
+        <div class="diagram">  Si la prueba…                              …entonces NO es unitaria
+  ─────────────────────────────────────────  ────────────────────────────
+  levanta el contexto de Spring              es de integración
+  toca una base de datos, aunque sea H2      es de integración
+  llama a un HTTP real                       es de integración (y frágil)
+  usa new Date() / now() sin control          no es determinista
+  depende de que otra prueba corriera antes  no está aislada
+  tarda más de ~100 ms                       algo está levantando
+
+  ⚠ Debate clásico: ¿una "unidad" es una CLASE o un COMPORTAMIENTO?
+    · Escuela de Detroit (clasicista): la unidad es el comportamiento;
+      se usan objetos reales salvo en los límites. Menos dobles,
+      pruebas más robustas ante refactorizaciones.
+    · Escuela de Londres (mockista): la unidad es la clase; se dobla
+      todo lo demás. Más aislamiento, pero las pruebas se acoplan al
+      diseño interno y se rompen al refactorizar.
+    Decir que conoces las dos y cuál prefieres —y por qué— es una
+    respuesta de nivel senior.</div>
+
+        <h3>3. Los cinco dobles de prueba</h3>
+        <p>Casi todo el mundo dice «mock» para todo. Distinguirlos es de las cosas que más rápido señalan
+        experiencia real:</p>
+
+        <div class="tbl-wrap"><table>
+          <thead><tr><th style="width:16%">Doble</th><th style="width:38%">Qué es</th><th>Ejemplo</th></tr></thead>
+          <tbody>
+            <tr><td><b>Dummy</b></td><td>Se pasa para rellenar un parámetro, pero no se usa.</td>
+              <td>Un <code>null</code> o un objeto vacío en un constructor.</td></tr>
+            <tr><td><b>Stub</b></td><td><b>Devuelve respuestas fijas.</b> No se comprueba nada sobre él.</td>
+              <td>Un repositorio que siempre devuelve el mismo cliente.</td></tr>
+            <tr><td><b>Spy</b></td><td>Es el objeto real, pero <b>registra</b> cómo se le llamó.</td>
+              <td>Un servicio real del que quieres saber cuántas veces se invocó.</td></tr>
+            <tr><td><b>Mock</b></td><td><b>Tiene expectativas.</b> La prueba falla si no se le llama como se esperaba.</td>
+              <td>Verificar que se envió <b>exactamente un</b> correo.</td></tr>
+            <tr><td><b>Fake</b></td><td>Implementación <b>funcional pero simplificada</b>.</td>
+              <td>Un repositorio en memoria con un <code>HashMap</code>.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip">
+          <b class="t">💡 La distinción que hay que decir en voz alta</b>
+          <p><strong>Un stub responde; un mock exige.</strong> El stub sirve para <em>llegar</em> al estado que quieres
+          probar; el mock <em>es</em> lo que se prueba. Y de ahí sale la regla:
+          <strong>verifica estado, no interacciones</strong>, salvo cuando el efecto <em>sea</em> la interacción
+          (que se envió el correo, que se publicó el evento). Verificar interacciones por defecto produce pruebas que
+          se rompen en cada refactorización sin que nada esté mal.</p>
+        </div>
+
+        <h3>4. Lo que hay que saber de JUnit 5 y Mockito</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th style="width:34%">Elemento</th><th>Para qué</th></tr></thead>
+          <tbody>
+            <tr><td><code>@Test</code>, <code>@DisplayName</code></td><td>Marcar la prueba y darle un nombre legible en el informe.</td></tr>
+            <tr><td><code>@BeforeEach</code> / <code>@AfterEach</code></td><td>Preparar y limpiar. En JUnit 5 se crea <b>una instancia por prueba</b>, lo que evita estado compartido.</td></tr>
+            <tr><td><code>@ParameterizedTest</code></td><td>La misma prueba con muchos casos. Sustituye a copiar y pegar cinco veces.</td></tr>
+            <tr><td><code>@Nested</code></td><td>Agrupar por escenario y que el informe se lea como una especificación.</td></tr>
+            <tr><td><code>assertThrows</code>, <code>assertAll</code></td><td>Comprobar excepciones y agrupar aserciones para verlas todas de una vez.</td></tr>
+            <tr><td><code>@Mock</code> + <code>@InjectMocks</code></td><td>Mockito crea los dobles y los inyecta en la clase probada.</td></tr>
+            <tr><td><code>when(...).thenReturn(...)</code></td><td>Programar un <b>stub</b>.</td></tr>
+            <tr><td><code>verify(x, times(1))</code></td><td>Comprobar una <b>interacción</b>. Úsalo con moderación.</td></tr>
+            <tr><td><code>@SpringBootTest</code></td><td>Levanta el contexto: <b>ya no es unitaria</b>. Con <code>@WebMvcTest</code> o <code>@DataJpaTest</code> se levanta sólo una porción.</td></tr>
+            <tr><td>Testcontainers</td><td>Levanta la base de datos <b>real</b> en un contenedor. Es lo que ha sustituido a H2 (Capítulo 29).</td></tr>
+          </tbody>
+        </table></div>
+
+        <p>Y la estructura que se espera de toda prueba, la tenga o no escrita en comentarios:
+        <strong>Preparar, Actuar, Comprobar</strong> (<em>Arrange, Act, Assert</em>). Si una prueba tiene dos bloques
+        de «actuar», son dos pruebas.</p>
+
+        <h3>5. TDD, sin dogma</h3>
+        <div class="diagram">  ROJO ─────▶ VERDE ─────▶ REFACTORIZAR ─────┐
+   ▲   escribe   escribe lo    limpia con las     │
+   │   la prueba mínimo para   pruebas en verde   │
+   └────────────que pase───────────────────────────┘
+
+  Lo que de verdad aporta, más allá de la disciplina:
+   · te obliga a DISEÑAR desde fuera: escribes primero cómo se usa
+   · garantiza que la prueba PUEDE fallar (una prueba que nunca ha
+     estado en rojo no demuestra nada)
+   · acota el trabajo a pasos pequeños y siempre reversibles
+
+  La respuesta honesta en una entrevista: "lo uso cuando el problema
+  está bien definido —una regla de negocio, un algoritmo, corregir un
+  fallo— y no cuando estoy explorando una API o una interfaz que aún
+  no sé cómo va a quedar". Decir que se hace TDD siempre suena falso;
+  decir que no se ha usado nunca, también.</div>
+
+        <p>Y un uso de TDD que casi nadie menciona y encaja perfecto: <strong>ante un fallo en producción, primero se
+        escribe la prueba que lo reproduce</strong>. Así se demuestra que se ha entendido la causa, y esa prueba queda
+        para siempre como red de seguridad contra la regresión.</p>
+
+        <h3>6. Cobertura: la métrica que hay que saber criticar</h3>
+        <div class="diagram">  El 100 % de cobertura NO significa que el código funcione.
+
+  int dividir(int a, int b) { return a / b; }
+
+  @Test void prueba() { assertEquals(2, dividir(4, 2)); }
+  ⇒ 100 % de líneas cubiertas.  ⇒ dividir(1, 0) revienta.
+
+  · Cobertura de LÍNEAS: qué líneas se ejecutaron.
+  · Cobertura de RAMAS: qué caminos del if se tomaron. Más útil.
+  · Pruebas de MUTACIÓN (PIT): cambia el código a propósito y
+    comprueba si alguna prueba se pone roja. Si no, la prueba
+    ejecutaba el código pero no comprobaba nada. Es la única métrica
+    que mide de verdad la CALIDAD de la suite, y mencionarla destaca.
+
+  ⇒ La cobertura sirve para encontrar lo que NO está probado.
+    Como objetivo se convierte en la ley de Goodhart: la gente
+    escribe pruebas sin aserciones para subir el número.</div>
+
+        <h3>Cómo se relaciona con el capítulo anterior</h3>
+        <p>El Capítulo 31 dejó una frase que hoy se convierte en el eje del capítulo:
+        <em>«la dificultad para probar es el mejor detector de acoplamiento»</em>. Todo lo de hoy la desarrolla:
+        una clase que construye por dentro sus dependencias con <code>new</code> es imposible de probar sin efectos
+        reales, y una que las recibe por constructor se prueba en tres milisegundos. También recogemos el
+        <code>@Transactional</code> del Capítulo 14 —que no funciona en las llamadas internas y por eso hay que
+        probarlo desde fuera— y los Testcontainers que aparecieron de pasada en el Capítulo 29, que aquí tienen por
+        fin su explicación.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Preguntas de entrevista</summary>
+      <div class="acc-body">
+        <div class="quiz">
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv1">Básico</span> «¿Qué es una prueba unitaria?»</p>
+            <div class="q-ans">Una prueba que verifica <b>una unidad de lógica de forma aislada</b>: rápida
+            (milisegundos), sin dependencias externas y determinista.<br><br>
+            <b>Lo que hay que añadir para que la respuesta valga:</b> las tres propiedades operativas.
+            <b>Rápida</b>, porque si la suite tarda diez minutos nadie la ejecuta antes de subir código.
+            <b>Aislada</b>, porque no debe depender de la red, del disco, de la base de datos <b>ni del orden de
+            ejecución de otras pruebas</b>. Y <b>determinista</b>, porque una prueba que falla una de cada veinte
+            veces es peor que no tenerla: el equipo aprende a reejecutar sin mirar y deja de creerse los fallos
+            reales.<br><br>
+            <b>El criterio práctico:</b> si levanta el contexto de Spring o toca una base de datos, aunque sea H2 en
+            memoria, no es unitaria: es de integración. No es peor, es otra cosa y va en otro sitio de la
+            pirámide.<br><br>
+            <b>Y el matiz que abre conversación:</b> qué se considera «una unidad» no está zanjado. Para la escuela
+            clasicista es un <b>comportamiento</b> y se usan objetos reales salvo en los límites; para la mockista es
+            una <b>clase</b> y se dobla todo lo demás. Yo tiendo a la primera porque las pruebas sobreviven a las
+            refactorizaciones internas, pero conocer las dos posturas es lo que suele buscar la pregunta.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv2">Intermedio</span> «¿Cuál es la diferencia entre un mock y un stub?»</p>
+            <div class="q-ans">Un <b>stub responde</b>; un <b>mock exige</b>. El stub devuelve valores fijos para
+            llevar al código al estado que quieres probar y no se comprueba nada sobre él. El mock lleva
+            expectativas: la prueba falla si no se le llamó como se esperaba.<br><br>
+            <b>Y hay tres más</b>, que casi nadie menciona: el <b>dummy</b> es un relleno que se pasa y no se usa;
+            el <b>spy</b> es el objeto real pero registrando cómo se le llamó; y el <b>fake</b> es una implementación
+            funcional pero simplificada, como un repositorio en memoria con un <code>HashMap</code>. Enumerarlos
+            señala que se ha trabajado con ellos y no sólo leído sobre ellos.<br><br>
+            <b>La consecuencia práctica, que es lo importante:</b> con un stub se verifica <b>estado</b> —el
+            resultado que devuelve el método— y con un mock se verifican <b>interacciones</b>. Y por defecto conviene
+            verificar estado, porque verificar interacciones acopla la prueba al <b>diseño interno</b>: cualquier
+            refactorización que no cambie el comportamiento pone la prueba en rojo, y eso enseña al equipo a
+            desconfiar de la suite.<br><br>
+            <b>Cuándo sí uso un mock:</b> cuando el efecto observable <b>es</b> la interacción y no hay estado que
+            comprobar — que se envió exactamente un correo, que se publicó el evento, que no se llamó a la pasarela
+            de pago dos veces. Ahí verificar la llamada no es un atajo: es la especificación.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv2">Intermedio</span> «¿Qué porcentaje de cobertura consideras aceptable?»</p>
+            <div class="q-ans">Es una pregunta trampa, y la respuesta que se busca no es un número.
+            <b>La cobertura mide qué código se ejecuta durante las pruebas, no si el código es correcto.</b><br><br>
+            <b>El contraejemplo que conviene tener preparado:</b> un método <code>dividir(a, b)</code> con una sola
+            prueba, <code>dividir(4, 2)</code>, tiene el 100 % de cobertura de líneas… y revienta con
+            <code>b = 0</code>. Se puede llegar al 100 % sin una sola aserción.<br><br>
+            <b>Cómo la uso de verdad:</b> como <b>detector</b>, no como objetivo. Miro qué partes están a cero para
+            decidir si me preocupan, y prefiero la cobertura de <b>ramas</b> a la de líneas porque dice qué caminos
+            del <code>if</code> se han recorrido. Y sí pongo un umbral bajo en el pipeline —del 60 o el 70 %— pero
+            como red contra despistes, no como meta.<br><br>
+            <b>El argumento de fondo:</b> en cuanto la cobertura se convierte en objetivo deja de ser una medida
+            útil, porque la gente escribe pruebas sin aserciones para subir el número. Es la ley de Goodhart aplicada
+            al código.<br><br>
+            <b>Y la métrica que sí mide calidad:</b> las <b>pruebas de mutación</b> —PIT en Java—. Cambian el código
+            a propósito, por ejemplo un <code>&gt;</code> por un <code>&gt;=</code>, y comprueban si alguna prueba se
+            pone roja. Si ninguna lo hace, esa prueba ejecutaba el código pero no comprobaba nada. Mencionarla suele
+            destacar bastante.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv2">Intermedio</span> «¿Haces TDD?»</p>
+            <div class="q-ans">La respuesta honesta y la que mejor funciona: <b>a veces, según el problema</b>.
+            Decir «siempre» suena a manual y decir «nunca» a que no se ha probado.<br><br>
+            <b>Cuándo sí lo aplico:</b> cuando el problema está bien definido —una regla de negocio con casos claros,
+            un algoritmo, una corrección de un fallo—. Ahí el ciclo <b>rojo, verde, refactorizar</b> aporta tres
+            cosas concretas: obliga a diseñar desde fuera, porque lo primero que escribes es cómo se usa la clase;
+            garantiza que la prueba <b>puede fallar</b>, cosa que una prueba escrita después nunca demuestra; y acota
+            el trabajo a pasos pequeños en los que siempre se puede volver atrás.<br><br>
+            <b>Cuándo no:</b> cuando estoy explorando una API que no conozco o una interfaz cuya forma final aún no
+            sé. Escribir la prueba primero ahí sólo produce pruebas que hay que tirar.<br><br>
+            <b>El caso donde siempre lo hago, y que casi nadie menciona:</b> ante un <b>fallo en producción</b>.
+            Primero escribo la prueba que lo reproduce y la veo en rojo. Eso demuestra que he entendido la causa —y
+            no sólo el síntoma— y deja esa prueba para siempre como red contra la regresión. Es el uso de TDD con
+            mejor relación entre esfuerzo y valor, y contarlo así suele convencer más que la teoría del ciclo.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv3">Avanzado</span> «Una prueba falla una de cada diez ejecuciones. ¿Qué haces?»</p>
+            <div class="q-ans">Lo primero, <b>no reejecutar hasta que pase</b>. Una prueba intermitente es un fallo
+            con prioridad alta: destruye la confianza en toda la suite, y en cuanto el equipo se acostumbra a
+            reintentar deja de mirar los fallos reales.<br><br>
+            <b>Las cinco causas, por frecuencia:</b> <b>tiempo</b> —código que usa <code>now()</code> directamente y
+            se rompe en un cambio de día, de mes o de horario de verano—; <b>orden y estado compartido</b> —una
+            prueba deja datos o un estático modificado que afecta a otra, lo que se detecta ejecutando la suite en
+            orden aleatorio—; <b>concurrencia</b> —una espera fija de dos segundos que a veces no basta—;
+            <b>dependencias externas</b> —una llamada real a un servicio que a veces tarda—; y <b>orden no
+            determinista de colecciones</b>, como una prueba que asume el orden de un <code>HashMap</code> o de un
+            <code>findAll()</code> sin <code>ORDER BY</code>.<br><br>
+            <b>Cómo se arreglan:</b> inyectar un <code>Clock</code> en lugar de llamar a <code>now()</code>, que
+            además es un buen ejemplo de inversión de dependencias; aislar el estado entre pruebas; sustituir esperas
+            fijas por esperas con condición; doblar las dependencias externas; y ordenar explícitamente antes de
+            comparar.<br><br>
+            <b>Y la medida de gestión:</b> mientras se investiga, marcarla como intermitente y sacarla del camino
+            crítico del pipeline, pero con un ticket asociado y una fecha. Lo que no se puede hacer es dejarla
+            fallando: una suite en la que se ignoran fallos ya no protege de nada.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv3">Avanzado</span> «¿Cómo pruebas algo que depende de la base de datos?»</p>
+            <div class="q-ans">Depende de <b>qué</b> quiera probar, y separar eso es la mitad de la respuesta.<br><br>
+            <b>Si lo que pruebo es lógica de negocio</b>, la base de datos no debería aparecer: el servicio recibe el
+            repositorio como interfaz y en la prueba le paso un doble o un <b>fake</b> en memoria. Milisegundos y
+            cero infraestructura. Si eso no se puede hacer, el problema no es de pruebas sino de diseño — es otra vez
+            «la dificultad para probar es el mejor detector de acoplamiento».<br><br>
+            <b>Si lo que pruebo es la consulta en sí</b> —un JPQL con varios <code>join fetch</code>, una consulta
+            nativa, un mapeo raro— entonces necesito una base de datos de verdad, y ahí uso
+            <b>Testcontainers</b>: levanta el mismo motor y la misma versión que producción en un contenedor.<br><br>
+            <b>Por qué no H2:</b> porque no es el mismo motor. El SQL específico no se comporta igual, hay tipos y
+            funciones que no existen, y sobre todo <b>los índices y el planificador son otros</b>, así que una
+            consulta puede pasar en H2 y ser lentísima en producción. Se acaba probando contra una base de datos que
+            no es la que se usa, que es justo lo contrario de lo que se pretendía.<br><br>
+            <b>El detalle operativo:</b> cada prueba debe dejar la base como la encontró. Lo más limpio es envolver
+            cada una en una transacción que se deshace al final, o reutilizar el contenedor entre pruebas y limpiar
+            las tablas afectadas. Y estas pruebas van en otra fase del pipeline, porque tardan segundos y no deben
+            bloquear el ciclo rápido.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv3">Avanzado</span> «El equipo dice que no da tiempo a escribir pruebas. ¿Qué respondes?»</p>
+            <div class="q-ans">Que casi siempre es cierto <b>a corto plazo</b> y falso a partir de la tercera semana,
+            y que discutirlo en términos de calidad no funciona: hay que hacerlo en términos de <b>velocidad</b>.<br><br>
+            <b>El argumento concreto:</b> sin pruebas, cada cambio exige comprobar a mano lo que ya funcionaba, y ese
+            coste se paga <b>en cada despliegue</b>, no una vez. Lo que empieza como ahorro se convierte en un
+            impuesto creciente: el equipo va frenando hasta que tocar ciertos módulos da miedo, y ahí la velocidad ya
+            no se recupera sin una reescritura.<br><br>
+            <b>Lo que propondría en la práctica</b>, porque «hay que escribir tests» no es un plan: no intentar
+            cubrir el sistema entero, sino aplicar la <b>regla del campamento</b> — cada vez que se toca un módulo,
+            se deja con pruebas—; exigir una prueba que reproduzca el fallo en cada corrección, que es donde la
+            relación entre coste y valor es mejor; y priorizar por riesgo, empezando por lo que da dinero o pierde
+            datos, no por lo que es fácil de probar.<br><br>
+            <b>Y el matiz que evita sonar dogmático:</b> hay código que legítimamente no merece pruebas — un
+            prototipo que se va a tirar, una pantalla interna que usan tres personas—. Decir esto demuestra criterio
+            de producto y no sólo disciplina técnica, y suele ser lo que la pregunta está buscando: si el candidato
+            aplica reglas o razona sobre costes.</div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>💻 Demuéstralo con código</summary>
+      <div class="acc-body">
+
+        <h3>Paso 1 · La clase que no se puede probar, y la que sí</h3>
+        <div class="code-block" data-lang="Java · codigo/34-pruebas/DescuentoServicio.java">
+<pre><code>// ❌ IMPOSIBLE DE PROBAR: construye sus dependencias y usa el reloj del sistema
+public class DescuentoServicioMal {
+    public int calcular(Long clienteId, int importe) {
+        var repo = new ClienteRepositoryJdbc();          // necesita una BD real
+        var cliente = repo.buscar(clienteId);
+        if (LocalDate.now().getDayOfWeek() == DayOfWeek.FRIDAY) {  // el viernes falla
+            return importe - (importe * 20 / 100);
+        }
+        return importe - (importe * cliente.descuento() / 100);
+    }
+}
+
+// ✅ PROBABLE: recibe lo que necesita
+public class DescuentoServicio {
+    private final ClienteRepository repo;
+    private final Clock reloj;
+
+    public DescuentoServicio(ClienteRepository repo, Clock reloj) {
+        this.repo = repo;
+        this.reloj = reloj;
+    }
+
+    public int calcular(Long clienteId, int importe) {
+        if (importe &lt; 0) throw new IllegalArgumentException("importe negativo");
+        var cliente = repo.buscar(clienteId)
+                .orElseThrow(() -&gt; new ClienteNoEncontrado(clienteId));
+
+        int pct = LocalDate.now(reloj).getDayOfWeek() == DayOfWeek.FRIDAY
+                ? 20
+                : cliente.descuento();
+
+        return importe - (importe * pct / 100);
+    }
+}</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> el mismo cálculo, escrito de las dos formas.<br>
+          <b>Las dos diferencias son las de siempre</b> · la dependencia llega por constructor en vez de crearse con
+          <code>new</code>, y el tiempo entra como un <code>Clock</code> en vez de leerse del sistema.<br>
+          <b><code>Clock</code> es la respuesta a «¿cómo pruebas algo que depende de la fecha?»</b> · con
+          <code>Clock.fixed(...)</code> se congela el instante y la prueba del viernes deja de depender del día en que
+          se ejecute. Es un ejemplo de inversión de dependencias que cabe en una frase y que casi nadie menciona.<br>
+          <b>La versión mala no es «menos elegante»</b> · es <b>imposible</b> de probar sin una base de datos, y
+          además da un resultado distinto los viernes. Ese es el argumento, no el estilo.
+        </p>
+
+        <h3>Paso 2 · Las tres pruebas: fake, mock y parametrizada</h3>
+        <div class="code-block" data-lang="Java · codigo/34-pruebas/DescuentoServicioTest.java">
+<pre><code>class DescuentoServicioTest {
+
+    // FAKE: implementación real pero simplificada. Sin librería de dobles.
+    static class RepoEnMemoria implements ClienteRepository {
+        private final Map&lt;Long, Cliente&gt; datos = new HashMap&lt;&gt;();
+        void guardar(Cliente c) { datos.put(c.id(), c); }
+        public Optional&lt;Cliente&gt; buscar(Long id) { return Optional.ofNullable(datos.get(id)); }
+    }
+
+    private final Clock martes = Clock.fixed(
+            Instant.parse("2026-04-14T10:00:00Z"), ZoneOffset.UTC);
+    private final Clock viernes = Clock.fixed(
+            Instant.parse("2026-04-17T10:00:00Z"), ZoneOffset.UTC);
+
+    @Test
+    @DisplayName("aplica el descuento del cliente en un día normal")
+    void descuentoDelCliente() {
+        var repo = new RepoEnMemoria();                        // Preparar
+        repo.guardar(new Cliente(1L, "Ana", 10));
+        var servicio = new DescuentoServicio(repo, martes);
+
+        int resultado = servicio.calcular(1L, 1000);           // Actuar
+
+        assertEquals(900, resultado);                          // Comprobar
+    }
+
+    @Test
+    @DisplayName("el viernes prevalece el 20 % sobre el del cliente")
+    void viernesGana() {
+        var repo = new RepoEnMemoria();
+        repo.guardar(new Cliente(1L, "Ana", 10));
+        var servicio = new DescuentoServicio(repo, viernes);
+
+        assertEquals(800, servicio.calcular(1L, 1000));
+    }
+
+    @Test
+    @DisplayName("lanza excepción si el cliente no existe")
+    void clienteInexistente() {
+        var servicio = new DescuentoServicio(new RepoEnMemoria(), martes);
+
+        var ex = assertThrows(ClienteNoEncontrado.class,
+                () -&gt; servicio.calcular(99L, 1000));
+        assertTrue(ex.getMessage().contains("99"));
+    }
+
+    @ParameterizedTest(name = "importe {0} con {1}% → {2}")
+    @CsvSource({ "1000, 10, 900", "1000, 0, 1000", "999, 10, 900", "0, 50, 0" })
+    void casosDeRedondeo(int importe, int pct, int esperado) {
+        var repo = new RepoEnMemoria();
+        repo.guardar(new Cliente(1L, "Ana", pct));
+
+        assertEquals(esperado, new DescuentoServicio(repo, martes).calcular(1L, importe));
+    }
+}</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> cuatro pruebas sin Spring, sin base de datos y sin Mockito.<br>
+          <b>El <code>RepoEnMemoria</code> es un <em>fake</em></b> · quince líneas que sustituyen a toda una librería
+          de dobles y producen pruebas más legibles. <b>Poder explicar por qué aquí un fake es mejor que un mock es
+          exactamente la respuesta de nivel</b>: no hay ninguna interacción que verificar, sólo estado.<br>
+          <b><code>Clock.fixed</code></b> · las dos pruebas del día de la semana son deterministas: pasan en martes,
+          en viernes y en Nochebuena.<br>
+          <b><code>@ParameterizedTest</code> con <code>@CsvSource</code></b> · cuatro casos en cuatro líneas.
+          Fíjate en <code>999</code> con 10 %: la división entera da 900, no 899,1. <b>Ese caso está a propósito</b>,
+          porque los casos borde del redondeo son de lo que más se pregunta.<br>
+          <b><code>@DisplayName</code></b> · el informe se lee como una especificación en castellano, que es la mitad
+          del valor de una suite.
+        </p>
+
+        <div class="code-block" data-lang="Java · codigo/34-pruebas/NotificadorTest.java">
+<pre><code>@ExtendWith(MockitoExtension.class)
+class NotificadorTest {
+
+    @Mock  private ServicioCorreo correo;      // aquí SÍ un mock: el efecto ES la llamada
+    @Mock  private ClienteRepository repo;
+    @InjectMocks private NotificadorPedidos notificador;
+
+    @Test
+    void envia_un_solo_correo_al_confirmar() {
+        when(repo.buscar(1L)).thenReturn(                       // ← esto es un STUB
+                Optional.of(new Cliente(1L, "Ana", 10)));
+
+        notificador.confirmar(new Pedido(7L, 1L, 1000));
+
+        verify(correo, times(1)).enviar(eq("ana@correo.com"), contains("7"));  // ← MOCK
+        verifyNoMoreInteractions(correo);
+    }
+
+    @Test
+    void no_envia_nada_si_el_cliente_no_existe() {
+        when(repo.buscar(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ClienteNoEncontrado.class,
+                () -&gt; notificador.confirmar(new Pedido(7L, 99L, 1000)));
+
+        verifyNoInteractions(correo);      // no se envió NINGÚN correo
+    }
+}</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> el caso en el que verificar interacciones <b>sí</b> es lo correcto.<br>
+          <b>Las dos cosas conviven en la misma prueba</b> · <code>when(repo.buscar(...))</code> es un <b>stub</b>
+          —sólo responde para llegar al escenario— y <code>verify(correo)</code> es un <b>mock</b> —comprobar la
+          llamada <em>es</em> la prueba—. Señalar esa distinción con el código delante es la mejor forma de responder
+          a la pregunta de mock contra stub.<br>
+          <b><code>times(1)</code> y <code>verifyNoMoreInteractions</code></b> · impiden el fallo clásico de enviar el
+          correo dos veces, que ninguna comprobación de estado detectaría.<br>
+          <b><code>verifyNoInteractions</code> en el caso de error</b> · comprobar que <b>no</b> pasó nada suele ser
+          más valioso que comprobar que pasó algo, y casi nadie lo escribe.<br>
+          <b>Resultado esperado:</b> las dos pruebas en verde en pocos milisegundos.
+        </p>
+
+        <h3>Paso 3 · La de integración, y la ficha</h3>
+        <div class="code-block" data-lang="Java · codigo/34-pruebas/ClienteRepositoryIT.java">
+<pre><code>@Testcontainers
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class ClienteRepositoryIT {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer&lt;?&gt; db = new PostgreSQLContainer&lt;&gt;("postgres:17");
+
+    @Autowired private ClienteRepository repo;
+
+    @Test
+    void la_consulta_con_join_fetch_no_produce_N_mas_1() {
+        repo.saveAll(datosDePrueba());
+
+        var conPedidos = repo.buscarConPedidos();      // JPQL con join fetch
+
+        assertThat(conPedidos).hasSize(3);
+        assertThat(conPedidos.get(0).getPedidos()).isNotEmpty();  // ya inicializados
+    }
+}</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> prueba la <b>consulta</b>, que es lo único que necesita una base de datos de verdad.<br>
+          <b><code>@DataJpaTest</code></b> · levanta sólo la porción de persistencia, no la aplicación entera.
+          Saber que existen los cortes (<code>@WebMvcTest</code>, <code>@DataJpaTest</code>) frente al
+          <code>@SpringBootTest</code> completo es una diferencia de nivel.<br>
+          <b><code>Replace.NONE</code></b> · imprescindible, o Spring sustituiría la base por H2 y perderías todo el
+          sentido del contenedor. <b>Es el error número uno con Testcontainers.</b><br>
+          <b>El sufijo <code>IT</code></b> · convención para que Maven las ejecute en la fase de verificación y no en
+          el ciclo rápido de <code>mvn test</code>.<br>
+          <b>Por qué esta prueba y no otra</b> · verifica el <code>join fetch</code> del Capítulo 13, que es
+          exactamente el tipo de cosa que un doble no puede comprobar: si el N+1 vuelve, esta prueba lo detecta.
+        </p>
+
+        <div class="code-block" data-lang="Terminal">
+<pre><code>cd nakahire
+mkdir -p codigo/34-pruebas
+
+# La ficha, con lo que hay que poder decir de memoria
+cat &gt; fichas/34-pruebas.md &lt;&lt;'EOF'
+# Pruebas
+
+## Respuesta de 30 segundos
+Unitaria = rapida, aislada, determinista. Si levanta Spring o toca BD,
+es de integracion. Piramide: muchas unitarias, algunas de integracion,
+pocas E2E. El cono de helado invertido es el antipatron.
+
+## Los 5 dobles
+dummy (relleno) · stub (responde) · spy (real + registra)
+mock (exige) · fake (implementacion simplificada)
+=> "un stub responde, un mock exige"
+=> verifica ESTADO, no interacciones, salvo que el efecto SEA la interaccion
+
+## Cobertura
+Mide que se ejecuta, no que sea correcto. dividir(4,2) da 100% y
+revienta con b=0. Ramas > lineas. La que mide calidad: MUTACION (PIT).
+
+## TDD
+Rojo-verde-refactor. Lo uso cuando el problema esta definido, y SIEMPRE
+para reproducir un fallo de produccion antes de corregirlo.
+
+## Frases
+"La dificultad para probar es el mejor detector de acoplamiento."
+"Sin pruebas, cada cambio exige comprobar a mano lo que ya funcionaba."
+EOF
+
+git add -A &amp;&amp; git commit -m "Capitulo 34: pruebas, dobles y TDD"</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> deja la ficha en el dossier con lo esencial en formato de respuesta hablada.<br>
+          <b>La sección de 30 segundos</b> · es la que se repasa el día antes. Si no cabe en un párrafo, no está
+          preparada.<br>
+          <b>Las frases al final</b> · son las que se dicen literalmente en la entrevista. Tener dos o tres
+          memorizadas por tema es lo que hace que la respuesta suene pensada y no improvisada.<br>
+          <b>Resultado esperado:</b> la ficha creada y el commit hecho.
+        </p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>✔ Verificación</summary>
+      <div class="acc-body">
+        <h3>Comprobación técnica</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code># Las unitarias: milisegundos, sin nada levantado
+mvn -q test -Dtest='DescuentoServicioTest,NotificadorTest'
+
+# La de integracion: levanta el contenedor, tarda segundos
+mvn -q verify -Dtest=ClienteRepositoryIT
+
+# La prueba de la prueba: rompe el codigo a proposito y comprueba
+# que la suite se pone ROJA. Si sigue verde, la prueba no probaba nada.
+#   cambia  pct = 20  por  pct = 25  en DescuentoServicio
+mvn -q test -Dtest=DescuentoServicioTest    # → debe FALLAR
+
+# Ejecuta en orden aleatorio: destapa dependencias entre pruebas
+mvn test -Djunit.jupiter.testmethod.order.default=\
+org.junit.jupiter.api.MethodOrderer\$Random</code></pre>
+        </div>
+        <p class="code-note"><b>Resultado esperado:</b> las unitarias en menos de un segundo; la de integración en
+        varios segundos con el contenedor arrancando; y —lo importante— <b>la suite en rojo al romper el código a
+        propósito</b>. Esa última comprobación es la versión manual de las pruebas de mutación, y es la única forma
+        de saber que una prueba comprueba algo. El orden aleatorio debe seguir dando verde: si no, hay estado
+        compartido entre pruebas.</p>
+
+        <h3>Comprobación en voz alta</h3>
+        <ol class="steps">
+          <li>Define prueba unitaria con las <b>tres propiedades</b> y di qué la descalifica.</li>
+          <li>Enumera los <b>cinco dobles</b> y resume la diferencia en una frase.</li>
+          <li>Explica por qué verificar interacciones produce pruebas frágiles, y cuándo sí hacerlo.</li>
+          <li>Responde a «¿qué cobertura te parece aceptable?» sin dar un número, con el contraejemplo de
+          <code>dividir</code>.</li>
+          <li>Di cuándo haces TDD y cuándo no, y menciona el caso del fallo en producción.</li>
+          <li>Enumera las cinco causas de una prueba intermitente y cómo se arregla la del tiempo.</li>
+          <li>Explica por qué Testcontainers y no H2.</li>
+        </ol>
+
+        <div class="note good">
+          <b class="t">✅ Has terminado el capítulo si…</b>
+          <p>…puedes distinguir los cinco dobles con un ejemplo cada uno, tienes preparado el contraejemplo de la
+          cobertura, y sabes responder a «no da tiempo a escribir tests» en términos de <b>velocidad</b> y no de
+          calidad. Y si has visto tu propia suite ponerse en rojo al romper el código a propósito: hasta que no lo
+          haces, no sabes si tus pruebas comprueban algo.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Estado del proyecto</summary>
+      <div class="acc-body">
+        <h3>Qué acabamos de construir</h3>
+        <p>El bloque de <strong>calidad</strong>: la pirámide y por qué su forma es económica, las tres propiedades
+        de una prueba unitaria, los <strong>cinco dobles</strong> con la distinción entre estado e interacciones,
+        JUnit 5 y Mockito en lo que se pregunta, TDD sin dogma, la crítica de la cobertura con las pruebas de
+        mutación, el diagnóstico de las pruebas intermitentes y Testcontainers frente a H2.</p>
+
+        <h3>Qué parte del proyecto representa</h3>
+        <p>Es <strong>la pregunta que aparece en casi todas las entrevistas</strong> y en la que casi todo el mundo
+        responde lo mismo. Es también donde se comprueba si los principios del Capítulo 31 eran teoría o práctica:
+        quien ha diseñado con inversión de dependencias tiene pruebas de tres milisegundos, y quien no, no tiene
+        pruebas.</p>
+
+        <div class="diagram">  NakaHire · estado actual
+
+  nakahire/
+    ├── fichas/
+    │    ├── 31-solid.md
+    │    ├── 32-arquitectura.md
+    │    ├── 33-ia.md
+    │    └── 34-pruebas.md      ⭐ 5 dobles · cobertura · TDD · intermitentes
+    ├── codigo/
+    │    └── 34-pruebas/        ▶ DescuentoServicio (mal y bien)
+    │                             DescuentoServicioTest  · fake + Clock
+    │                             NotificadorTest        · stub + mock
+    │                             ClienteRepositoryIT    · Testcontainers
+    └── progreso.md
+
+  Siguiente pieza ▶ Capítulo 35: la entrevista que no es de código</div>
+
+        <h3>Por qué era necesario antes de continuar</h3>
+        <p>El Capítulo 35 trata de la mitad de la entrevista que no es técnica, y su ejercicio central es contar un
+        proyecto propio con una decisión difícil. Las pruebas son, con diferencia, la fuente más habitual de esas
+        historias: «heredamos un sistema sin tests y no nos atrevíamos a tocarlo», «una prueba intermitente nos tenía
+        parado el pipeline», «convencí al equipo de empezar por la regla del campamento». Llegar con el vocabulario
+        de hoy hace que esas historias se puedan contar con precisión en lugar de en general.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚠ Errores comunes</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th style="width:35%">Problema</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td>Responder «sí, escribo tests unitarios» y callarse</td>
+              <td>No distingue de nadie. Define las tres propiedades y di qué <b>no</b> pruebas y por qué.</td></tr>
+            <tr><td>Llamar «mock» a todo</td>
+              <td>Delata que se ha usado la librería sin pensar en el concepto. Un stub responde; un mock exige.</td></tr>
+            <tr><td>Dar un número al preguntar por cobertura</td>
+              <td>Es la trampa de la pregunta. Explica que mide ejecución, no corrección, y usa el contraejemplo de <code>dividir</code>.</td></tr>
+            <tr><td>Llamar unitaria a una prueba con <code>@SpringBootTest</code></td>
+              <td>Levanta el contexto: es de integración. No es peor, pero va en otro sitio de la pirámide.</td></tr>
+            <tr><td>Verificar interacciones por sistema</td>
+              <td>Acopla la prueba al diseño interno y se rompe en cada refactorización. Verifica estado salvo que el efecto sea la llamada.</td></tr>
+            <tr><td>Reejecutar una prueba intermitente hasta que pase</td>
+              <td>Destruye la confianza en la suite. Diagnostícala: tiempo, orden, concurrencia, dependencia externa u orden de colecciones.</td></tr>
+            <tr><td>Usar H2 «porque es más rápido»</td>
+              <td>No es el mismo motor: distinto SQL, distintos tipos y distinto planificador. Testcontainers levanta el real.</td></tr>
+            <tr><td>Olvidar <code>Replace.NONE</code> con Testcontainers</td>
+              <td>Spring sustituye la base por H2 y el contenedor no se usa. La prueba pasa contra la base equivocada.</td></tr>
+            <tr><td>Escribir la prueba después y no verla nunca en rojo</td>
+              <td>Una prueba que nunca ha fallado no demuestra nada. Rompe el código a propósito una vez.</td></tr>
+            <tr><td>Decir «hago TDD siempre»</td>
+              <td>Suena a manual. Di cuándo sí y cuándo no, y menciona el caso del fallo en producción.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📝 Resumen</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><strong>Unitaria = rápida, aislada y determinista.</strong> Si levanta Spring o toca la base de datos,
+          es de integración.</li>
+          <li>La <strong>pirámide</strong> tiene esa forma por economía: cuanto más arriba, más tarda y peor localiza
+          el fallo.</li>
+          <li>Cinco dobles: <strong>dummy, stub, spy, mock y fake</strong>. «Un stub responde; un mock exige.»</li>
+          <li><strong>Verifica estado, no interacciones</strong>, salvo cuando el efecto <em>sea</em> la interacción.</li>
+          <li>La <strong>cobertura mide ejecución, no corrección</strong>. Ramas mejor que líneas; y quien mide
+          calidad de verdad es la <strong>mutación</strong>.</li>
+          <li><strong>TDD según el problema</strong>, y siempre para reproducir un fallo de producción antes de
+          corregirlo.</li>
+          <li>Una prueba <strong>intermitente</strong> es un fallo prioritario: tiempo, orden, concurrencia,
+          dependencia externa o colecciones sin orden.</li>
+          <li>Inyecta un <strong><code>Clock</code></strong> en vez de llamar a <code>now()</code>: es la forma de
+          probar lo que depende de la fecha.</li>
+          <li><strong>Testcontainers, no H2</strong>: distinto motor, distinto SQL, distinto planificador.</li>
+          <li>El argumento ante «no da tiempo» es de <strong>velocidad</strong>: el coste de no tenerlas se paga en
+          cada despliegue.</li>
+        </ul>
+
+        <div class="note good">
+          <b class="t">⭐ Buenas prácticas y recomendaciones</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Ten preparado el contraejemplo de <code>dividir(4, 2)</code>: convierte una pregunta abstracta sobre
+            cobertura en algo comprobable en diez segundos.</li>
+            <li>Menciona las <b>pruebas de mutación</b>. Casi nadie las saca y demuestran que has pensado en la
+            calidad de las pruebas, no sólo en su cantidad.</li>
+            <li>Cuenta una prueba intermitente <b>real</b> que hayas diagnosticado. Es de las mejores historias
+            técnicas que se pueden llevar.</li>
+            <li>Usa un <b>fake</b> cuando no haya nada que verificar: se lee mejor que tres <code>when(...)</code> y
+            demuestra criterio.</li>
+            <li>Al hablar de pruebas con quien decide, habla de <b>velocidad de entrega</b> y no de calidad. Es el
+            mismo argumento traducido al idioma de quien escucha.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>❓ Autoevaluación</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Te enseñan una prueba anotada con <code>@SpringBootTest</code> que levanta la aplicación entera y consulta una base H2. El candidato la llama «prueba unitaria». ¿Qué corriges?</p>
+            <div class="q-ans">Dos cosas, y ninguna es que la prueba esté mal. La primera es de vocabulario: no es unitaria, es de <strong>integración</strong>, porque levanta el contexto de Spring y toca una base de datos, así que tardará segundos en vez de milisegundos y no aísla el fallo — si se pone roja, el problema puede estar en cualquier punto de la cadena. No es peor que una unitaria: simplemente ocupa otro sitio en la pirámide y debe ejecutarse en otra fase del pipeline, para no frenar el ciclo rápido. La segunda es sobre H2: al no ser el mismo motor que producción, el SQL específico, los tipos y el planificador son distintos, de modo que la prueba puede pasar y la consulta ser incorrecta o lentísima en producción — que es justo lo contrario de lo que se pretendía. La alternativa correcta es <strong>Testcontainers</strong>, con el mismo motor y la misma versión, recordando poner <code>Replace.NONE</code> para que Spring no sustituya la base por H2 y deje el contenedor sin usar.</div></div>
+
+          <div class="q"><p class="q-text">2. Una prueba comprueba con <code>verify()</code> que el servicio llama a <code>repositorio.buscarPorId()</code>. Tras una refactorización que no cambia el comportamiento, la prueba se pone roja. ¿Qué ha pasado y qué harías distinto?</p>
+            <div class="q-ans">La prueba estaba verificando <strong>interacciones</strong> en lugar de estado, y por tanto se había acoplado al <em>diseño interno</em> de la clase y no a su comportamiento observable. Si la refactorización sustituyó esa llamada por otra equivalente —una consulta distinta, una caché delante, un método que agrupa dos búsquedas— el resultado para quien usa la clase es idéntico, pero la expectativa del mock ya no se cumple. Eso es un <strong>falso positivo</strong>, y es especialmente dañino porque enseña al equipo a desconfiar de la suite: cuando las pruebas se ponen rojas sin que nada esté roto, se dejan de mirar. Lo que haría distinto es comprobar el <strong>resultado</strong> del método —el valor devuelto o el estado final— usando un stub o un fake para llegar al escenario, y reservar <code>verify()</code> para los casos en que el efecto observable <em>sea</em> la interacción: que se envió un correo, que se publicó un evento, que no se llamó dos veces a la pasarela de pago. La regla resumida: verifica estado por defecto, interacciones por excepción.</div></div>
+
+          <div class="q"><p class="q-text">3. Tu equipo tiene el 92 % de cobertura y aun así se escapan fallos a producción con frecuencia. ¿Cómo lo explicas y qué propones?</p>
+            <div class="q-ans">Lo explico diciendo que la cobertura mide <strong>qué código se ejecuta</strong> durante las pruebas, no si ese código es correcto: se puede tener el 100 % sin una sola aserción útil. El ejemplo mínimo es un método <code>dividir(a, b)</code> con la prueba <code>dividir(4, 2)</code>: cubre todas las líneas y no detecta que <code>b = 0</code> revienta. Con un 92 % es muy probable que haya pruebas que ejecutan el código sin comprobar nada significativo, o que comprueban el camino feliz e ignoran los casos borde, que es donde viven los fallos. Lo que propondría es, primero, mirar la cobertura de <strong>ramas</strong> en vez de la de líneas, porque dice qué caminos de los condicionales se han recorrido; segundo, introducir <strong>pruebas de mutación</strong> con PIT sobre los módulos críticos, que alteran el código a propósito y revelan qué pruebas siguen en verde cuando deberían fallar — es la única métrica que mide la calidad de la suite y no su tamaño; y tercero, analizar los últimos fallos escapados para ver qué tipo de caso no se estaba probando, que suele ser el mismo patrón repetido. Y dejar de usar el porcentaje como objetivo, porque en cuanto lo es la gente escribe pruebas para subirlo.</div></div>
+
+          <div class="q"><p class="q-text">4. Tienes que probar un método que aplica un descuento distinto los viernes. ¿Cómo lo haces determinista?</p>
+            <div class="q-ans">Sacando el tiempo del código y convirtiéndolo en una dependencia. Si el método llama directamente a <code>LocalDate.now()</code>, su resultado depende del día en que se ejecute la prueba: pasará seis días a la semana y fallará los viernes, o al revés, que es uno de los orígenes más frecuentes de pruebas intermitentes. La solución es inyectar un <code>Clock</code> por constructor y usar <code>LocalDate.now(reloj)</code>; en la prueba se pasa <code>Clock.fixed(...)</code> con un martes y con un viernes concretos, y ambos casos quedan cubiertos de forma determinista y en milisegundos. En producción se inyecta <code>Clock.systemDefaultZone()</code>. Conviene señalar además que esto es un ejemplo directo del principio de <strong>inversión de dependencias</strong> del Capítulo 31: el tiempo es una dependencia externa como la base de datos o la red, y tratarlo como tal es lo que hace el código probable. El mismo razonamiento se aplica a los identificadores aleatorios, a la generación de UUID y a cualquier fuente de no determinismo.</div></div>
+
+          <div class="q"><p class="q-text">5. En una entrevista te dicen: «aquí no escribimos tests, no da tiempo». ¿Qué respondes, teniendo en cuenta que quieres el puesto?</p>
+            <div class="q-ans">Sin sermonear, porque la pregunta también mide cómo se discrepa. Empezaría reconociendo que a corto plazo es cierto: escribir pruebas cuesta tiempo <em>hoy</em>, y en un arranque o un prototipo puede ser una decisión razonable. Después llevaría la conversación de la calidad a la <strong>velocidad</strong>, que es el idioma de quien decide: sin pruebas, cada cambio obliga a comprobar a mano lo que ya funcionaba, y ese coste no se paga una vez sino en <em>cada</em> despliegue, así que el ahorro inicial se convierte en un impuesto creciente hasta que tocar ciertos módulos da miedo y el equipo frena. Y terminaría con una propuesta concreta y modesta, no con un plan de cobertura total: aplicar la <strong>regla del campamento</strong> —cada módulo que se toca se deja con pruebas—, exigir una prueba que reproduzca el fallo en cada corrección, que es donde la relación entre esfuerzo y valor es mejor, y priorizar por riesgo empezando por lo que mueve dinero o pierde datos. Añadiría también que hay código que legítimamente no merece pruebas, porque eso demuestra criterio de producto y evita sonar dogmático. Preguntar además <em>por qué</em> no da tiempo suele revelar el problema real —despliegues manuales, entorno de pruebas inexistente, deuda acumulada—, y mostrar interés por entenderlo antes de opinar juega a favor.</div></div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+
+  <!-- =========================================================
+       CAPÍTULO 35 · LA ENTREVISTA QUE NO ES DE CÓDIGO
+       ========================================================= -->
+  <section class="view chapter" id="cap-35"
+    data-num="35"
+    data-title="La entrevista que no es de código: comportamiento, proyectos y salario"
+    data-short="Comportamiento y salario"
+    data-module="Módulo 13 · Calidad y entrevista completa"
+    data-time="65 min" data-level="Intermedio" data-icon="🗣"
+    data-concepts="Método STAR|Preguntas de comportamiento|Contar un proyecto|Conflicto y feedback|Salario y banda|Preguntas que haces tú|Señales de alarma">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Se puede responder perfectamente a todo lo técnico y aun así no recibir la oferta. La otra mitad de la
+      entrevista —cómo trabajas, cómo discrepas, qué has hecho de verdad y cuánto cuestas— <strong>decide tanto o más
+      que la técnica</strong>, y casi nadie la prepara. Vas a montar un <strong>banco de historias</strong> con el
+      método STAR, aprender a contar un proyecto en dos minutos sin divagar, y saber qué decir cuando te pregunten
+      por el salario <em>antes</em> de que te hagan una oferta.</p>
+      <p><strong>Qué construimos hoy:</strong> <code>historias/</code> dentro de NakaHire — seis historias STAR
+      reutilizables—, la ficha <code>35-comportamiento.md</code> y tu lista de preguntas para el entrevistador.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>📖 Teoría</summary>
+      <div class="acc-body">
+
+        <h3>1. Qué se está midiendo de verdad</h3>
+        <p>La pregunta «háblame de un conflicto con un compañero» no busca el conflicto. Busca cuatro cosas, y
+        saberlo cambia por completo qué se cuenta:</p>
+
+        <div class="tbl-wrap"><table>
+          <thead><tr><th style="width:26%">Qué se mide</th><th>Cómo se detecta</th></tr></thead>
+          <tbody>
+            <tr><td><b>Autoconciencia</b></td><td>¿Reconoce lo que hizo mal, o todo fue culpa del entorno? Quien nunca se equivocó es la respuesta que más alarma.</td></tr>
+            <tr><td><b>Impacto real</b></td><td>¿Dice «participé en» o dice qué hizo <b>él</b> y qué cambió por ello? Sin números, no hay impacto.</td></tr>
+            <tr><td><b>Cómo discrepa</b></td><td>¿Impone, cede siempre o argumenta y acepta la decisión? Es lo que predice cómo será en las revisiones de código.</td></tr>
+            <tr><td><b>Encaje</b></td><td>¿Lo que busca coincide con lo que hay? Un buen entrevistador prefiere descartarte a que te vayas en tres meses.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note bad">
+          <b class="t">⚠ Los tres errores que hunden esta parte</b>
+          <p><strong>1. Divagar.</strong> Una historia de siete minutos sin desenlace. El entrevistador desconecta al
+          segundo minuto.<br>
+          <strong>2. Hablar en plural.</strong> «Hicimos», «se decidió», «el equipo mejoró». No se puede evaluar a
+          alguien que nunca aparece en primera persona.<br>
+          <strong>3. Hablar mal de la empresa anterior.</strong> Es la respuesta que más candidatos descarta, y la
+          más fácil de evitar. Quien critica a su antiguo jefe delante de un desconocido criticará al siguiente.</p>
+        </div>
+
+        <h3>2. El método STAR</h3>
+        <div class="diagram">  S · SITUACIÓN   dónde y cuándo. DOS FRASES, no más.
+                  "En mi anterior empresa, un servicio de pagos con 200 req/s."
+
+  T · TAREA       cuál era TU responsabilidad concreta.
+                  "Yo era responsable de que los pagos duplicados no ocurrieran."
+
+  A · ACCIÓN      qué hiciste TÚ. Es el 60 % del tiempo. En primera persona.
+                  "Propuse una clave de idempotencia, monté una prueba que
+                   reproducía el caso, y lo defendí en la revisión porque
+                   había una alternativa con bloqueos que descarté por…"
+
+  R · RESULTADO   qué cambió, CON NÚMERO. Y qué aprendiste.
+                  "Los duplicados pasaron de ~15 al mes a cero en seis meses.
+                   Aprendí que debí haber medido antes de proponer nada."
+
+  Proporciones:  S+T ≈ 20 %   ·   A ≈ 60 %   ·   R ≈ 20 %
+  Duración:      90 segundos a 2 minutos. Cronometrado.
+
+  ⚠ El fallo casi universal: gastar dos minutos en la Situación
+    contando el contexto de la empresa, y despachar la Acción en
+    una frase. Se cuenta al revés de como se piensa.</div>
+
+        <h3>3. El banco de seis historias</h3>
+        <p>No hace falta una historia por pregunta: hacen falta <strong>seis historias buenas</strong> que, con un
+        ajuste de énfasis, cubren casi todas las preguntas que existen.</p>
+
+        <div class="tbl-wrap"><table>
+          <thead><tr><th style="width:32%">Historia</th><th>Preguntas que cubre</th></tr></thead>
+          <tbody>
+            <tr><td><b>1. Un problema técnico difícil</b></td>
+              <td>«Lo más complejo que has resuelto», «un fallo difícil de diagnosticar», «cuándo has tenido que aprender algo rápido».</td></tr>
+            <tr><td><b>2. Un error tuyo</b></td>
+              <td>«Un fallo que causaste», «algo que harías distinto», «tu mayor debilidad». <b>Es la más importante y la que menos gente prepara.</b></td></tr>
+            <tr><td><b>3. Un desacuerdo</b></td>
+              <td>«Un conflicto», «cuando discrepaste de tu responsable», «cómo defiendes una decisión técnica».</td></tr>
+            <tr><td><b>4. Algo que mejoraste por iniciativa</b></td>
+              <td>«Cuándo fuiste más allá», «qué has propuesto tú», «cómo mides el impacto de tu trabajo».</td></tr>
+            <tr><td><b>5. Ayudar a alguien</b></td>
+              <td>«Mentoría», «trabajo en equipo», «cómo das feedback», «cómo explicas algo técnico a alguien de negocio».</td></tr>
+            <tr><td><b>6. Trabajar bajo presión</b></td>
+              <td>«Un plazo imposible», «una incidencia en producción», «cómo priorizas», «cómo llevas la ambigüedad».</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip">
+          <b class="t">💡 La historia del error es la más rentable</b>
+          <p>Todo el mundo prepara la del éxito y casi nadie la del fallo, así que <strong>es donde más se
+          destaca</strong>. Tiene que ser un error <em>real</em> y con consecuencias —no «soy perfeccionista»—,
+          hay que asumirlo sin repartir culpas, y sobre todo hay que terminar en <strong>qué se cambió para que no
+          se repita</strong>: una alerta, una prueba, un cambio de proceso. Un fallo sin aprendizaje es sólo un
+          fallo; con aprendizaje, es la mejor prueba de criterio que puedes dar.</p>
+        </div>
+
+        <h3>4. Contar un proyecto en dos minutos</h3>
+        <div class="diagram">  «Háblame de un proyecto del que estés orgulloso»
+
+  1. QUÉ ERA, en una frase de negocio      (15 s)
+     "Un sistema de reservas para 40 clínicas."
+     ❌ NO: "Un backend con Spring Boot, Kafka, Redis y Kubernetes."
+
+  2. TU PAPEL, sin ambigüedad              (15 s)
+     "Éramos cuatro; yo llevaba la parte de disponibilidad y pagos."
+
+  3. LA DECISIÓN DIFÍCIL, con alternativas (60 s)  ← AQUÍ está el valor
+     "Había que evitar dobles reservas. Valoré bloqueo pesimista y
+      una restricción de exclusión en la base. Elegí la segunda porque
+      la garantía queda en el motor y no depende de que la aplicación
+      la aplique bien. El coste: nos ató a PostgreSQL."
+
+  4. RESULTADO Y APRENDIZAJE, con número   (30 s)
+     "Cero dobles reservas en un año. Si lo repitiera, mediría la
+      contención antes: asumí que sería alta y no lo era."
+
+  ⇒ El paso 3 es el único que distingue. Un proyecto sin una decisión
+    difícil contada con sus alternativas y su coste suena a tutorial.
+  ⇒ Y ten preparada la versión de 30 segundos y la de 5 minutos:
+    el entrevistador decidirá cuál quiere por sus repreguntas.</div>
+
+        <h3>5. El salario</h3>
+        <p>Es la parte que más incomoda y la que tiene reglas más claras. La primera: <strong>quien da una cifra
+        primero suele perder</strong>, salvo que esté muy bien informado.</p>
+
+        <div class="diagram">  «¿Cuáles son tus expectativas salariales?»  (en la PRIMERA llamada)
+
+  ❌ Dar un número a ciegas → te ancla, arriba o abajo.
+  ❌ "Lo que sea justo"     → no dice nada y suena a inseguridad.
+
+  ✅ Devolver la pregunta, con educación y una razón:
+     "Antes de dar una cifra me gustaría entender bien el alcance
+      del puesto. ¿Tenéis una banda definida para esta posición?"
+
+  ✅ Si insisten (y a veces lo harán, es su trabajo), da un RANGO
+     informado, con el mínimo ya en tu objetivo:
+     "Por lo que he visto en el mercado para este perfil y con estas
+      responsabilidades, me movería entre X e Y."
+     ⇒ El mínimo del rango es lo que te van a ofrecer. Ponlo alto.
+
+  Y siempre: TOTAL, no sólo el fijo.
+     fijo + variable + cuántas pagas + seguro + formación
+     + teletrabajo + días de vacaciones + acciones
+  ⇒ Un fijo menor con teletrabajo total puede ser mejor oferta.
+
+  ⚠ En España es habitual que pregunten cuánto cobras AHORA.
+    No estás obligado a decirlo, y decirlo te ancla a tu sueldo
+    anterior en vez de al valor del puesto. Se reconduce:
+    "Prefiero orientar la conversación al valor de esta posición."</div>
+
+        <div class="note warn">
+          <b class="t">Cuando llegue la oferta</b>
+          <p>Tres reglas. <strong>Agradece y pide tiempo</strong> —«¿puedo darte una respuesta el jueves?»— porque
+          aceptar en caliente casi siempre deja dinero encima de la mesa. <strong>Negocia una sola vez y con
+          argumentos</strong>, no regateando: una contraoferta con un motivo (otra oferta, una responsabilidad
+          concreta, la banda del mercado) es profesional; tres rondas de tira y afloja queman la relación.
+          Y <strong>pide el acuerdo por escrito</strong> antes de renunciar a nada, con el detalle del variable:
+          «hasta un 15 %» no es lo mismo que «un 15 %».</p>
+        </div>
+
+        <h3>6. Las preguntas que haces tú</h3>
+        <p>«¿Tienes alguna pregunta?» no es una formalidad: es la última oportunidad de demostrar criterio,
+        y responder «no, me lo has explicado todo» es de las peores señales que se pueden dar.</p>
+
+        <div class="tbl-wrap"><table>
+          <thead><tr><th style="width:44%">Pregunta</th><th>Qué demuestra y qué averiguas</th></tr></thead>
+          <tbody>
+            <tr><td>«¿Cómo es el proceso desde que se hace un commit hasta que llega a producción?»</td>
+              <td>Que piensas en entrega y no sólo en código. Y averiguas si despliegan a diario o cada tres meses.</td></tr>
+            <tr><td>«¿Cómo se revisa el código y cuánto se tarda en aprobar un cambio?»</td>
+              <td>Que valoras el trabajo en equipo. Y detectas cuellos de botella y falta de confianza.</td></tr>
+            <tr><td>«¿Qué pasó la última vez que se cayó algo en producción?»</td>
+              <td><b>La mejor de todas.</b> Distingue una cultura de aprendizaje de una de buscar culpables.</td></tr>
+            <tr><td>«¿Cuál es la mayor deuda técnica que arrastráis?»</td>
+              <td>Que entiendes que siempre la hay. Si dicen que ninguna, o no lo saben o no lo dicen.</td></tr>
+            <tr><td>«¿Qué haría que dentro de seis meses dijerais que fue un acierto contratarme?»</td>
+              <td>Orientación a resultados. Y te da los criterios reales de evaluación.</td></tr>
+            <tr><td>«¿Qué es lo que más te frustra de trabajar aquí?»</td>
+              <td>Valentía y sinceridad. La calidad de la respuesta dice más que todo lo anterior.</td></tr>
+          </tbody>
+        </table></div>
+
+        <p><strong>Y las señales de alarma que hay que saber leer:</strong> nadie sabe decir qué pasó en la última
+        incidencia; «aquí somos como una familia»; el puesto lleva ocho meses abierto; no hay pruebas y lo cuentan
+        con normalidad; el proceso tiene seis fases y un ejercicio de veinte horas sin remunerar; o el entrevistador
+        no conoce el equipo al que vas a entrar.</p>
+
+        <h3>Cómo se relaciona con el capítulo anterior</h3>
+        <p>El Capítulo 34 dio el vocabulario preciso de calidad, y ahí está la conexión directa: las mejores
+        historias STAR del apartado 3 suelen salir de ahí — la prueba intermitente que tenía el pipeline parado,
+        el módulo heredado sin tests que nadie se atrevía a tocar, convencer al equipo de empezar por la regla del
+        campamento. Y en general, todo lo técnico de los 34 capítulos anteriores es la <em>materia prima</em> de este:
+        una decisión difícil se cuenta bien cuando se conocen las alternativas y su coste, que es exactamente lo que
+        el curso lleva construyendo desde el principio.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Preguntas de entrevista</summary>
+      <div class="acc-body">
+        <div class="quiz">
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv1">Básico</span> «Háblame de ti»</p>
+            <div class="q-ans">Es la primera pregunta de casi todas las entrevistas y la peor preparada: casi todo el
+            mundo recita el currículum en orden cronológico desde la universidad.<br><br>
+            <b>La estructura que funciona son tres bloques en unos 90 segundos.</b> <b>Presente:</b> qué haces ahora y
+            con qué tecnologías, en una frase. <b>Pasado relevante:</b> dos o tres hitos elegidos <b>en función de
+            este puesto</b>, no toda la trayectoria. <b>Futuro:</b> qué buscas y por qué esta oferta encaja — y aquí
+            hay que ser concreto, porque «busco un reto» no dice nada.<br><br>
+            <b>La clave está en la selección, no en el contenido:</b> la misma persona debería contarlo distinto para
+            un puesto de backend que para uno de plataforma. Que la respuesta esté claramente adaptada demuestra que
+            has leído la oferta.<br><br>
+            <b>Y el cierre que funciona muy bien:</b> terminar devolviendo el foco —«por eso me interesó esta oferta,
+            sobre todo la parte de X; ¿es esa la prioridad del equipo ahora?»—. Convierte un monólogo en una
+            conversación y te da información para el resto de la entrevista.<br><br>
+            <b>Qué evitar:</b> empezar por la carrera, contar la vida personal, y pasar de los dos minutos.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv2">Intermedio</span> «Cuéntame un conflicto con un compañero»</p>
+            <div class="q-ans">La pregunta <b>no busca el conflicto</b>: busca cómo discrepas, porque eso predice
+            cómo serán tus revisiones de código y tus discusiones de diseño.<br><br>
+            <b>La respuesta se estructura en STAR</b> y el peso va en la <b>acción</b>: qué hiciste tú para
+            resolverlo. Lo que se valora es haber ido a hablar directamente antes de escalar, haber intentado
+            entender el motivo del otro, y haber buscado un criterio objetivo que sacara la discusión del terreno de
+            las opiniones — una medición, un prototipo, los datos de producción.<br><br>
+            <b>El desenlace importa tanto como el proceso, y hay dos finales buenos.</b> Uno es «tenía razón él y
+            cambié de opinión», que demuestra autoconciencia. El otro es «se decidió lo contrario de lo que yo
+            proponía y lo apoyé igualmente», que demuestra madurez: discrepar y comprometerse. El único final malo es
+            «al final se hizo lo mío porque yo tenía razón».<br><br>
+            <b>Errores que descartan:</b> elegir un conflicto personal en vez de técnico; pintar al otro como
+            incompetente; o decir que nunca has tenido un desacuerdo, que se lee como que no participas en las
+            decisiones o como que no eres sincero.<br><br>
+            <b>El nivel superior:</b> mencionar que el conflicto reveló un problema de proceso —no había criterio para
+            decidir ese tipo de cosas— y que se cambió algo para que no se repitiera.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv2">Intermedio</span> «Cuéntame un error que hayas cometido»</p>
+            <div class="q-ans">La pregunta que más gente esquiva y donde más fácil es destacar, precisamente porque
+            casi nadie la prepara.<br><br>
+            <b>Tiene que ser un error real y con consecuencias.</b> Un despliegue que tiró un servicio, una migración
+            que perdió datos, una estimación que se fue al triple. Las respuestas de manual —«trabajo demasiado»,
+            «soy perfeccionista»— se detectan al instante y hacen sospechar del resto de la entrevista.<br><br>
+            <b>La estructura tiene cuatro partes y ninguna es opcional:</b> qué pasó, en concreto; el impacto real,
+            sin adornarlo ni exagerarlo; qué hiciste <b>inmediatamente</b> —avisar, contener, comunicar—; y qué
+            <b>cambiaste</b> para que no se repita. Esta última es la que da valor a toda la respuesta: una alerta
+            nueva, una prueba de regresión, una comprobación en el pipeline, un cambio en el proceso de despliegue.<br><br>
+            <b>Asume la responsabilidad sin repartirla.</b> «Nadie revisó mi cambio» convierte una buena respuesta en
+            una mala. Se puede mencionar que faltaba una salvaguarda —de hecho, casi siempre falta— pero después de
+            haber asumido lo tuyo, y en forma de mejora del sistema y no de excusa.<br><br>
+            <b>Y el remate:</b> «desde entonces, ante cualquier corrección, lo primero que escribo es la prueba que
+            reproduce el fallo». Conecta con el Capítulo 34 y demuestra que el aprendizaje se convirtió en un
+            hábito.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv2">Intermedio</span> «¿Por qué quieres dejar tu trabajo actual?»</p>
+            <div class="q-ans">Aquí se mide una sola cosa: <b>si hablas mal de donde vienes</b>. Es el error que más
+            candidatos descarta y el más fácil de evitar.<br><br>
+            <b>La regla es formularlo en positivo, hacia dónde vas y no de qué huyes.</b> No «mi jefe es un desastre y
+            el código es horrible», sino «he aprendido mucho en X, y ahora busco un entorno con Y», donde Y sea algo
+            concreto y verificable en la oferta: más escala, más contacto con producto, un dominio distinto,
+            responsabilidad técnica sobre un sistema.<br><br>
+            <b>Se puede ser crítico sin ser desleal.</b> Decir «no había cultura de pruebas y me costaba entregar con
+            confianza» es una razón legítima y demuestra criterio; decir «allí nadie sabe programar» dice más de ti
+            que de ellos. La diferencia está en criticar prácticas y no personas.<br><br>
+            <b>Si la salida fue mala</b> —un despido, un conflicto, un cierre— lo mejor es una frase breve, sin drama
+            y sin detalles, y pasar a lo que buscas. Alargarse ahí es lo que hace que el entrevistador se
+            quede con eso.<br><br>
+            <b>Y el detalle que suma:</b> mencionar algo bueno de la empresa actual. Que alguien reconozca lo que
+            aprendió donde está, incluso al irse, es exactamente la señal de que hablará bien de esta empresa cuando
+            se vaya de aquí.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv3">Avanzado</span> «¿Cuáles son tus expectativas salariales?» (en la primera llamada)</p>
+            <div class="q-ans">Es una negociación, no una pregunta informativa, y quien da la primera cifra sin
+            información suele perder: si la das baja, te anclas ahí aunque el puesto pagara más; si la das alta a
+            ciegas, puedes quedar fuera antes de demostrar nada.<br><br>
+            <b>La respuesta de primera intención es devolver la pregunta con una razón:</b> «antes de dar una cifra me
+            gustaría entender bien el alcance del puesto — ¿tenéis una banda definida para esta posición?». En
+            muchas empresas la banda existe y te la dirán, y eso ya resuelve la conversación.<br><br>
+            <b>Si insisten —y a veces insistirán, porque es su trabajo— se da un rango informado</b>, apoyado en
+            datos de mercado para ese perfil, esa ubicación y esa responsabilidad. Y con una precaución que casi
+            nadie tiene en cuenta: <b>el mínimo del rango es lo que te van a ofrecer</b>, así que ese mínimo debe ser
+            ya tu objetivo, no tu suelo.<br><br>
+            <b>Hay que hablar de paquete total y no de fijo:</b> variable y bajo qué condiciones, número de pagas,
+            seguro, formación, días de vacaciones, teletrabajo y, si las hay, acciones y su valoración real. Un fijo
+            algo menor con teletrabajo completo puede ser mejor oferta, y decirlo demuestra que sabes evaluar.<br><br>
+            <b>Sobre cuánto cobras ahora:</b> en España lo preguntan a menudo. No estás obligado a decirlo, y decirlo
+            te ancla a tu sueldo anterior en vez de al valor del puesto. Se reconduce con educación: «prefiero
+            orientar la conversación al valor de esta posición». Si insisten mucho, esa insistencia ya es
+            información sobre la empresa.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv3">Avanzado</span> «¿Dónde te ves en cinco años?»</p>
+            <div class="q-ans">La pregunta es tramposa porque casi nadie lo sabe, y las dos respuestas obvias son
+            malas: inventarse un plan de carrera suena falso, y decir «no lo sé» suena a falta de dirección.<br><br>
+            <b>Lo que en realidad se está preguntando es otra cosa:</b> si vas a seguir aquí dentro de dos años, y si
+            lo que quieres es compatible con lo que la empresa puede ofrecer. Un entrevistador que descubre que
+            quieres liderar equipos en un sitio donde no hay esa vía te está haciendo un favor al descartarte.<br><br>
+            <b>La respuesta que funciona habla de capacidades y no de cargos:</b> «me interesa profundizar en sistemas
+            distribuidos y llegar a un punto en el que pueda tomar decisiones de arquitectura y acompañar a gente más
+            junior; si eso se llama <em>staff</em>, <em>tech lead</em> o seguir siendo senior con más alcance, me
+            importa menos que el contenido». Es honesto, es concreto y no te encierra en un título.<br><br>
+            <b>Y conviene conectar con el puesto:</b> decir qué de esta oferta te acerca a eso demuestra que has
+            pensado en el encaje y no sólo en el salto.<br><br>
+            <b>El matiz que se agradece:</b> reconocer que a cinco años vista hay incertidumbre y que lo que sí sabes
+            es la dirección. Suena mucho más creíble que un plan detallado, y es lo que casi todo el mundo piensa de
+            verdad.</div>
+          </div>
+
+          <div class="q">
+            <p class="q-text"><span class="chip lv3">Avanzado</span> «¿Tienes alguna pregunta para nosotros?»</p>
+            <div class="q-ans">No es una formalidad de cierre: es la última oportunidad de demostrar criterio, y
+            responder «no, me lo has explicado todo» es de las peores señales que se pueden dar — parece desinterés o
+            falta de preparación.<br><br>
+            <b>Las preguntas que mejor funcionan son las que revelan cómo trabaja el equipo de verdad</b>, no las que
+            se contestan mirando la web. Cómo es el camino desde un commit hasta producción; cómo se revisa el código
+            y cuánto tarda en aprobarse un cambio; cuál es la mayor deuda técnica que arrastran; y, la mejor de
+            todas, <b>qué pasó la última vez que se cayó algo en producción</b> — la respuesta distingue en treinta
+            segundos una cultura de aprendizaje de una de buscar culpables.<br><br>
+            <b>Dos más que suman:</b> «¿qué haría que dentro de seis meses dijerais que fue un acierto contratarme?»,
+            que orienta a resultados y de paso te da los criterios reales de evaluación; y «¿qué es lo que más te
+            frustra de trabajar aquí?», que exige cierta valentía y cuya respuesta —o su ausencia— dice más que toda
+            la entrevista.<br><br>
+            <b>Aprovecha también para leer las señales de alarma:</b> que nadie sepa contar la última incidencia, que
+            el puesto lleve ocho meses abierto, que describan la empresa como «una familia», o que cuenten con
+            naturalidad que no tienen pruebas.<br><br>
+            <b>Detalle práctico:</b> lleva seis preguntas escritas y usa tres. Consultar una nota no resta:
+            demuestra que has venido preparado.</div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>💻 Demuéstralo con código</summary>
+      <div class="acc-body">
+
+        <h3>Paso 1 · La plantilla STAR y el banco de historias</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>cd nakahire
+mkdir -p historias
+
+cat &gt; historias/_plantilla.md &lt;&lt;'EOF'
+# [Titulo corto de la historia]
+
+**Cubre:** conflicto | error | iniciativa | presion | mentoria | tecnico dificil
+**Duracion objetivo:** 90 s      **Ultima vez practicada:** ____
+
+## S · Situacion  (2 frases, 15 s)
+Donde, cuando, que escala. Nada de contexto corporativo.
+
+## T · Tarea  (1 frase, 10 s)
+Cual era MI responsabilidad concreta.
+
+## A · Accion  (60 s — el 60 % del tiempo)
+- Que hice YO, en primera persona.
+- Que alternativas valore y por que descarte las otras.
+- Como lo defendi / con quien lo acorde.
+
+## R · Resultado  (25 s)
+- Que cambio, CON NUMERO.
+- Que aprendi / que haria distinto.
+
+## Repreguntas probables
+- "¿Y por que no hiciste X?"  →
+- "¿Que habria pasado si…?"   →
+EOF
+
+# Las seis historias del banco
+for h in 01-tecnico-dificil 02-mi-error 03-desacuerdo \
+         04-iniciativa 05-ayudar-a-alguien 06-bajo-presion; do
+  cp historias/_plantilla.md "historias/$h.md"
+done
+
+ls historias/</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> crea la plantilla y las seis historias del banco.<br>
+          <b>Por qué seis y no una por pregunta</b> · las preguntas de comportamiento son infinitas y las historias
+          reutilizables son pocas. Con estas seis, ajustando el énfasis, se cubre casi todo lo que te van a
+          preguntar.<br>
+          <b>El campo <code>Cubre:</code></b> · es lo que convierte el banco en una herramienta: al preparar una
+          entrevista concreta se busca por ahí en lugar de releerlo todo.<br>
+          <b>La sección de repreguntas</b> · es la que casi nadie escribe y la que más falta hace. La historia se
+          cuenta bien la primera vez; lo que descoloca es el «¿y por qué no hiciste X?».<br>
+          <b>Resultado esperado:</b> siete archivos en <code>historias/</code>.
+        </p>
+
+        <h3>Paso 2 · Escribir la historia del error, que es la que importa</h3>
+        <div class="code-block" data-lang="Markdown · historias/02-mi-error.md">
+<pre><code># La migracion que dejo 4 horas de pedidos sin notificar
+
+**Cubre:** error | presion | aprendizaje
+**Duracion objetivo:** 100 s     **Ultima vez practicada:** 2026-04-12
+
+## S · Situacion
+En la plataforma de pedidos, con unas 3.000 operaciones al dia.
+Tenia que anadir una columna de estado a la tabla de notificaciones.
+
+## T · Tarea
+Yo era responsable de la migracion y del despliegue de esa version.
+
+## A · Accion
+- Prepare la migracion como un unico ALTER TABLE con valor por defecto
+  y la probe en un entorno con 200 filas. Paso en milisegundos.
+- En produccion la tabla tenia 40 millones: el ALTER reescribio la
+  tabla y bloqueo las escrituras durante 4 horas.
+- En cuanto vi los tiempos de espera, avise en el canal de incidencias
+  y al responsable de producto ANTES de que lo detectara soporte.
+- No cancele a mitad: calcule que abortar dejaria la tabla en un estado
+  peor y que quedaba menos tiempo del ya transcurrido. Lo comunique.
+- Reprocesamos las notificaciones pendientes desde el registro.
+
+## R · Resultado
+- 4 h sin notificaciones, ~500 pedidos afectados, cero perdidas de datos.
+- Cambiamos tres cosas: entorno de pruebas con volumen realista,
+  lock_timeout obligatorio en toda migracion, y patron expandir/contraer
+  para los cambios de esquema grandes.
+- Lo que aprendi: no era un fallo de SQL sino de metodo — probe contra
+  un entorno que no se parecia a produccion.
+
+## Repreguntas probables
+- "¿Por que no lo cancelaste?"      → calculo de tiempo restante + estado
+- "¿Y si vuelve a pasar hoy?"       → lock_timeout corto: falla en 5 s
+- "¿Quien mas fallo ahi?"           → falto revision, pero la decision
+                                       de desplegar fue mia</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> una historia STAR completa y realista, escrita con la estructura del apartado 2.<br>
+          <b>Fíjate en las proporciones</b> · situación y tarea en tres líneas; acción, cinco puntos; resultado, con
+          <b>números concretos</b> (4 horas, 500 pedidos, cero pérdidas). Sin cifras no hay impacto.<br>
+          <b>Asume la responsabilidad y no la reparte</b> · la última repregunta está preparada precisamente para eso:
+          se reconoce que faltaba una salvaguarda <b>después</b> de haber asumido lo propio.<br>
+          <b>El aprendizaje es de método, no técnico</b> · «probé contra un entorno que no se parecía a producción»
+          vale mucho más que «aprendí que ALTER TABLE bloquea».<br>
+          <b>Y conecta con el curso</b> · <code>lock_timeout</code> y expandir/contraer salen del Capítulo 14 y del
+          32. Que la historia use el vocabulario del temario es exactamente lo que hace que suene vivida.
+        </p>
+
+        <h3>Paso 3 · Cronometrar, y las preguntas que haces tú</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code># Practicar en voz alta CRONOMETRADO. Sin esto, no sirve de nada.
+cat &gt; historias/practicar.sh &lt;&lt;'EOF'
+#!/usr/bin/env bash
+# Elige una historia al azar y te cronometra mientras la cuentas.
+h=$(ls historias/*.md | grep -v _plantilla | shuf -n1)
+echo "=== $h ==="
+echo "Cuentala EN VOZ ALTA. Enter cuando termines."
+inicio=$(date +%s); read -r; fin=$(date +%s)
+seg=$((fin - inicio))
+echo "Duracion: ${seg}s"
+[ "$seg" -gt 150 ] && echo "⚠ Demasiado larga: recorta la SITUACION."
+[ "$seg" -lt 60 ]  && echo "⚠ Demasiado corta: falta detalle en la ACCION."
+EOF
+chmod +x historias/practicar.sh
+./historias/practicar.sh
+
+cat &gt; fichas/35-comportamiento.md &lt;&lt;'EOF'
+# La entrevista que no es de codigo
+
+## STAR — proporciones
+S+T 20% · A 60% · R 20%   ·   90-120 s   ·   SIEMPRE en primera persona
+El fallo universal: 2 min de Situacion y la Accion en una frase.
+
+## Banco (6 historias cubren casi todo)
+tecnico dificil · MI ERROR · desacuerdo · iniciativa · ayudar · presion
+=> la del error es la mas rentable: casi nadie la prepara
+
+## Contar un proyecto (2 min)
+1. Que era, en NEGOCIO (15 s)   2. Mi papel (15 s)
+3. LA DECISION DIFICIL con alternativas y coste (60 s)  ← lo unico que distingue
+4. Resultado con numero + aprendizaje (30 s)
+
+## Salario
+No dar cifra primero. Devolver: "¿teneis banda definida?"
+Si insisten: rango informado, y el MINIMO ya es mi objetivo.
+Paquete TOTAL, no fijo. No estoy obligado a decir cuanto cobro ahora.
+Con oferta: agradecer, pedir tiempo, negociar UNA vez con argumento,
+todo por escrito antes de renunciar.
+
+## Mis preguntas (llevar 6, usar 3)
+- ¿Como es el camino de un commit a produccion?
+- ¿Que paso la ultima vez que se cayo algo?      ← la mejor
+- ¿Cual es la mayor deuda tecnica que arrastrais?
+- ¿Que haria que en 6 meses dijerais que fue un acierto contratarme?
+- ¿Que es lo que mas te frustra de trabajar aqui?
+
+## Alarmas
+"somos una familia" · nadie sabe contar la ultima incidencia ·
+puesto abierto 8 meses · ejercicio de 20 h sin pagar ·
+no hay pruebas y lo cuentan con normalidad
+EOF
+
+git add -A &amp;&amp; git commit -m "Capitulo 35: historias STAR, proyecto y salario"</code></pre>
+        </div>
+        <p class="code-note">
+          <b>Qué hace:</b> monta el cronómetro de práctica y deja la ficha de repaso.<br>
+          <b>Cronometrar es el paso que casi nadie da</b> · una historia que <em>parece</em> de dos minutos leída dura
+          cinco contada. Los dos avisos del script son los dos fallos reales: demasiado larga por la situación,
+          demasiado corta por falta de detalle en la acción.<br>
+          <b>En voz alta y no mentalmente</b> · la diferencia es enorme, y es la única forma de detectar las muletillas
+          y los rodeos.<br>
+          <b><code>shuf -n1</code></b> · al azar, para practicar sin saber cuál toca — que es como será.<br>
+          <b>La ficha de repaso</b> · escrita en formato hablado, para leerla la mañana de la entrevista.<br>
+          <b>Resultado esperado:</b> el script funcionando, la ficha creada y el commit hecho.
+        </p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>✔ Verificación</summary>
+      <div class="acc-body">
+        <h3>Comprobación técnica</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code># Las seis historias existen y ninguna sigue siendo la plantilla
+ls historias/*.md | grep -v _plantilla | wc -l          # → 6
+grep -L "## S · Situacion" historias/0*.md              # → vacio
+
+# Ninguna historia sin numeros en el resultado: sin cifra no hay impacto
+grep -L "[0-9]" historias/0*.md                          # → vacio
+
+# Cuantas veces aparece "hicimos" frente a "hice": el plural delata
+grep -oc "hicimos\|se decidio\|el equipo" historias/0*.md
+grep -oc "hice\|propuse\|decidi\|avise" historias/0*.md   # → debe ser mayor
+
+git log --oneline | head -5</code></pre>
+        </div>
+        <p class="code-note"><b>Resultado esperado:</b> seis historias, todas con la estructura completa y todas con
+        al menos una cifra en el resultado. <b>La comprobación del plural es la más reveladora</b>: si «hicimos»
+        aparece más que «hice», la historia no te evalúa a ti, y ése es precisamente el motivo por el que muchas
+        respuestas técnicamente correctas no convencen.</p>
+
+        <h3>Comprobación en voz alta</h3>
+        <ol class="steps">
+          <li>Cuenta <b>«háblame de ti»</b> en 90 segundos con la estructura presente-pasado-futuro.</li>
+          <li>Cuenta la historia del <b>error</b> cronometrada, terminando en qué cambiaste.</li>
+          <li>Cuenta un <b>proyecto</b> en dos minutos dedicando un minuto a la decisión difícil y sus alternativas.</li>
+          <li>Responde a <b>«¿por qué dejas tu trabajo?»</b> sin una sola crítica personal.</li>
+          <li>Responde a <b>«¿expectativas salariales?»</b> devolviendo la pregunta, y luego con un rango.</li>
+          <li>Enuncia de memoria <b>tres preguntas</b> para el entrevistador y qué averiguas con cada una.</li>
+          <li>Que alguien te haga una <b>repregunta</b> incómoda sobre tu historia del error.</li>
+        </ol>
+
+        <div class="note good">
+          <b class="t">✅ Has terminado el capítulo si…</b>
+          <p>…tienes las seis historias escritas, has contado <b>en voz alta y cronometrada</b> al menos tres, y
+          ninguna pasa de dos minutos ni habla en plural. Y si tienes decidido, antes de que te lo pregunten, qué vas
+          a responder sobre el salario: improvisar esa respuesta en caliente es lo que hace que se deje dinero encima
+          de la mesa.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Estado del proyecto</summary>
+      <div class="acc-body">
+        <h3>Qué acabamos de construir</h3>
+        <p>La <strong>mitad no técnica del dossier</strong>: el método STAR con sus proporciones, un banco de seis
+        historias reutilizables con sus repreguntas preparadas, la estructura para contar un proyecto en dos minutos,
+        la estrategia de salario completa —desde la primera llamada hasta la oferta por escrito—, las preguntas que
+        haces tú y las señales de alarma que hay que saber leer.</p>
+
+        <h3>Qué parte del proyecto representa</h3>
+        <p>Es <strong>la mitad que decide y que casi nadie prepara</strong>. Se puede responder bien a los treinta y
+        cuatro capítulos anteriores y no recibir la oferta por divagar siete minutos, hablar siempre en plural o
+        criticar a la empresa anterior. Y es también donde todo lo técnico se convierte en algo contable: una
+        decisión difícil sólo se cuenta bien cuando se conocen las alternativas y su coste.</p>
+
+        <div class="diagram">  NakaHire · estado actual
+
+  nakahire/
+    ├── fichas/           35 fichas de concepto
+    │    ├── 34-pruebas.md
+    │    └── 35-comportamiento.md   ⭐ STAR · proyecto · salario · preguntas
+    ├── codigo/           demostraciones por tema
+    ├── historias/        ⭐ NUEVO
+    │    ├── _plantilla.md
+    │    ├── 01-tecnico-dificil.md   04-iniciativa.md
+    │    ├── 02-mi-error.md          05-ayudar-a-alguien.md
+    │    ├── 03-desacuerdo.md        06-bajo-presion.md
+    │    └── practicar.sh            ▶ cronómetro en voz alta
+    └── progreso.md
+
+  Siguiente pieza ▶ Capítulo 36: el simulacro completo y el cierre</div>
+
+        <h3>Por qué era necesario antes de continuar</h3>
+        <p>El Capítulo 36 es el simulacro de 45 minutos, y una entrevista real no es sólo técnica: empieza con
+        «háblame de ti», acaba con «¿tienes alguna pregunta?» y por el medio hay al menos una pregunta de
+        comportamiento. Sin las historias de hoy, el simulacro sólo ensayaría la mitad del examen — y precisamente la
+        mitad que la mayoría ya lleva preparada.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚠ Errores comunes</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th style="width:35%">Problema</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td>Historias de cinco o siete minutos</td>
+              <td>Casi siempre por gastar demasiado en la situación. S+T son el 20 %: dos frases y a la acción.</td></tr>
+            <tr><td>Hablar en plural: «hicimos», «se decidió»</td>
+              <td>No se puede evaluar a quien nunca aparece. Primera persona en toda la acción.</td></tr>
+            <tr><td>Resultado sin cifras</td>
+              <td>«Mejoró bastante» no es un resultado. Un número aproximado y honesto vale más que un adjetivo.</td></tr>
+            <tr><td>Hablar mal de la empresa anterior</td>
+              <td>El error que más descarta. Critica prácticas, nunca personas, y formúlalo en positivo.</td></tr>
+            <tr><td>«Mi debilidad es que soy perfeccionista»</td>
+              <td>Se detecta al instante y contamina el resto de la entrevista. Un error real con su aprendizaje.</td></tr>
+            <tr><td>Contar el proyecto como una lista de tecnologías</td>
+              <td>Suena a tutorial. Empieza por el problema de negocio y dedica el grueso a la decisión difícil.</td></tr>
+            <tr><td>Dar una cifra de salario a ciegas en la primera llamada</td>
+              <td>Te ancla. Devuelve la pregunta; si insisten, rango informado con el mínimo en tu objetivo.</td></tr>
+            <tr><td>Comparar sólo el fijo entre dos ofertas</td>
+              <td>Ignora variable, pagas, seguro, vacaciones y teletrabajo. Compara paquete total.</td></tr>
+            <tr><td>Aceptar la oferta en la misma llamada</td>
+              <td>Deja dinero encima de la mesa. Agradece y pide un par de días.</td></tr>
+            <tr><td>«No, ninguna pregunta»</td>
+              <td>Parece desinterés. Lleva seis escritas y usa tres; consultar la nota no resta.</td></tr>
+            <tr><td>No practicar en voz alta</td>
+              <td>Leída dura dos minutos; contada, cinco. Sin cronómetro no hay preparación.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📝 Resumen</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li>Las preguntas de comportamiento miden <strong>autoconciencia, impacto, cómo discrepas y encaje</strong>,
+          no la anécdota.</li>
+          <li><strong>STAR con proporciones</strong>: situación y tarea el 20 %, <strong>acción el 60 %</strong>,
+          resultado el 20 %. De 90 a 120 segundos.</li>
+          <li><strong>Primera persona siempre.</strong> «Hicimos» no se puede evaluar.</li>
+          <li><strong>Seis historias</strong> cubren casi todas las preguntas. La del <strong>error</strong> es la más
+          rentable porque casi nadie la prepara.</li>
+          <li>Un resultado <strong>sin número no es un resultado</strong>; y un error sin aprendizaje es sólo un error.</li>
+          <li>Al contar un proyecto, lo único que distingue es la <strong>decisión difícil con sus alternativas y su
+          coste</strong>.</li>
+          <li>Nunca hables mal de la empresa anterior. Critica <strong>prácticas, no personas</strong>, y en positivo.</li>
+          <li><strong>No des la primera cifra</strong>: pregunta por la banda. Si insisten, rango informado con el
+          mínimo ya en tu objetivo.</li>
+          <li>Compara <strong>paquete total</strong>, pide tiempo antes de aceptar y todo por escrito antes de
+          renunciar.</li>
+          <li>Lleva <strong>seis preguntas</strong> y usa tres. La mejor: <em>«¿qué pasó la última vez que se cayó
+          algo en producción?»</em>.</li>
+        </ul>
+
+        <div class="note good">
+          <b class="t">⭐ Buenas prácticas y recomendaciones</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Escribe las repreguntas probables de cada historia. Contar la historia es fácil; lo que descoloca es
+            el «¿y por qué no hiciste X?».</li>
+            <li>Practica <b>en voz alta y con cronómetro</b>. Es la diferencia entre tener una historia y saber
+            contarla.</li>
+            <li>Que tus historias usen el vocabulario técnico del curso: es lo que hace que suenen vividas y no
+            preparadas.</li>
+            <li>Ten decidida la respuesta del salario <b>antes</b> de la primera llamada. Improvisarla en caliente
+            sale caro.</li>
+            <li>Trata la entrevista como bidireccional de verdad: tú también estás decidiendo, y quien lo transmite
+            negocia mejor.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>❓ Autoevaluación</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Cuentas una historia STAR y el entrevistador parece perder interés al minuto y medio. Repasas lo que dijiste y ves que empleaste 70 segundos en explicar a qué se dedicaba la empresa. ¿Qué falló?</p>
+            <div class="q-ans">Las proporciones. La situación y la tarea deberían ocupar en torno al 20 % del tiempo —dos frases: dónde, cuándo y qué escala— porque al entrevistador el contexto corporativo no le aporta nada para evaluarte. El grueso, alrededor del 60 %, tiene que ir a la <strong>acción</strong>: qué hiciste tú, qué alternativas valoraste, por qué descartaste las otras y cómo lo defendiste. Es exactamente al revés de como se tiende a contar, porque contar el contexto es cómodo y contar las propias decisiones expone. El síntoma que describes —perder atención al minuto y medio— es el más habitual, y la corrección práctica es cronometrar la historia en voz alta y recortar despiadadamente la situación: si al final de los primeros quince segundos no se ha oído «yo», hay que reescribirla. Como red de seguridad, conviene tener la historia también en versión de 30 segundos, por si el entrevistador tiene prisa o quiere ir directamente a las repreguntas.</div></div>
+
+          <div class="q"><p class="q-text">2. Te preguntan por un error que hayas cometido y respondes que a veces te implicas demasiado en los proyectos. ¿Por qué es una mala respuesta y qué estructura tendría una buena?</p>
+            <div class="q-ans">Porque es una debilidad disfrazada de virtud, se reconoce al instante y hace que el entrevistador dude del resto de tus respuestas: si esquivas la pregunta fácil de detectar, quizá también estés adornando las demás. Además desaprovecha la mejor oportunidad de destacar, porque casi nadie prepara esta historia. Una buena respuesta tiene cuatro partes: <strong>qué pasó</strong>, concreto y con consecuencias reales —un despliegue que tiró un servicio, una migración que bloqueó una tabla, una estimación que se fue al triple—; el <strong>impacto</strong> sin adornarlo ni exagerarlo; <strong>qué hiciste inmediatamente</strong>, que es donde se ve el criterio bajo presión: avisar antes de que lo detectaran, contener, comunicar a quien tocaba; y <strong>qué cambiaste</strong> para que no se repita, que es la parte que da valor a todo lo anterior. Fundamental asumir la responsabilidad sin repartirla: mencionar que faltaba una salvaguarda está bien, pero después de haber asumido lo tuyo y en forma de mejora del sistema, no de excusa.</div></div>
+
+          <div class="q"><p class="q-text">3. En la primera llamada, antes de conocer el puesto, te preguntan cuánto quieres ganar. Explica qué haces y por qué.</p>
+            <div class="q-ans">No dar una cifra todavía, porque quien la da primero sin información suele salir perdiendo: si la das baja te anclas ahí aunque el puesto pagara más, y si la das alta a ciegas puedes quedar descartado antes de demostrar nada. La respuesta es devolver la pregunta con una razón, no evadirla: «antes de dar una cifra me gustaría entender bien el alcance del puesto — ¿tenéis una banda definida para esta posición?». En muchas empresas la banda existe y te la dirán, con lo que la conversación se resuelve sola. Si insisten —y a veces lo harán, porque es su trabajo— entonces sí se da un <strong>rango informado</strong> con datos de mercado para ese perfil y esa ubicación, teniendo muy presente que el mínimo del rango es lo que te van a ofrecer, así que ese mínimo debe ser ya tu objetivo y no tu suelo. Y en cualquier caso hay que hablar de <strong>paquete total</strong> —variable y sus condiciones, número de pagas, seguro, vacaciones, teletrabajo, acciones— porque un fijo algo menor con teletrabajo completo puede ser mejor oferta. Sobre cuánto cobras ahora: no estás obligado a decirlo, y decirlo te ancla a tu sueldo anterior en lugar de al valor del puesto.</div></div>
+
+          <div class="q"><p class="q-text">4. Al final de una entrevista preguntas qué pasó la última vez que se cayó algo en producción, y el entrevistador responde que no se acuerda y que «esas cosas casi no pasan». ¿Qué información te da eso?</p>
+            <div class="q-ans">Bastante, y ninguna buena del todo, aunque conviene no sacar conclusiones precipitadas. Puede significar tres cosas. Que efectivamente hay poca actividad o el sistema es muy simple, lo cual es información útil sobre lo que vas a aprender allí. Que las incidencias ocurren pero no se analizan: no hay <em>post mortem</em>, nadie documenta las causas y por tanto los mismos fallos se repiten — que es una cultura de apagar fuegos, no de aprender. O que quien te entrevista está lejos del día a día del equipo al que vas a entrar, lo que a su vez es una señal sobre el proceso de selección. Lo que haría es repreguntar con suavidad para distinguir: «¿tenéis alguna práctica de análisis posterior cuando pasa algo?» o «¿quién está de guardia?». La calidad de esa segunda respuesta suele ser definitiva. Y conviene contrastarlo con otras señales de la misma familia: si además no tienen pruebas y lo cuentan con naturalidad, o el puesto lleva muchos meses abierto, el patrón se confirma.</div></div>
+
+          <div class="q"><p class="q-text">5. Te dicen «háblame de un proyecto del que estés orgulloso» y respondes describiendo la arquitectura: Spring Boot, Kafka, Redis, Kubernetes y un front en React. La conversación se apaga. ¿Qué habría que haber contado?</p>
+            <div class="q-ans">Una lista de tecnologías no es un proyecto: no dice qué problema resolvía, ni qué hiciste tú, ni por qué se eligió eso en lugar de otra cosa — y suena exactamente igual que un tutorial seguido hasta el final. La estructura que funciona empieza por <strong>qué era en términos de negocio</strong>, en una frase que entienda alguien que no programe («un sistema de reservas para cuarenta clínicas»), sigue con <strong>tu papel</strong> sin ambigüedad («éramos cuatro; yo llevaba disponibilidad y pagos»), y dedica el grueso —alrededor de un minuto— a <strong>una decisión difícil</strong>: cuál era el problema, qué alternativas valoraste, por qué elegiste la que elegiste y <strong>qué coste tuvo esa elección</strong>. Mencionar el coste es lo que más credibilidad da, porque demuestra que fue una decisión y no una casualidad. Se cierra con el resultado en números y con qué harías distinto. Las tecnologías aparecen, pero como consecuencia de las decisiones y no como el contenido de la respuesta. Y conviene tener preparadas tres versiones —de 30 segundos, 2 minutos y 5 minutos— porque el entrevistador decidirá con sus repreguntas cuánto quiere oír.</div></div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+
+  <!-- =========================================================
+       CAPÍTULO 36 · EL SIMULACRO Y EL CIERRE
+       ========================================================= -->
+  <section class="view chapter" id="cap-36"
+    data-num="36"
     data-title="El simulacro: lógica, diseño de sistemas y cómo cerrar la entrevista"
     data-short="Simulacro y cierre"
-    data-module="Módulo 12 · Diseño, IA y cierre"
+    data-module="Módulo 13 · Calidad y entrevista completa"
     data-time="70 min" data-level="Avanzado" data-icon="🎤"
     data-concepts="Preguntas de lógica|Diseño de sistemas|Simulacro|Plan de repaso|Cierre|Negociación técnica">
 
@@ -21931,8 +23393,8 @@ public class ClasificadorTickets {
   Y recuerda: "no lo sé, pero razonaría así" SUMA.</div>
 
         <h3>Cómo se relaciona con el capítulo anterior</h3>
-        <p>Los capítulos 1 al 24 llenaron el dossier de contenido; hoy se practica <strong>el acceso a ese
-        contenido bajo presión</strong>, que es una habilidad distinta. Alguien puede saberse los veinticuatro temas
+        <p>Los treinta y cinco capítulos anteriores llenaron el dossier de contenido; hoy se practica <strong>el acceso a ese
+        contenido bajo presión</strong>, que es una habilidad distinta. Alguien puede saberse todos los temas
         y bloquearse en el minuto tres, y alguien con lagunas puede aprobar razonando en voz alta. El simulacro de
         hoy entrena eso segundo, que es lo que el Capítulo 0 anunciaba: <em>reconocer no es recordar</em>.</p>
       </div>
@@ -22318,7 +23780,7 @@ cat progreso.md</code></pre>
   Cada proyecto nuevo añade una historia que contar.</div>
 
         <h3>Por qué era necesario</h3>
-        <p>Porque saber los veinticuatro temas y <strong>saber responderlos bajo presión</strong> son habilidades
+        <p>Porque saber los temas y <strong>saber responderlos bajo presión</strong> son habilidades
         distintas, y sólo la segunda se evalúa en una entrevista. Todo el curso ha insistido en lo mismo desde el
         Capítulo 0: <em>reconocer no es recordar</em>. El simulacro es el único ejercicio que entrena el recuerdo en
         las condiciones reales — con reloj, en voz alta y sin poder consultar nada.</p>
@@ -22374,7 +23836,7 @@ cat progreso.md</code></pre>
         </ul>
 
         <div class="note warn">
-          <b class="t">🎯 Preguntas que debes saber sí o sí · Módulo 12 · Diseño, IA y cierre</b>
+          <b class="t">🎯 Preguntas que debes saber sí o sí · Módulos 12 y 13</b>
           <p>Las de diseño y criterio son las que deciden un puesto Mid o Senior:</p>
           <ul class="clean" style="margin-bottom:0">
             <li>¿Qué es <b>SOLID</b>? Con <b>un ejemplo tuyo de cada letra</b>.</li>
@@ -22873,11 +24335,15 @@ const ARCH = [
     {ch:29, i:'🔄', n:'CI/CD, entornos y despliegues'},
     {ch:30, i:'📡', n:'Logs, métricas, DNS y proxy'}
   ]},
-  { layer:'Diseño, IA y cierre', nodes:[
+  { layer:'Diseño e IA', nodes:[
     {ch:31, i:'🧱', n:'SOLID, DRY y patrones'},
     {ch:32, i:'🏛', n:'Capas, hexagonal y microservicios'},
-    {ch:33, i:'🤖', n:'LLMs, RAG y prompting'},
-    {ch:34, i:'🎤', n:'Simulacro y diseño de sistemas'}
+    {ch:33, i:'🤖', n:'LLMs, RAG y prompting'}
+  ]},
+  { layer:'Calidad y entrevista completa', nodes:[
+    {ch:34, i:'🧪', n:'Pruebas, dobles y TDD'},
+    {ch:35, i:'🗣', n:'STAR, proyectos y salario'},
+    {ch:36, i:'🎤', n:'Simulacro y diseño de sistemas'}
   ]}
 ];
 const RESOURCES = [
@@ -22915,9 +24381,17 @@ const RESOURCES = [
   ['Refactorización de una clase que viola cuatro principios','fichas/31-solid.md · codigo/31-solid/',31],
   ['El mismo caso en capas y en hexagonal, más una saga','fichas/32-arquitectura.md · codigo/32-arquitectura/',32],
   ['Ficha de LLMs, tokens, RAG y prompting','fichas/33-ia.md · codigo/33-ia/',33],
-  ['Guion de simulacro y plantilla de diseño de sistemas','simulacros/ · fichas/34-cierre.md',34]
+  ['Banco de pruebas: fake, mock y Testcontainers','fichas/34-pruebas.md · codigo/34-pruebas/',34],
+  ['Banco de seis historias STAR y cronómetro de práctica','historias/ · fichas/35-comportamiento.md',35],
+  ['Guion de simulacro y plantilla de diseño de sistemas','simulacros/ · fichas/36-cierre.md',36]
 ];
 const GLOSARIO = [
+  ['Método STAR','Situación, Tarea, Acción y Resultado. La acción es el 60 % del tiempo y va siempre en primera persona.'],
+  ['Pirámide de pruebas','Muchas unitarias, algunas de integración, pocas E2E. Invertirla produce suites lentas y frágiles que el equipo acaba ignorando.'],
+  ['Dobles de prueba','Dummy, stub, spy, mock y fake. «Un stub responde; un mock exige.»'],
+  ['Prueba intermitente','La que falla de forma aleatoria. Es un fallo prioritario: destruye la confianza en toda la suite.'],
+  ['Pruebas de mutación','Alteran el código a propósito para comprobar si alguna prueba se pone roja. La única métrica que mide la calidad de la suite.'],
+  ['Banda salarial','El rango que la empresa tiene definido para un puesto. Preguntar por ella evita dar tú la primera cifra.'],
   ['Reconocer vs recordar','La diferencia entre entender algo al leerlo y ser capaz de producirlo de cero. Estudiar leyendo entrena lo primero; la entrevista exige lo segundo.'],
   ['Las tres capas','Qué es, por qué importa y cuándo NO usarlo. Una respuesta completa cubre las tres; memorizar sólo cubre la primera.'],
   ['Pensar en voz alta','Verbalizar el razonamiento durante un ejercicio. Es la habilidad más puntuada, porque el entrevistador no puede evaluar lo que no ve.'],

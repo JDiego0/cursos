@@ -35,7 +35,7 @@ features ──► shared ──► core
 `core` no importa de `shared` ni de `features`. `shared` no importa de `features`. Un feature no
 importa de otro. Si te hace falta romperlo, lo que falta es una pieza en `core` o en `shared`.
 
-Cursos existentes (340 capítulos en total):
+Cursos existentes (342 capítulos en total):
 
 | Curso | Proyecto guía | Capítulos |
 |---|---|---|
@@ -52,7 +52,7 @@ Cursos existentes (340 capítulos en total):
 | `ciberseguridad` | **NakaShield**, programa de seguridad | 25 |
 | `azure` | **NakaShop**, tienda online | 12 |
 | `aws` | **NakaStream**, plataforma de vídeo | 25 |
-| `entrevistas` | **NakaHire**, dossier de entrevista técnica | 35 |
+| `entrevistas` | **NakaHire**, dossier de entrevista técnica | 37 |
 
 > `entrevistas` es el único curso con una anatomía distinta (preguntas y respuestas por tema en
 > lugar de proyecto continuo) y `algoritmia`, el único con laboratorios de código ejecutable.

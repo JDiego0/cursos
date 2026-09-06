@@ -750,9 +750,9 @@ const CURSOS = [
   { id:'entrevistas', file:'entrevistas.html', key:'entrevistas-nakahire-v1',
     name:'Entrevistas Full Stack', tech:'Java · Spring · React · SQL', icon:'🎯',
     proyecto:'NakaHire', proyectoDesc:'tu dossier de entrevista técnica',
-    horas:38, caps:35, nivel:'Junior → Senior',
-    desc:'Preparación para <strong>entrevistas técnicas</strong> de desarrollador Full Stack. Cada tema empieza explicando el concepto y sigue con las <strong>preguntas reales</strong>: respuesta corta, explicación profunda, ejemplo y nivel Básico / Intermedio / Avanzado. De fundamentos y Java a Spring, SQL, React, seguridad, arquitectura e IA — ',
-    temas:['Java','Spring','SQL','React','HTTP','Seguridad','SOLID','IA'] },
+    horas:41, caps:37, nivel:'Junior → Senior',
+    desc:'Preparación para <strong>entrevistas técnicas</strong> de desarrollador Full Stack. Cada tema empieza explicando el concepto y sigue con las <strong>preguntas reales</strong>: respuesta corta, explicación profunda, ejemplo y nivel Básico / Intermedio / Avanzado. De fundamentos y Java a Spring, SQL, React, seguridad, arquitectura e IA — y la mitad que casi nadie prepara: <strong>pruebas</strong> y la <strong>entrevista de comportamiento</strong>, con historias STAR y salario.',
+    temas:['Java','Spring','SQL','React','HTTP','Seguridad','SOLID','Pruebas','STAR','IA'] },
 
   { id:'azure', file:'azure.html', key:'azure-nakashop-v1',
     name:'Azure desde Cero', tech:'Microsoft Azure · CLI', icon:'☁',
@@ -969,10 +969,12 @@ const CAPS = {
   {n:28,s:'Docker y despliegue',t:'Docker y despliegue: imágenes, contenedores y Compose',m:'Módulo 11 · Del código a producción',h:'65 min',lv:'Intermedio',i:'🐳',c:'Imagen vs contenedor|Capas|Dockerfile|Volúmenes|Redes|Compose'},
   {n:29,s:'CI/CD y entornos',t:'CI/CD: integración continua, entornos, secretos y despliegues',m:'Módulo 11 · Del código a producción',h:'60 min',lv:'Intermedio',i:'🔄',c:'Integración continua|Pipeline|Variables de entorno|Secretos|Blue-green|Rollback'},
   {n:30,s:'Observabilidad e infra',t:'Observabilidad e infraestructura: logs, métricas, trazas, DNS y proxy inverso',m:'Módulo 11 · Del código a producción',h:'65 min',lv:'Intermedio',i:'📡',c:'Logs métricas trazas|Percentiles|DNS|Proxy inverso|Balanceo|Caché'},
-  {n:31,s:'SOLID y patrones',t:'SOLID, principios de diseño y patrones que sí se preguntan',m:'Módulo 12 · Diseño, IA y cierre',h:'65 min',lv:'Avanzado',i:'🧱',c:'SOLID|Inversión de dependencias|DRY y KISS|Patrones|Acoplamiento|Deuda técnica'},
-  {n:32,s:'Arquitectura y escalado',t:'Arquitectura: capas, hexagonal, monolito contra microservicios y escalabilidad',m:'Módulo 12 · Diseño, IA y cierre',h:'70 min',lv:'Avanzado',i:'🏛',c:'Arquitectura en capas|Hexagonal|Microservicios|Consistencia eventual|Saga|Teorema CAP'},
-  {n:33,s:'IA para desarrolladores',t:'IA para full stack: LLMs, tokens, embeddings, RAG y prompting',m:'Módulo 12 · Diseño, IA y cierre',h:'65 min',lv:'Intermedio',i:'🤖',c:'LLM|Token|Alucinación|Embedding|RAG|Prompting'},
-  {n:34,s:'Simulacro y cierre',t:'El simulacro: lógica, diseño de sistemas y cómo cerrar la entrevista',m:'Módulo 12 · Diseño, IA y cierre',h:'70 min',lv:'Avanzado',i:'🎤',c:'Preguntas de lógica|Diseño de sistemas|Simulacro|Plan de repaso|Cierre|Negociación técnica'}
+  {n:31,s:'SOLID y patrones',t:'SOLID, principios de diseño y patrones que sí se preguntan',m:'Módulo 12 · Diseño e IA',h:'65 min',lv:'Avanzado',i:'🧱',c:'SOLID|Inversión de dependencias|DRY y KISS|Patrones|Acoplamiento|Deuda técnica'},
+  {n:32,s:'Arquitectura y escalado',t:'Arquitectura: capas, hexagonal, monolito contra microservicios y escalabilidad',m:'Módulo 12 · Diseño e IA',h:'70 min',lv:'Avanzado',i:'🏛',c:'Arquitectura en capas|Hexagonal|Microservicios|Consistencia eventual|Saga|Teorema CAP'},
+  {n:33,s:'IA para desarrolladores',t:'IA para full stack: LLMs, tokens, embeddings, RAG y prompting',m:'Módulo 12 · Diseño e IA',h:'65 min',lv:'Intermedio',i:'🤖',c:'LLM|Token|Alucinación|Embedding|RAG|Prompting'},
+  {n:34,s:'Pruebas y TDD',t:'Pruebas: unitarias, dobles, TDD y qué se pregunta de verdad',m:'Módulo 13 · Calidad y entrevista completa',h:'70 min',lv:'Avanzado',i:'🧪',c:'Pirámide de pruebas|Dobles de prueba|Mock vs stub|JUnit 5|Mockito|TDD|Cobertura|Tests frágiles'},
+  {n:35,s:'Comportamiento y salario',t:'La entrevista que no es de código: comportamiento, proyectos y salario',m:'Módulo 13 · Calidad y entrevista completa',h:'65 min',lv:'Intermedio',i:'🗣',c:'Método STAR|Preguntas de comportamiento|Contar un proyecto|Conflicto y feedback|Salario y banda|Preguntas que haces tú|Señales de alarma'},
+  {n:36,s:'Simulacro y cierre',t:'El simulacro: lógica, diseño de sistemas y cómo cerrar la entrevista',m:'Módulo 13 · Calidad y entrevista completa',h:'70 min',lv:'Avanzado',i:'🎤',c:'Preguntas de lógica|Diseño de sistemas|Simulacro|Plan de repaso|Cierre|Negociación técnica'}
  ],
  ia: [
   {n:0,s:'Preparación del entorno',t:'Qué es de verdad la IA que vas a usar y cómo preparar tu entorno',m:'Módulo 1 · Fundamentos de la IA',h:'50 min',lv:'Principiante',i:'🧠',c:'IA|LLM|API|Entorno virtual|Variable de entorno|Token'},
