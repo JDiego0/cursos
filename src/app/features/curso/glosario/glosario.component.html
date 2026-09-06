@@ -40,7 +40,9 @@
         <tbody>
           @for (cmd of comandos(); track cmd.clave) {
             <tr>
-              <td><code>{{ cmd.clave }}</code></td>
+              <!-- La clave lleva entidades HTML (&lt;tabla&gt;, &#39;valor&#39;) porque el
+                   contenido se escribió para inyectarse; hay que decodificarlas. -->
+              <td><code [innerHTML]="cmd.clave | htmlSeguro"></code></td>
               <td [innerHTML]="cmd.para | htmlSeguro"></td>
             </tr>
           }
