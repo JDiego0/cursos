@@ -1,6 +1,6 @@
 # CURSOS
 
-Aplicación **Angular** que reúne ocho cursos interactivos. Cada curso construye **un solo
+Aplicación **Angular** que reúne catorce cursos interactivos. Cada curso construye **un solo
 proyecto** de principio a fin, capítulo a capítulo, y guarda tu progreso en el navegador.
 
 | Curso | Proyecto | Capítulos |
@@ -8,13 +8,19 @@ proyecto** de principio a fin, capítulo a capítulo, y guarda tu progreso en el
 | Algoritmia y Lógica · Python · Java · JS | **AlgoNaka**, tu playbook de patrones | 25 |
 | Java desde Cero · Spring Boot | **LibroTech**, gestión de una librería | 25 |
 | React desde Cero · Vite · TypeScript | **CineNaka**, catálogo de cine | 25 |
+| React Native desde Cero · Expo · TypeScript | **NakaTrip**, diario de viajes | 25 |
+| Next.js desde Cero · React · TypeScript | **NakaEats**, guía gastronómica | 25 |
 | Python desde Cero · pandas · FastAPI | **NakaData**, plataforma de datos | 25 |
 | Angular desde Cero · TypeScript · RxJS | **NakaGym**, gestión de un gimnasio | 24 |
+| PostgreSQL desde Cero · SQL · psql | **NakaMarket**, mercado de segunda mano | 25 |
 | IA para Desarrolladores · LLMs · n8n | **NakaDesk**, copiloto de un equipo | 22 |
 | Docker y Kubernetes · Compose · Helm | **NakaTicket**, venta de entradas | 22 |
+| Ciberseguridad desde Cero · Kali · OWASP · SIEM | **NakaShield**, programa de seguridad | 25 |
 | Azure desde Cero · CLI | **NakaShop**, tienda en la nube | 12 |
+| AWS desde Cero · CLI | **NakaStream**, plataforma de vídeo | 25 |
+| Entrevistas Full Stack · Java · Spring · React · SQL | **NakaHire**, dossier de entrevista | 35 |
 
-**180 capítulos · ~209 horas de estudio.**
+**340 capítulos · ~398 horas de estudio.**
 
 ---
 
@@ -101,7 +107,7 @@ capítulo es un objeto con sus metadatos, su caja de objetivo y sus **ocho acord
 
 ```
 public/contenido/
-├─ catalogo.json      56 kB   fichas de los 7 cursos + temario de los 158 capítulos
+├─ catalogo.json     112 kB   fichas de los 14 cursos + temario de los 340 capítulos
 ├─ java.json         950 kB   el curso entero
 ├─ react.json        1,2 MB
 └─ …
@@ -150,7 +156,7 @@ un Python 3.13, un Java 17 y un Node 22 auténticos. Es la **única** funcionali
 cumple tres condiciones: viene **desactivada**, no se contacta con nadie al cargar la página, y si el
 servicio desapareciera el laboratorio seguiría funcionando entero con el intérprete local.
 
-Todo esto se carga con `import()` diferido: los seis cursos que no tienen laboratorio nunca
+Todo esto se carga con `import()` diferido: los trece cursos que no tienen laboratorio nunca
 descargan ni el componente ni el intérprete.
 
 ---
@@ -177,7 +183,7 @@ Cubren lo que más duele si se rompe:
 
 ## `legacy/`
 
-Los ocho archivos originales (`index.html` y `cursos/*.html`) siguen ahí, **sin tocar**. Se abren con
+Los archivos originales (`index.html` y `cursos/*.html`) siguen ahí, **sin tocar**. Se abren con
 doble clic, funcionan sin servidor y comparten las claves de `localStorage` con la aplicación
 Angular, así que puedes ir y venir sin perder el progreso.
 

@@ -1,13 +1,13 @@
 # CURSOS · Guía de construcción
 
-Este repositorio es una **aplicación Angular** que sirve ocho cursos interactivos. Un curso = un
+Este repositorio es una **aplicación Angular** que sirve catorce cursos interactivos. Un curso = un
 proyecto continuo repartido en capítulos, con teoría y práctica en el mismo sitio.
 
 La guía tiene dos mitades y conviene no mezclarlas:
 
 - **Los principios pedagógicos y la anatomía de un capítulo (§1 y §5–§8) no han cambiado** con la
   migración. Describen el contenido, y el contenido es lo que da valor al repositorio.
-- **El motor sí ha cambiado por completo (§2–§4).** Antes era un `<script>` copiado ocho veces;
+- **El motor sí ha cambiado por completo (§2–§4).** Antes era un `<script>` copiado en cada curso;
   ahora es una aplicación Angular con una sola implementación de todo.
 
 ---
@@ -23,7 +23,7 @@ CURSOS/
 │  └─ features/      panel · curso · laboratorio · no-encontrado
 ├─ public/contenido/ El contenido, generado · un JSON por curso
 ├─ herramientas/     migrar-contenido.js (extrae y valida)
-└─ legacy/           Los 8 HTML originales · fuente del contenido
+└─ legacy/           Un HTML por curso · fuente del contenido
 ```
 
 Reglas de dependencia entre capas, en un solo sentido:
@@ -35,18 +35,27 @@ features ──► shared ──► core
 `core` no importa de `shared` ni de `features`. `shared` no importa de `features`. Un feature no
 importa de otro. Si te hace falta romperlo, lo que falta es una pieza en `core` o en `shared`.
 
-Cursos existentes:
+Cursos existentes (340 capítulos en total):
 
 | Curso | Proyecto guía | Capítulos |
 |---|---|---|
 | `algoritmia` | **AlgoNaka**, playbook de patrones | 25 |
 | `java` | **LibroTech**, gestión de librería | 25 |
 | `react` | **CineNaka**, catálogo de cine | 25 |
+| `reactnative` | **NakaTrip**, diario de viajes móvil | 25 |
+| `nextjs` | **NakaEats**, guía gastronómica | 25 |
 | `python` | **NakaData**, plataforma de datos | 25 |
 | `angular` | **NakaGym**, gestión de gimnasio | 24 |
+| `postgresql` | **NakaMarket**, mercado de segunda mano | 25 |
 | `ia` | **NakaDesk**, copiloto interno | 22 |
 | `docker` | **NakaTicket**, venta de entradas | 22 |
+| `ciberseguridad` | **NakaShield**, programa de seguridad | 25 |
 | `azure` | **NakaShop**, tienda online | 12 |
+| `aws` | **NakaStream**, plataforma de vídeo | 25 |
+| `entrevistas` | **NakaHire**, dossier de entrevista técnica | 35 |
+
+> `entrevistas` es el único curso con una anatomía distinta (preguntas y respuestas por tema en
+> lugar de proyecto continuo) y `algoritmia`, el único con laboratorios de código ejecutable.
 
 ---
 
@@ -74,7 +83,7 @@ Cursos existentes:
 
 ## 2. El motor · qué te da ya hecho
 
-Nada de esto se reimplementa por curso. Existe una sola vez y sirve para los ocho:
+Nada de esto se reimplementa por curso. Existe una sola vez y sirve para todos:
 
 | Pieza | Dónde |
 |---|---|
@@ -89,7 +98,7 @@ Nada de esto se reimplementa por curso. Existe una sola vez y sirve para los och
 | Menú lateral, telón en móvil, botón de volver arriba | `layout/` |
 
 **Antes de escribir código nuevo, comprueba que no está ya aquí.** El motor legacy estaba duplicado
-ocho veces; el objetivo de la migración fue precisamente que eso no vuelva a pasar.
+en cada curso; el objetivo de la migración fue precisamente que eso no vuelva a pasar.
 
 ---
 
@@ -288,13 +297,14 @@ inventes componentes nuevos sin añadirlos ahí.**
 
 ### Volumen esperado
 
-| Métrica | Curso corto (azure) | Curso completo (java) |
-|---|---|---|
-| Líneas de contenido por capítulo | ~500 | ~750 |
-| Bloques de código por capítulo | ~10 | ~17 |
-| Preguntas de autoevaluación | 5 por capítulo | 5 por capítulo |
-| Diagramas ASCII | ~2–3 por capítulo | ~2 por capítulo |
-| Entradas de glosario | 51 | 58 |
+| Métrica | Curso corto (azure) | Curso completo (java) | Referencia reciente (postgresql) |
+|---|---|---|---|
+| Líneas de contenido por capítulo | ~500 | ~750 | ~770 |
+| Bloques de código por capítulo | ~10 | ~17 | ~15 |
+| Preguntas de autoevaluación | 5 por capítulo | 5 por capítulo | 5 por capítulo |
+| Diagramas ASCII | ~2–3 por capítulo | ~2 por capítulo | ~4 por capítulo |
+| Entradas de glosario | 51 | 58 | 76 |
+| Entradas de chuleta | 14 | — | 21 |
 
 Un capítulo muy por debajo de esto está incompleto: falta teoría, faltan errores comunes o falta el
 *por qué* de los comandos.

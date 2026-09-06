@@ -54,6 +54,7 @@
   --b-reactnative:#84cc16;  --s-reactnative:#bef264;
   --b-ciberseguridad:#22d34c; --s-ciberseguridad:#86efac;
   --b-aws:        #ff9900;  --s-aws:        #ffb84d;
+  --b-postgresql: #336791;  --s-postgresql: #7fa8d4;
 }
 
 html[data-theme="dark"] {
@@ -101,6 +102,7 @@ html[data-theme="dark"] {
   --c-reactnative: #a3e635; --c-reactnative-rgb: 163, 230, 53;
   --c-ciberseguridad: #4ade80; --c-ciberseguridad-rgb: 74, 222, 128;
   --c-aws: #ffb84d;         --c-aws-rgb: 255, 184, 77;
+  --c-postgresql: #7fa8d4;  --c-postgresql-rgb: 127, 168, 212;
 }
 
 html[data-theme="light"] {
@@ -148,6 +150,7 @@ html[data-theme="light"] {
   --c-reactnative: #4d7c0f; --c-reactnative-rgb: 77, 124, 15;
   --c-ciberseguridad: #15803d; --c-ciberseguridad-rgb: 21, 128, 61;
   --c-aws: #a35a00;         --c-aws-rgb: 163, 90, 0;
+  --c-postgresql: #2a5a80;  --c-postgresql-rgb: 42, 90, 128;
 }
 
 /* ------------------------------------------------------------
@@ -172,6 +175,7 @@ html[data-curso="react"]      { --accent: var(--c-react);      --accent-rgb: var
 html[data-curso="reactnative"]{ --accent: var(--c-reactnative);--accent-rgb: var(--c-reactnative-rgb); }
 html[data-curso="ciberseguridad"]{ --accent: var(--c-ciberseguridad); --accent-rgb: var(--c-ciberseguridad-rgb); }
 html[data-curso="aws"]        { --accent: var(--c-aws);        --accent-rgb: var(--c-aws-rgb); }
+html[data-curso="postgresql"] { --accent: var(--c-postgresql); --accent-rgb: var(--c-postgresql-rgb); }
 
 /* ============================================================
    2. RESET Y BASE

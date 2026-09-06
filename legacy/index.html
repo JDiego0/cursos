@@ -46,6 +46,7 @@
   --b-reactnative:#84cc16; --s-reactnative:#bef264;
   --b-ciberseguridad:#22d34c; --s-ciberseguridad:#86efac;
   --b-aws:#ff9900;      --s-aws:#ffb84d;
+  --b-postgresql:#336791; --s-postgresql:#7fa8d4;
 }
 html[data-theme="dark"]{
   --bg:#111114;
@@ -78,6 +79,7 @@ html[data-theme="dark"]{
   --c-reactnative:#a3e635;
   --c-ciberseguridad:#4ade80;
   --c-aws:#ffb84d;
+  --c-postgresql:#7fa8d4;
 }
 html[data-theme="light"]{
   --bg:#ffffff;
@@ -110,6 +112,7 @@ html[data-theme="light"]{
   --c-reactnative:#4d7c0f;
   --c-ciberseguridad:#15803d;
   --c-aws:#a35a00;
+  --c-postgresql:#2a5a80;
 }
 
 /* ============================================================
@@ -748,7 +751,7 @@ const CURSOS = [
     name:'Entrevistas Full Stack', tech:'Java · Spring · React · SQL', icon:'🎯',
     proyecto:'NakaHire', proyectoDesc:'tu dossier de entrevista técnica',
     horas:38, caps:35, nivel:'Junior → Senior',
-    desc:'Preparación para <strong>entrevistas técnicas</strong> de desarrollador Full Stack. Cada tema empieza explicando el concepto y sigue con las <strong>preguntas reales</strong>: respuesta corta, explicación profunda, ejemplo y nivel Básico / Intermedio / Avanzado. De fundamentos y Java a Spring, SQL, React, seguridad, arquitectura e IA.',
+    desc:'Preparación para <strong>entrevistas técnicas</strong> de desarrollador Full Stack. Cada tema empieza explicando el concepto y sigue con las <strong>preguntas reales</strong>: respuesta corta, explicación profunda, ejemplo y nivel Básico / Intermedio / Avanzado. De fundamentos y Java a Spring, SQL, React, seguridad, arquitectura e IA — ',
     temas:['Java','Spring','SQL','React','HTTP','Seguridad','SOLID','IA'] },
 
   { id:'azure', file:'azure.html', key:'azure-nakashop-v1',
@@ -770,7 +773,14 @@ const CURSOS = [
     proyecto:'NakaStream', proyectoDesc:'una plataforma de vídeo bajo demanda en la nube',
     horas:28, caps:25, nivel:'Principiante → Avanzado',
     desc:'La nube líder explicada construyendo una plataforma de streaming: cuenta e IAM, control de costes, S3 y CloudFront, dominio propio con HTTPS, VPC, EC2 y autoescalado, RDS y DynamoDB, Lambda, API Gateway, Cognito, mensajería, contenedores en Fargate, observabilidad, seguridad e infraestructura como código con CDK.',
-    temas:['IAM','S3','CloudFront','VPC','EC2','RDS','DynamoDB','Lambda','Fargate','CDK'] }
+    temas:['IAM','S3','CloudFront','VPC','EC2','RDS','DynamoDB','Lambda','Fargate','CDK'] },
+
+  { id:'postgresql', file:'postgresql.html', key:'postgresql-nakamarket-v1',
+    name:'PostgreSQL desde Cero', tech:'PostgreSQL · SQL · psql', icon:'🐘',
+    proyecto:'NakaMarket', proyectoDesc:'la base de datos de un mercado de segunda mano',
+    horas:30, caps:25, nivel:'Principiante → Avanzado',
+    desc:'De <code>CREATE TABLE</code> a una base de datos en producción: tipos, restricciones, claves foráneas, <code>JOIN</code>, agregación, CTE y funciones de ventana; después <strong>lo que hace especial a PostgreSQL</strong> — <code>JSONB</code>, búsqueda de texto completo, rangos— y por último índices, <code>EXPLAIN ANALYZE</code>, <code>VACUUM</code>, particionado, transacciones, PL/pgSQL, triggers, RLS y copias de seguridad. Todo <strong>gratis y en tu propio equipo</strong>.',
+    temas:['Modelo relacional','JOIN','GROUP BY','Ventanas','JSONB','Búsqueda','Índices','EXPLAIN','Transacciones','RLS'] }
 ];
 
 /* La ruta real de cada curso es BASE + su nombre de archivo. Se resuelve una sola
@@ -834,6 +844,33 @@ const CAPS = {
   {n:21,s:'Build y despliegue',t:'Build y despliegue: NakaGym en producción',m:'Módulo 5 · Producción',h:'70 min',lv:'Avanzado',i:'🚀',c:'Configuraciones de build|Variables de entorno|Docker|CI/CD|Cabeceras y caché|CSP|Monitorización'},
   {n:22,s:'Arquitectura y migración',t:'Arquitectura por features y convivencia con código antiguo',m:'Módulo 6 · Nivel profesional',h:'65 min',lv:'Avanzado',i:'🏛',c:'Arquitectura por features|Barriles|Dependencias por capas|NgModule|Migraciones del CLI|Monorepo|Convenciones de equipo'},
   {n:23,s:'Cierre y siguientes pasos',t:'Cierre: lo que has construido y hacia dónde seguir',m:'Módulo 6 · Nivel profesional',h:'45 min',lv:'Avanzado',i:'🏁',c:'Repaso integral|Decisiones de arquitectura|Ecosistema Angular|Hacia dónde va el framework|Ruta de aprendizaje'}
+ ],
+ aws: [
+  {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano del proyecto NakaStream',m:'Módulo 1 · Fundamentos y cuenta',h:'55 min',lv:'Principiante',i:'🧰',c:'Cuenta AWS|Usuario root|Consola de AWS|AWS CLI v2|Perfil de credenciales|CloudShell|Capa gratuita'},
+  {n:1,s:'Regiones y etiquetas',t:'La nube por dentro: regiones, zonas y las etiquetas de NakaStream',m:'Módulo 1 · Fundamentos y cuenta',h:'60 min',lv:'Principiante',i:'🌎',c:'Región|Zona de disponibilidad|Edge location|Responsabilidad compartida|IaaS PaaS SaaS|Etiquetas|Resource Groups'},
+  {n:2,s:'IAM: usuarios, políticas y roles',t:'IAM: quién puede hacer qué en NakaStream',m:'Módulo 1 · Fundamentos y cuenta',h:'75 min',lv:'Principiante',i:'🔐',c:'Principal|Política JSON|Usuario y grupo|Rol|AssumeRole|Mínimo privilegio|Deny explícito|IAM Identity Center'},
+  {n:3,s:'Costes y presupuesto',t:'El dinero: capa gratuita, presupuesto y alarmas para NakaStream',m:'Módulo 1 · Fundamentos y cuenta',h:'55 min',lv:'Principiante',i:'💰',c:'Capa gratuita|Cost Explorer|AWS Budgets|Alarma de facturación|Cost allocation tags|Pricing Calculator|Savings Plans'},
+  {n:4,s:'S3: almacenamiento de objetos',t:'S3: donde viven los vídeos y las carátulas de NakaStream',m:'Módulo 2 · Almacenamiento y entrega',h:'70 min',lv:'Principiante',i:'🪣',c:'Bucket|Objeto|Clave|Clases de almacenamiento|Versionado|Bucket policy|Block Public Access|Ciclo de vida|Cifrado'},
+  {n:5,s:'CloudFront y web estática',t:'CloudFront: NakaStream servido desde 600 ciudades a la vez',m:'Módulo 2 · Almacenamiento y entrega',h:'70 min',lv:'Principiante',i:'🌍',c:'CDN|Edge location|Distribución|Origin Access Control|TTL y caché|Invalidación|Cache policy|Web estática en S3'},
+  {n:6,s:'Dominio y certificado',t:'Route 53 y ACM: nakastream.com con HTTPS de verdad',m:'Módulo 2 · Almacenamiento y entrega',h:'65 min',lv:'Intermedio',i:'🧭',c:'DNS|Zona alojada|Registro A y CNAME|Alias|TTL de DNS|ACM|Validación DNS|Políticas de enrutamiento'},
+  {n:7,s:'VPC, subredes y rutas',t:'VPC: la red privada donde vivirá el servidor de NakaStream',m:'Módulo 3 · Red e infraestructura',h:'75 min',lv:'Intermedio',i:'🕸',c:'VPC|CIDR|Subred pública y privada|Internet Gateway|Tabla de rutas|NAT Gateway|VPC Endpoint|Multi-AZ'},
+  {n:8,s:'Cortafuegos de la red',t:'Security Groups y NACLs: quién puede hablar con quién en NakaStream',m:'Módulo 3 · Red e infraestructura',h:'60 min',lv:'Intermedio',i:'🛡',c:'Security Group|Con estado|NACL|Sin estado|Regla de entrada y salida|Referencia entre grupos|Puertos|Flow Logs'},
+  {n:9,s:'EC2: servidores',t:'EC2: la primera máquina de NakaStream',m:'Módulo 3 · Red e infraestructura',h:'75 min',lv:'Intermedio',i:'💻',c:'Instancia|AMI|Tipo de instancia|EBS|User data|Metadata IMDSv2|Session Manager|Snapshot|Spot y On-Demand'},
+  {n:10,s:'ALB y Auto Scaling',t:'Balanceador y autoescalado: que NakaStream aguante un estreno',m:'Módulo 3 · Red e infraestructura',h:'75 min',lv:'Intermedio',i:'⚖️',c:'Application Load Balancer|Target group|Health check|Listener y reglas|Launch template|Auto Scaling Group|Política de escalado|Drenaje de conexiones'},
+  {n:11,s:'RDS: base de datos relacional',t:'RDS PostgreSQL: el catálogo de películas de NakaStream',m:'Módulo 4 · Datos',h:'75 min',lv:'Intermedio',i:'🗃',c:'RDS|Motor gestionado|Subnet group|Multi-AZ|Réplica de lectura|Backup y PITR|Parameter group|Aurora'},
+  {n:12,s:'DynamoDB: NoSQL',t:'DynamoDB: el histórico de visualizaciones de NakaStream',m:'Módulo 4 · Datos',h:'75 min',lv:'Intermedio',i:'🧬',c:'NoSQL|Clave de partición y ordenación|Query vs Scan|Índice GSI y LSI|On-demand y provisionada|TTL|Streams|Consistencia'},
+  {n:13,s:'Caché con Redis',t:'ElastiCache: que la portada de NakaStream no machaque la base de datos',m:'Módulo 4 · Datos',h:'65 min',lv:'Intermedio',i:'⚡',c:'Caché|Cache-aside|TTL|Invalidación|Redis vs Memcached|Estampida de caché|Serverless|Sesiones compartidas'},
+  {n:14,s:'Lambda y eventos',t:'Lambda: la primera pieza de NakaStream que no tiene servidor',m:'Módulo 5 · Serverless e integración',h:'70 min',lv:'Intermedio',i:'⚡',c:'Lambda|Serverless|Handler|Evento|Arranque en frío|Rol de ejecución|Trigger de S3|Concurrencia|Idempotencia'},
+  {n:15,s:'API Gateway',t:'API Gateway: la puerta pública de la API de NakaStream',m:'Módulo 5 · Serverless e integración',h:'70 min',lv:'Intermedio',i:'🚪',c:'API Gateway|HTTP API|REST API|Ruta|Etapa|CORS|Throttling|Caché de API|Proxy de Lambda|Payload'},
+  {n:16,s:'Usuarios con Cognito',t:'Cognito: registro, login y tokens para los usuarios de NakaStream',m:'Módulo 5 · Serverless e integración',h:'75 min',lv:'Avanzado',i:'🔐',c:'Cognito|User Pool|JWT|Token de acceso|Token de identidad|Autenticación|Autorización|Autorizador JWT|MFA|Grupos y claims'},
+  {n:17,s:'Colas y eventos',t:'SQS, SNS y EventBridge: desacoplar la ingesta de vídeo de NakaStream',m:'Módulo 5 · Serverless e integración',h:'75 min',lv:'Avanzado',i:'📨',c:'SQS|SNS|EventBridge|Cola|Fan-out|DLQ|Visibility timeout|Entrega al menos una vez|FIFO|Acoplamiento'},
+  {n:18,s:'Step Functions',t:'Step Functions: orquestar el pipeline de ingesta de NakaStream',m:'Módulo 5 · Serverless e integración',h:'70 min',lv:'Avanzado',i:'🎼',c:'Step Functions|Máquina de estados|ASL|Orquestación|Coreografía|Retry y Catch|Map|Choice|Saga|Express vs Standard'},
+  {n:19,s:'Contenedores y ECR',t:'ECR: empaquetar la API de catálogo de NakaStream en un contenedor',m:'Módulo 6 · Contenedores y operación',h:'70 min',lv:'Avanzado',i:'📦',c:'Contenedor|Imagen|Dockerfile|Capas|ECR|Etiqueta|Digest|Multi-stage|Escaneo de vulnerabilidades|Ciclo de vida'},
+  {n:20,s:'ECS Fargate',t:'ECS Fargate: ejecutar la API de NakaStream sin administrar servidores',m:'Módulo 6 · Contenedores y operación',h:'75 min',lv:'Avanzado',i:'🚢',c:'ECS|Fargate|Definición de tarea|Servicio|Rol de tarea|Rol de ejecución|Despliegue continuo|Autoescalado|Circuit breaker|Grupo de destino'},
+  {n:21,s:'Observabilidad',t:'CloudWatch, X-Ray y CloudTrail: saber qué pasa dentro de NakaStream',m:'Módulo 6 · Contenedores y operación',h:'70 min',lv:'Avanzado',i:'🔭',c:'Observabilidad|Métricas|Logs|Trazas|Logs Insights|Alarma|Percentil|SLO|X-Ray|CloudTrail'},
+  {n:22,s:'Seguridad y secretos',t:'Secrets Manager, KMS, WAF y GuardDuty: fortificar NakaStream',m:'Módulo 6 · Contenedores y operación',h:'75 min',lv:'Avanzado',i:'🛡',c:'Secrets Manager|Rotación|KMS|Sobre criptográfico|Cifrado en reposo|WAF|Regla gestionada|GuardDuty|Defensa en profundidad|Security Hub'},
+  {n:23,s:'Infraestructura como código',t:'CloudFormation y CDK: NakaStream entera como código',m:'Módulo 7 · Automatizar y entregar',h:'75 min',lv:'Avanzado',i:'🏗',c:'IaC|CloudFormation|Pila|Plantilla|Conjunto de cambios|Deriva|CDK|Constructo|Síntesis|Política de eliminación'},
+  {n:24,s:'CI/CD y cierre',t:'CI/CD con GitHub Actions y OIDC, y cómo borrar NakaStream entera',m:'Módulo 7 · Automatizar y entregar',h:'75 min',lv:'Avanzado',i:'🏁',c:'CI/CD|GitHub Actions|OIDC|Rol federado|Puerta de calidad|Despliegue por entornos|Prueba de humo|Rollback|Borrado de recursos|Coste'}
  ],
  azure: [
   {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano del proyecto',m:'Módulo 1 · Fundamentos',h:'30 min',lv:'Principiante',i:'🧰',c:'Cuenta Azure|Portal|Azure CLI|ARM|Cloud Shell'},
@@ -1014,6 +1051,33 @@ const CAPS = {
   {n:22,s:'Subida de ficheros',t:'Subida de fotos y almacenamiento de ficheros',m:'Módulo 6 · Integraciones',h:'70 min',lv:'Avanzado',i:'📤',c:'File y FormData|Números mágicos|Almacenamiento de objetos|URL prefirmada|sharp|EXIF'},
   {n:23,s:'Tests',t:'Tests: Vitest, Testing Library y Playwright',m:'Módulo 7 · Calidad y entrega',h:'70 min',lv:'Avanzado',i:'🧪',c:'Vitest|Testing Library|Playwright|Consultas por rol|storageState|Test de extremo a extremo'},
   {n:24,s:'Despliegue y cierre',t:'Despliegue y vida en producción: Vercel, Docker y observabilidad',m:'Módulo 7 · Calidad y entrega',h:'75 min',lv:'Avanzado',i:'🚀',c:'next build|Salida standalone|Dockerfile|Vercel|Integración continua|instrumentation.ts|Migraciones'}
+ ],
+ postgresql: [
+  {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano de NakaMarket',m:'Módulo 1 · Fundamentos',h:'45 min',lv:'Principiante',i:'🧰',c:'Base de datos|SGBD|PostgreSQL|Cliente y servidor|SQL|psql|pgAdmin|Clúster'},
+  {n:1,s:'Tablas y tipos de datos',t:'Tablas, columnas y tipos de datos: la tabla usuarios',m:'Módulo 1 · Fundamentos',h:'65 min',lv:'Principiante',i:'🧱',c:'CREATE TABLE|Tipo de dato|text|numeric|timestamptz|boolean|ALTER TABLE|Dominio del dato'},
+  {n:2,s:'El CRUD',t:'Insertar, leer, corregir y borrar: el CRUD sobre usuarios',m:'Módulo 1 · Fundamentos',h:'65 min',lv:'Principiante',i:'✏️',c:'INSERT|SELECT|UPDATE|DELETE|RETURNING|NULL|TRUNCATE|COPY'},
+  {n:3,s:'Filtros, orden y NULL',t:'Buscar de verdad: WHERE, ORDER BY, paginación y NULL',m:'Módulo 1 · Fundamentos',h:'70 min',lv:'Principiante',i:'🔎',c:'WHERE|Operadores|IN y BETWEEN|LIKE e ILIKE|IS NULL|coalesce|CASE|ORDER BY|LIMIT y OFFSET|DISTINCT'},
+  {n:4,s:'Restricciones e identidad',t:'Restricciones: que la base de datos rechace lo imposible',m:'Módulo 1 · Fundamentos',h:'70 min',lv:'Principiante',i:'🛡',c:'NOT NULL|DEFAULT|PRIMARY KEY|IDENTITY|Secuencia|UNIQUE|CHECK|Integridad|NOT VALID'},
+  {n:5,s:'Claves foráneas',t:'Claves foráneas: la tabla anuncios y su vendedor (1:N)',m:'Módulo 2 · El modelo relacional',h:'70 min',lv:'Principiante',i:'🔗',c:'FOREIGN KEY|Integridad referencial|1:N|ON DELETE|CASCADE|RESTRICT|Fila huérfana|Índice en la FK'},
+  {n:6,s:'JOIN',t:'JOIN: responder preguntas que cruzan varias tablas',m:'Módulo 2 · El modelo relacional',h:'75 min',lv:'Principiante',i:'🔀',c:'INNER JOIN|LEFT JOIN|FULL JOIN|CROSS JOIN|SELF JOIN|USING|Alias|Anti-join|Producto cartesiano'},
+  {n:7,s:'Relaciones N:M',t:'Relaciones N:M: categorías y favoritos con tablas puente',m:'Módulo 2 · El modelo relacional',h:'70 min',lv:'Intermedio',i:'🕸',c:'N:M|Tabla puente|Clave primaria compuesta|Autorreferencia|Jerarquía|Datos de la relación|UPSERT'},
+  {n:8,s:'Normalización y esquema',t:'Normalización y el esquema completo de NakaMarket',m:'Módulo 2 · El modelo relacional',h:'75 min',lv:'Intermedio',i:'📐',c:'1FN|2FN|3FN|Dependencia funcional|Redundancia|Desnormalización|generate_series|Datos de prueba'},
+  {n:9,s:'Agregación y GROUP BY',t:'Informes: GROUP BY, HAVING y funciones de agregado',m:'Módulo 3 · Consultas que responden preguntas',h:'70 min',lv:'Intermedio',i:'📊',c:'GROUP BY|HAVING|count|sum|avg|FILTER|string_agg|GROUPING SETS|percentile'},
+  {n:10,s:'Subconsultas y CTE',t:'Subconsultas, CTE y el árbol de categorías con WITH RECURSIVE',m:'Módulo 3 · Consultas que responden preguntas',h:'75 min',lv:'Intermedio',i:'🪆',c:'Subconsulta escalar|EXISTS|IN y ANY|Correlacionada|CTE (WITH)|MATERIALIZED|WITH RECURSIVE|LATERAL'},
+  {n:11,s:'Funciones de ventana',t:'Funciones de ventana: rankings, acumulados y comparativas',m:'Módulo 3 · Consultas que responden preguntas',h:'75 min',lv:'Intermedio',i:'🪟',c:'OVER|PARTITION BY|row_number|rank|lag y lead|Marco de ventana|Suma acumulada|ntile|WINDOW'},
+  {n:12,s:'Vistas y materializadas',t:'Vistas y vistas materializadas: el panel del vendedor',m:'Módulo 3 · Consultas que responden preguntas',h:'65 min',lv:'Intermedio',i:'🔭',c:'CREATE VIEW|Vista actualizable|WITH CHECK OPTION|MATERIALIZED VIEW|REFRESH CONCURRENTLY|Dependencias'},
+  {n:13,s:'Fechas y zonas horarias',t:'Fechas, intervalos y zonas horarias sin equivocarse',m:'Módulo 4 · Los tipos que hacen especial a PostgreSQL',h:'70 min',lv:'Intermedio',i:'🕐',c:'timestamptz|UTC|AT TIME ZONE|interval|date_trunc|generate_series|Rangos|EXCLUDE'},
+  {n:14,s:'Búsqueda de texto',t:'Texto: expresiones regulares, búsqueda completa y erratas',m:'Módulo 4 · Los tipos que hacen especial a PostgreSQL',h:'75 min',lv:'Intermedio',i:'🔤',c:'Funciones de texto|Expresiones regulares|tsvector|tsquery|ts_rank|GIN|unaccent|pg_trgm|Columna generada'},
+  {n:15,s:'JSONB y tipos propios',t:'JSONB, arrays, enums y UUID: atributos que cambian por categoría',m:'Módulo 4 · Los tipos que hacen especial a PostgreSQL',h:'75 min',lv:'Intermedio',i:'🧩',c:'jsonb|Operadores JSON|jsonpath|Índice GIN|Arrays|ENUM|DOMAIN|UUID|Tipo compuesto'},
+  {n:16,s:'Índices',t:'Índices: cómo PostgreSQL encuentra una fila sin leerlas todas',m:'Módulo 5 · Rendimiento y escala',h:'75 min',lv:'Intermedio',i:'⚡',c:'B-tree|Índice compuesto|Selectividad|Índice parcial|De expresión|INCLUDE|CONCURRENTLY|Índices inútiles'},
+  {n:17,s:'EXPLAIN ANALYZE',t:'EXPLAIN ANALYZE: leer un plan y arreglar lo que va lento',m:'Módulo 5 · Rendimiento y escala',h:'80 min',lv:'Avanzado',i:'🔬',c:'Planificador|Coste|Nodos del plan|Nested Loop|Hash Join|BUFFERS|Estimación|pg_stat_statements'},
+  {n:18,s:'VACUUM y mantenimiento',t:'MVCC, VACUUM y mantenimiento: por qué la tabla engorda sola',m:'Módulo 5 · Rendimiento y escala',h:'75 min',lv:'Avanzado',i:'🧹',c:'MVCC|Tuplas muertas|VACUUM|autovacuum|Bloat|TOAST|Wraparound|BRIN|REINDEX'},
+  {n:19,s:'Particionado',t:'Particionado: la tabla de eventos que no deja de crecer',m:'Módulo 5 · Rendimiento y escala',h:'75 min',lv:'Avanzado',i:'🗂',c:'PARTITION BY RANGE|LIST|HASH|Poda de particiones|ATTACH y DETACH|Clave de partición|Partición por defecto'},
+  {n:20,s:'Transacciones y bloqueos',t:'Transacciones, ACID y concurrencia: que el dinero no descuadre',m:'Módulo 6 · Integridad y lógica en la base de datos',h:'80 min',lv:'Avanzado',i:'🔐',c:'ACID|BEGIN y COMMIT|Niveles de aislamiento|Lectura no repetible|FOR UPDATE|Interbloqueo|SAVEPOINT|Bloqueos consultivos'},
+  {n:21,s:'PL/pgSQL',t:'PL/pgSQL: funciones y procedimientos dentro de la base de datos',m:'Módulo 6 · Integridad y lógica en la base de datos',h:'75 min',lv:'Avanzado',i:'⚙️',c:'Función y procedimiento|IMMUTABLE y STABLE|RETURNS TABLE|EXCEPTION|RAISE|SQL dinámico|SECURITY DEFINER|Cursores'},
+  {n:22,s:'Triggers y auditoría',t:'Triggers y auditoría: quién cambió qué, cuándo y desde dónde',m:'Módulo 6 · Integridad y lógica en la base de datos',h:'75 min',lv:'Avanzado',i:'🎣',c:'BEFORE y AFTER|FOR EACH ROW|NEW y OLD|WHEN|Auditoría|INSTEAD OF|Trigger de sentencia|NOTIFY'},
+  {n:23,s:'Roles, permisos y RLS',t:'Roles, permisos y seguridad a nivel de fila',m:'Módulo 7 · Operación y entrega',h:'75 min',lv:'Avanzado',i:'🛡',c:'Roles y grupos|GRANT y REVOKE|Esquemas|search_path|Privilegios por defecto|RLS|POLICY|Inyección SQL'},
+  {n:24,s:'Producción y cierre',t:'Copias de seguridad, migraciones y puesta en producción',m:'Módulo 7 · Operación y entrega',h:'80 min',lv:'Avanzado',i:'🚀',c:'pg_dump y pg_restore|PITR|Replicación|Migraciones|Docker|Monitorización|Conexiones|Actualizaciones'}
  ],
  python: [
   {n:0,s:'Entorno y plano del proyecto',t:'Python, tu entorno de trabajo y el plano de NakaData',m:'Módulo 1 · Fundamentos de Python',h:'55 min',lv:'Principiante',i:'🐍',c:'Intérprete|CPython|REPL|PATH|Entorno virtual|pip|Script .py'},
