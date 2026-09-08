@@ -47,6 +47,7 @@
   --b-ciberseguridad:#22d34c; --s-ciberseguridad:#86efac;
   --b-aws:#ff9900;      --s-aws:#ffb84d;
   --b-postgresql:#336791; --s-postgresql:#7fa8d4;
+  --b-typescript:#3178c6; --s-typescript:#7db3e8;
 }
 html[data-theme="dark"]{
   --bg:#111114;
@@ -80,6 +81,7 @@ html[data-theme="dark"]{
   --c-ciberseguridad:#4ade80;
   --c-aws:#ffb84d;
   --c-postgresql:#7fa8d4;
+  --c-typescript:#7db3e8;
 }
 html[data-theme="light"]{
   --bg:#ffffff;
@@ -113,6 +115,7 @@ html[data-theme="light"]{
   --c-ciberseguridad:#15803d;
   --c-aws:#a35a00;
   --c-postgresql:#2a5a80;
+  --c-typescript:#235a97;
 }
 
 /* ============================================================
@@ -780,7 +783,14 @@ const CURSOS = [
     proyecto:'NakaMarket', proyectoDesc:'la base de datos de un mercado de segunda mano',
     horas:30, caps:25, nivel:'Principiante → Avanzado',
     desc:'De <code>CREATE TABLE</code> a una base de datos en producción: tipos, restricciones, claves foráneas, <code>JOIN</code>, agregación, CTE y funciones de ventana; después <strong>lo que hace especial a PostgreSQL</strong> — <code>JSONB</code>, búsqueda de texto completo, rangos— y por último índices, <code>EXPLAIN ANALYZE</code>, <code>VACUUM</code>, particionado, transacciones, PL/pgSQL, triggers, RLS y copias de seguridad. Todo <strong>gratis y en tu propio equipo</strong>.',
-    temas:['Modelo relacional','JOIN','GROUP BY','Ventanas','JSONB','Búsqueda','Índices','EXPLAIN','Transacciones','RLS'] }
+    temas:['Modelo relacional','JOIN','GROUP BY','Ventanas','JSONB','Búsqueda','Índices','EXPLAIN','Transacciones','RLS'] },
+
+  { id:'typescript', file:'typescript.html', key:'typescript-nakaboard-v1',
+    name:'TypeScript desde Cero', tech:'TypeScript · Node · Zod', icon:'🔷',
+    proyecto:'NakaBoard', proyectoDesc:'el tablero de trabajo de un equipo',
+    horas:28, caps:25, nivel:'Principiante → Avanzado',
+    desc:'El sistema de tipos explicado construyendo una aplicación entera: tipos, uniones, genéricos, <code>keyof</code>, tipos utilitarios y uniones discriminadas; después lo avanzado —condicionales, <code>infer</code>, <em>mapped</em> y <em>template literal types</em>— y por último lo que hace falta para que un proyecto sobreviva: asincronía, validación en el borde con Zod, <code>Result</code>, <em>branded types</em>, una API con contrato compartido, pruebas de comportamiento <strong>y de tipos</strong>, monorepo y publicación en npm.',
+    temas:['Inferencia','Uniones','Genéricos','keyof','Discriminadas','satisfies','Zod','Result','Vitest','Monorepo'] }
 ];
 
 /* La ruta real de cada curso es BASE + su nombre de archivo. Se resuelve una sola
@@ -1161,6 +1171,33 @@ const CAPS = {
   {n:22,s:'Tests',t:'Que no se rompa: tests con Jest y Testing Library',m:'Módulo 6 · Calidad de producto',h:'70 min',lv:'Avanzado',i:'🧪',c:'Jest|React Native Testing Library|Consultas accesibles|jest.mock|waitFor|Cobertura|CI'},
   {n:23,s:'Development build y EAS',t:'Salir de Expo Go: development builds y EAS Build',m:'Módulo 7 · Entrega',h:'70 min',lv:'Avanzado',i:'🏗',c:'Development build|Prebuild|Config plugins|EAS Build|eas.json|Credenciales|Variables de entorno'},
   {n:24,s:'Publicación y OTA',t:'Publicar NakaTrip: tiendas, actualizaciones OTA y CI/CD',m:'Módulo 7 · Entrega',h:'75 min',lv:'Avanzado',i:'🚀',c:'EAS Submit|TestFlight|Google Play|Revisión|EAS Update|Canales|CI/CD|Dar de baja'}
+ ],
+ typescript: [
+  {n:0,s:'Preparación del entorno',t:'Preparación del entorno y plano de NakaBoard',m:'Módulo 1 · Fundamentos del tipado',h:'50 min',lv:'Principiante',i:'🧰',c:'TypeScript|Tipado estático|Compilador tsc|Node.js y npm|tsconfig.json|Borrado de tipos|Servidor de lenguaje|tsx'},
+  {n:1,s:'Primitivos e inferencia',t:'Los primeros datos de una tarea: primitivos, inferencia y anotaciones',m:'Módulo 1 · Fundamentos del tipado',h:'60 min',lv:'Principiante',i:'🔤',c:'string|number|boolean|Inferencia|Anotación|any|unknown|never|Aserción de tipo|Ampliación de literales'},
+  {n:2,s:'Interfaces y objetos',t:'La tarea como una sola cosa: objetos, interfaces y alias de tipo',m:'Módulo 1 · Fundamentos del tipado',h:'65 min',lv:'Principiante',i:'🧱',c:'Tipo objeto|interface|type|Propiedad opcional|readonly|extends|Intersección|Tipado estructural|Exceso de propiedades|Firma de índice'},
+  {n:3,s:'Uniones y estrechamiento',t:'Los cinco estados de una tarea: uniones, literales y estrechamiento',m:'Módulo 1 · Fundamentos del tipado',h:'70 min',lv:'Principiante',i:'🔀',c:'Unión|Tipo literal|Estrechamiento|typeof|in|Igualdad estricta|Análisis de flujo|Veracidad|Intersección'},
+  {n:4,s:'Arrays, tuplas y readonly',t:'Las listas del tablero: arrays, tuplas y datos inmutables',m:'Módulo 1 · Fundamentos del tipado',h:'65 min',lv:'Principiante',i:'📚',c:'Array|readonly T[]|Tupla|noUncheckedIndexedAccess|at()|Desestructuración|Rest y spread|Inmutabilidad|Varianza'},
+  {n:5,s:'Funciones tipadas',t:'Las operaciones del tablero: funciones tipadas de verdad',m:'Módulo 2 · Funciones y estructura del código',h:'65 min',lv:'Principiante',i:'⚙️',c:'Tipo de función|Parámetro opcional|Valor por defecto|Rest|Inferencia contextual|Sobrecarga|this|Retorno void|Función de orden superior'},
+  {n:6,s:'Módulos y estructura',t:'Poner orden: módulos, barriles y rutas que no dan miedo',m:'Módulo 2 · Funciones y estructura del código',h:'60 min',lv:'Principiante',i:'📦',c:'Módulo ES|export e import|Exportación por defecto|import type|Extensión .js|Barril|paths|Dependencia circular|verbatimModuleSyntax'},
+  {n:7,s:'strict y nulos',t:'strict de verdad: null, undefined y las ocho reglas que lo componen',m:'Módulo 2 · Funciones y estructura del código',h:'70 min',lv:'Intermedio',i:'🛡',c:'strict|strictNullChecks|noImplicitAny|strictFunctionTypes|useUnknownInCatchVariables|Operador !|Encadenamiento opcional|Fusión de nulos|El error del billón de dólares'},
+  {n:8,s:'as const y enums',t:'Constantes que no mienten: as const, enums y tipos derivados de valores',m:'Módulo 2 · Funciones y estructura del código',h:'60 min',lv:'Intermedio',i:'🔒',c:'as const|Ampliación de literales|enum|const enum|typeof|Derivar tipos de valores|Object.freeze|Un solo sitio de la verdad'},
+  {n:9,s:'Genéricos',t:'Genéricos: el Repositorio&lt;T&gt; que guarda cualquier entidad de NakaBoard',m:'Módulo 3 · El sistema de tipos en serio',h:'75 min',lv:'Intermedio',i:'🧬',c:'Parámetro de tipo|Genérico|Inferencia de argumentos de tipo|Restricción extends|Tipo por defecto|Interfaz genérica|Tipo de función genérica|Regla de los tres usos'},
+  {n:10,s:'keyof y acceso indexado',t:'keyof y acceso indexado: consultas que conocen los nombres de los campos',m:'Módulo 3 · El sistema de tipos en serio',h:'70 min',lv:'Intermedio',i:'🔑',c:'keyof|Acceso indexado|K extends keyof T|Object.keys tipado|Object.entries tipado|Unión de claves|Genéricos encadenados|Extract y Exclude'},
+  {n:11,s:'Tipos utilitarios',t:'Tipos utilitarios: los DTO de NakaBoard sin escribir nada dos veces',m:'Módulo 3 · El sistema de tipos en serio',h:'65 min',lv:'Intermedio',i:'🧰',c:'Partial|Required|Readonly|Pick|Omit|Record|Exclude|Extract|NonNullable|ReturnType|Parameters|DTO'},
+  {n:12,s:'Uniones discriminadas',t:'Uniones discriminadas: hacer imposibles los estados imposibles',m:'Módulo 3 · El sistema de tipos en serio',h:'70 min',lv:'Intermedio',i:'🎭',c:'Unión discriminada|Discriminante|switch exhaustivo|never|assertNever|Estados imposibles|Eventos del dominio|Máquina de estados'},
+  {n:13,s:'Guardas y satisfies',t:'Cruzar la frontera: guardas de tipo, funciones de aserción y satisfies',m:'Módulo 3 · El sistema de tipos en serio',h:'65 min',lv:'Intermedio',i:'🚧',c:'Predicado de tipo|valor is T|Función de aserción|asserts|satisfies|Guardas compuestas|filter con guarda|Guardas de unión discriminada'},
+  {n:14,s:'Condicionales e infer',t:'Tipos condicionales e infer: tipos que deciden y tipos que descomponen',m:'Módulo 4 · Tipos avanzados',h:'70 min',lv:'Avanzado',i:'🔮',c:'Tipo condicional|extends ?|Distributividad|infer|never en uniones|Tipos recursivos|Profundidad de recursión|NoInfer'},
+  {n:15,s:'Mapeados y plantillas',t:'Tipos mapeados y plantillas: la matriz de permisos y los colores que no mienten',m:'Módulo 4 · Tipos avanzados',h:'70 min',lv:'Avanzado',i:'🗺',c:'Tipo mapeado|Remapeo con as|Modificadores + y -|Template literal type|Uppercase y Capitalize|Matriz de permisos|Color hexadecimal|Eventos tipados'},
+  {n:16,s:'Clases',t:'Clases: cuándo compensan de verdad y cómo se tipan bien',m:'Módulo 4 · Tipos avanzados',h:'70 min',lv:'Intermedio',i:'🏛',c:'class|Modificadores de acceso|Campos privados con #|Propiedades de parámetro|abstract|implements|override|Captadores|Jerarquía de errores|Decoradores'},
+  {n:17,s:'Asincronía',t:'Asincronía tipada: promesas, async/await y errores que no se pierden',m:'Módulo 5 · TypeScript en ejecución',h:'75 min',lv:'Intermedio',i:'⏳',c:'Promise|async y await|Awaited|Promise.all|allSettled|Promesa flotante|AbortSignal|Concurrencia|Reintentos|Condición de carrera'},
+  {n:18,s:'Validación en el borde',t:'El borde del programa: validar lo que entra y derivar el tipo del esquema',m:'Módulo 5 · TypeScript en ejecución',h:'70 min',lv:'Avanzado',i:'🛃',c:'Validación en ejecución|Zod|z.infer|Esquema como fuente|safeParse|Transformaciones|Refinamientos|Errores por campo|Parse don\'t validate'},
+  {n:19,s:'Result y branded types',t:'Errores como valores y tipos con marca: Result&lt;T, E&gt; e identificadores que no se confunden',m:'Módulo 5 · TypeScript en ejecución',h:'70 min',lv:'Avanzado',i:'🏷',c:'Result|Errores como valores|Excepción frente a valor|mapear y encadenar|Branded types|Tipado nominal|Constructor inteligente|Unidades'},
+  {n:20,s:'API y cliente tipado',t:'NakaBoard en red: una API HTTP y un cliente que comparten el contrato',m:'Módulo 5 · TypeScript en ejecución',h:'80 min',lv:'Avanzado',i:'🌐',c:'Contrato compartido|Servidor HTTP|fetch tipado|Rutas tipadas|Serialización|Códigos de estado|Autorización en el servidor|Cliente derivado del contrato'},
+  {n:21,s:'Pruebas y linter',t:'Pruebas: comportamiento con Vitest, tipos con expectTypeOf y un linter que ve los tipos',m:'Módulo 6 · Calidad y producción',h:'75 min',lv:'Avanzado',i:'🧪',c:'Vitest|describe e it|Dobles de prueba|expectTypeOf|@ts-expect-error|Cobertura|ESLint con tipos|no-floating-promises|Pirámide de pruebas'},
+  {n:22,s:'Declaraciones .d.ts',t:'Declaraciones .d.ts: tipar lo que no trae tipos y ampliar lo que sí',m:'Módulo 6 · Calidad y producción',h:'65 min',lv:'Avanzado',i:'📜',c:'Archivo .d.ts|declare module|DefinitelyTyped|Ampliación de módulos|declare global|Tipos ambientales|skipLibCheck|Variables de entorno tipadas'},
+  {n:23,s:'Monorepo y rendimiento',t:'Dividir el proyecto: monorepo, referencias entre proyectos y compilaciones rápidas',m:'Módulo 6 · Calidad y producción',h:'70 min',lv:'Avanzado',i:'🏗',c:'Monorepo|npm workspaces|Project references|composite|Compilación incremental|tsc --build|extendedDiagnostics|generateTrace|Dependencias por capas'},
+  {n:24,s:'Entrega y cierre',t:'Entrega: empaquetar, publicar en npm, integración continua y cierre del curso',m:'Módulo 6 · Calidad y producción',h:'75 min',lv:'Avanzado',i:'🚀',c:'tsup y esbuild|ESM y CJS|exports|Versionado semántico|npm publish|GitHub Actions|Cambios incompatibles|Deprecación|Ruta de aprendizaje'}
  ],
 };
 /* __CAPS_FIN__ */

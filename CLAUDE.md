@@ -1,6 +1,6 @@
 # CURSOS · Guía de construcción
 
-Este repositorio es una **aplicación Angular** que sirve catorce cursos interactivos. Un curso = un
+Este repositorio es una **aplicación Angular** que sirve quince cursos interactivos. Un curso = un
 proyecto continuo repartido en capítulos, con teoría y práctica en el mismo sitio.
 
 La guía tiene dos mitades y conviene no mezclarlas:
@@ -35,7 +35,7 @@ features ──► shared ──► core
 `core` no importa de `shared` ni de `features`. `shared` no importa de `features`. Un feature no
 importa de otro. Si te hace falta romperlo, lo que falta es una pieza en `core` o en `shared`.
 
-Cursos existentes (342 capítulos en total):
+Cursos existentes (367 capítulos en total):
 
 | Curso | Proyecto guía | Capítulos |
 |---|---|---|
@@ -47,6 +47,7 @@ Cursos existentes (342 capítulos en total):
 | `python` | **NakaData**, plataforma de datos | 25 |
 | `angular` | **NakaGym**, gestión de gimnasio | 24 |
 | `postgresql` | **NakaMarket**, mercado de segunda mano | 25 |
+| `typescript` | **NakaBoard**, tablero de trabajo de un equipo | 25 |
 | `ia` | **NakaDesk**, copiloto interno | 22 |
 | `docker` | **NakaTicket**, venta de entradas | 22 |
 | `ciberseguridad` | **NakaShield**, programa de seguridad | 25 |
