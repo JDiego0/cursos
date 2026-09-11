@@ -790,7 +790,21 @@ const CURSOS = [
     proyecto:'NakaBoard', proyectoDesc:'el tablero de trabajo de un equipo',
     horas:28, caps:25, nivel:'Principiante → Avanzado',
     desc:'El sistema de tipos explicado construyendo una aplicación entera: tipos, uniones, genéricos, <code>keyof</code>, tipos utilitarios y uniones discriminadas; después lo avanzado —condicionales, <code>infer</code>, <em>mapped</em> y <em>template literal types</em>— y por último lo que hace falta para que un proyecto sobreviva: asincronía, validación en el borde con Zod, <code>Result</code>, <em>branded types</em>, una API con contrato compartido, pruebas de comportamiento <strong>y de tipos</strong>, monorepo y publicación en npm.',
-    temas:['Inferencia','Uniones','Genéricos','keyof','Discriminadas','satisfies','Zod','Result','Vitest','Monorepo'] }
+    temas:['Inferencia','Uniones','Genéricos','keyof','Discriminadas','satisfies','Zod','Result','Vitest','Monorepo'] },
+
+  { id:'arquitectura', file:'arquitectura.html', key:'arquitectura-nakaflow-v1',
+    name:'Arquitectura de Software', tech:'Java · Spring Boot · Arquitectura limpia', icon:'🏛',
+    proyecto:'NakaFlow', proyectoDesc:'un sistema de reservas con dominio rico',
+    horas:24, caps:16, nivel:'Intermedio → Avanzado',
+    desc:'Cómo estructurar una aplicación para que dure. Empieza por los cimientos —acoplamiento, cohesión y la dirección de las dependencias— y sube por las tres arquitecturas que de verdad se usan: <strong>por capas y MVC</strong>, <strong>hexagonal</strong> (puertos y adaptadores) y <strong>arquitectura limpia</strong> (la regla de dependencia y los círculos). Por el camino, SOLID aplicado, modelo de dominio rico frente a anémico, casos de uso, repositorios que no acoplan a la base de datos, DDD ligero, testing guiado por la arquitectura y —lo que casi nadie enseña— <strong>cuándo NO</strong> aplicar todo esto. Cierra refactorizando un proyecto real hacia arquitectura limpia, con monolito modular frente a microservicios y decisiones documentadas (ADR).',
+    temas:['Acoplamiento','SOLID','Por capas / MVC','Hexagonal','Arquitectura limpia','Dominio rico','Casos de uso','Repositorios','DDD','ADR'] },
+
+  { id:'modelado', file:'modelado.html', key:'modelado-nakaclinic-v1',
+    name:'Modelado y Diseño de Datos', tech:'MER · Normalización · Diseño relacional', icon:'📐',
+    proyecto:'NakaClinic', proyectoDesc:'un sistema de citas de una clínica',
+    horas:18, caps:14, nivel:'Principiante → Intermedio',
+    desc:'Lo que hay que definir y diseñar <strong>antes</strong> de empezar a programar. Empieza por el análisis —convertir la petición del cliente en requisitos y descubrir las entidades del dominio— y avanza por el <strong>Modelo Entidad-Relación</strong>: entidades, atributos y claves, relaciones y <strong>cardinalidad</strong> (1:1, 1:N, N:M), notaciones de diagrama (Chen y pata de gallo) y jerarquías (EER). Después, del modelo al esquema: transformación a tablas, claves foráneas e integridad, y <strong>normalización</strong> (1FN–3FN y BCNF) para que cada dato viva en un solo sitio. Cierra con antipatrones a evitar, el diccionario de datos y el diseño inicial completo, listo para construir. Curso agnóstico de motor: el prólogo de <em>PostgreSQL</em> y <em>Arquitectura</em>.',
+    temas:['Requisitos','Entidades y claves','Cardinalidad','MER y diagramas','EER','Tablas','Integridad','Normalización','Antipatrones','Diccionario de datos'] }
 ];
 
 /* La ruta real de cada curso es BASE + su nombre de archivo. Se resuelve una sola
