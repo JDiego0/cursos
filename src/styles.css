@@ -58,6 +58,7 @@
   --b-typescript: #3178c6;  --s-typescript: #7db3e8;
   --b-arquitectura:#8b5cf6;  --s-arquitectura:#c4b5fd;
   --b-modelado:#0d9488;  --s-modelado:#5eead4;
+  --b-redes:#eab308;  --s-redes:#fde047;
 }
 
 html[data-theme="dark"] {
@@ -109,6 +110,7 @@ html[data-theme="dark"] {
   --c-typescript: #7db3e8;  --c-typescript-rgb: 125, 179, 232;
   --c-arquitectura: #c4b5fd; --c-arquitectura-rgb: 196, 181, 253;
   --c-modelado: #5eead4; --c-modelado-rgb: 94, 234, 212;
+  --c-redes: #fde047; --c-redes-rgb: 253, 224, 71;
 }
 
 html[data-theme="light"] {
@@ -160,6 +162,7 @@ html[data-theme="light"] {
   --c-typescript: #235a97;  --c-typescript-rgb: 35, 90, 151;
   --c-arquitectura: #6d28d9; --c-arquitectura-rgb: 109, 40, 217;
   --c-modelado: #0f766e; --c-modelado-rgb: 15, 118, 110;
+  --c-redes: #a16207; --c-redes-rgb: 161, 98, 7;
 }
 
 /* ------------------------------------------------------------
@@ -188,6 +191,7 @@ html[data-curso="postgresql"] { --accent: var(--c-postgresql); --accent-rgb: var
 html[data-curso="typescript"] { --accent: var(--c-typescript); --accent-rgb: var(--c-typescript-rgb); }
 html[data-curso="arquitectura"]{ --accent: var(--c-arquitectura); --accent-rgb: var(--c-arquitectura-rgb); }
 html[data-curso="modelado"]{ --accent: var(--c-modelado); --accent-rgb: var(--c-modelado-rgb); }
+html[data-curso="redes"]{ --accent: var(--c-redes); --accent-rgb: var(--c-redes-rgb); }
 
 /* ============================================================
    2. RESET Y BASE
