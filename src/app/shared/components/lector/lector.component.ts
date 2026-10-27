@@ -24,8 +24,6 @@ const CLASE_ACTIVO = 'leyendo';
 
 /* Dónde se paró cada capítulo, por `clave`. */
 const CLAVE_MARCAS = 'cursos-lector-posicion-v1';
-/* Ancho del botón «Leer desde aquí» más su separación del texto. */
-const HUECO_BOTON = 34;
 
 interface Bloque {
   el: HTMLElement;
@@ -38,13 +36,6 @@ type Estado = 'parado' | 'sonando' | 'pausado';
 interface Marca {
   indice: number;
   seccion: string;
-}
-
-/** El botón flotante, colocado junto al bloque que tiene debajo el puntero. */
-interface Senalado {
-  el: HTMLElement;
-  top: number;
-  left: number;
 }
 
 /**
@@ -67,6 +58,8 @@ export class LectorComponent {
   readonly clave = input<unknown>();
 
   protected readonly voz = inject(VozService);
+  /** Para que el capítulo no pinte botones ▶ en un navegador sin voz. */
+  readonly disponible = this.voz.disponible;
   private readonly almacen = inject(AlmacenamientoService);
   protected readonly VELOCIDADES = VELOCIDADES;
 
@@ -78,7 +71,6 @@ export class LectorComponent {
 
   /** Dónde se quedó la última lectura de este capítulo, si no llegó al final. */
   protected readonly guardada = signal<Marca | null>(null);
-  protected readonly senalado = signal<Senalado | null>(null);
 
   protected readonly posicion = computed(() => {
     const bloque = this.bloques()[this.indice()];
@@ -90,7 +82,6 @@ export class LectorComponent {
       const clave = String(this.clave());
       untracked(() => {
         this.detener();
-        this.senalado.set(null);
         this.guardada.set(this.leerMarcas()[clave] ?? null);
       });
     });
@@ -102,22 +93,6 @@ export class LectorComponent {
       if (!bloque) return;
       const marca = { indice: this.indice(), seccion: bloque.seccion };
       untracked(() => this.guardarMarca(String(this.clave()), marca));
-    });
-
-    /* Un solo botón que se mueve al bloque señalado, en vez de uno por
-       párrafo: no hay que tocar el contenido ni pintar cientos de botones.
-       `pointerover` también salta al tocar en móvil, así que sirve para
-       los dos casos. */
-    effect((alLimpiar) => {
-      const raiz = this.raiz();
-      const alPasar = (e: PointerEvent) => this.senalar(e.target);
-      const alSalir = () => this.senalado.set(null);
-      raiz.addEventListener('pointerover', alPasar);
-      raiz.addEventListener('pointerleave', alSalir);
-      alLimpiar(() => {
-        raiz.removeEventListener('pointerover', alPasar);
-        raiz.removeEventListener('pointerleave', alSalir);
-      });
     });
 
     /* Cambiar de voz o de velocidad se oye al momento: se repite el
@@ -156,10 +131,16 @@ export class LectorComponent {
     this.ir(bloques, indice < bloques.length ? indice : 0);
   }
 
-  /** Lee desde el bloque señalado, esté sonando, en pausa o parado. */
-  protected leerDesde(el: HTMLElement): void {
+  /**
+   * Lee desde el principio del acordeón `seccion` y sigue hasta el
+   * final del capítulo, esté el lector sonando, en pausa o parado.
+   * El primer bloque es el título del acordeón: se anuncia solo.
+   */
+  leerSeccion(seccion: number): void {
+    const acordeon = this.raiz().querySelectorAll('app-acordeon')[seccion];
+    if (!acordeon) return;
     const bloques = this.estado() === 'parado' ? this.extraer() : this.bloques();
-    const indice = bloques.findIndex((b) => b.el === el);
+    const indice = bloques.findIndex((b) => acordeon.contains(b.el));
     if (indice >= 0) this.ir(bloques, indice);
   }
 
@@ -267,41 +248,6 @@ export class LectorComponent {
     const titulo = el.closest('app-acordeon')?.querySelector('summary .ttl')?.textContent;
     if (titulo) return prepararParaVoz(titulo);
     return el.closest('.goal') ? 'Objetivo' : 'Introducción';
-  }
-
-  private senalar(objetivo: EventTarget | null): void {
-    const el = this.bloqueDe(objetivo);
-    /* Sobre un hueco entre bloques o sobre el propio botón, el botón
-       se queda donde está: si no, se escaparía al ir a pulsarlo. */
-    if (!el) return;
-
-    const raiz = this.raiz().getBoundingClientRect();
-    const caja = el.getBoundingClientRect();
-    const izquierda = caja.left - raiz.left;
-    /* En el margen izquierdo si cabe; en móvil no hay margen y se
-       sube a la esquina superior derecha del bloque. */
-    const senalado =
-      izquierda >= HUECO_BOTON
-        ? { el, top: caja.top - raiz.top, left: izquierda - HUECO_BOTON }
-        : { el, top: caja.top - raiz.top - 24, left: caja.right - raiz.left - 28 };
-
-    const previo = this.senalado();
-    if (previo?.el === el && previo.top === senalado.top && previo.left === senalado.left) return;
-    this.senalado.set(senalado);
-  }
-
-  /** El bloque que leería `extraer` para este punto del contenido. */
-  private bloqueDe(objetivo: EventTarget | null): HTMLElement | null {
-    if (!(objetivo instanceof Element)) return null;
-    const raiz = this.raiz();
-    let el = objetivo.closest<HTMLElement>(LEGIBLE);
-    if (!el || !raiz.contains(el) || el.closest(EXCLUIDO)) return null;
-    /* Igual que en `extraer`: el bloque es el `LEGIBLE` más externo. */
-    for (let padre = el.parentElement?.closest<HTMLElement>(LEGIBLE); padre && raiz.contains(padre); ) {
-      el = padre;
-      padre = padre.parentElement?.closest<HTMLElement>(LEGIBLE);
-    }
-    return el;
   }
 
   private leerMarcas(): Record<string, Marca> {

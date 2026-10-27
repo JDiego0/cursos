@@ -1,18 +1,4 @@
 @if (voz.disponible) {
-  @if (senalado(); as s) {
-    <button
-      class="desde-aqui"
-      type="button"
-      title="Leer desde aquí"
-      aria-label="Leer desde aquí"
-      [style.top.px]="s.top"
-      [style.left.px]="s.left"
-      (click)="leerDesde(s.el)"
-    >
-      ▶
-    </button>
-  }
-
   @if (estado() === 'parado') {
     <div class="inicio">
       @if (guardada(); as g) {
@@ -25,7 +11,7 @@
           🎧 Escuchar el capítulo
         </button>
       }
-      <span class="pista">o pulsa ▶ junto a cualquier párrafo</span>
+      <span class="pista">o pulsa ▶ en el tema por el que quieras empezar</span>
     </div>
   } @else {
     <div class="barra" role="region" aria-label="Lector en voz alta">

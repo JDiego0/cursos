@@ -1,7 +1,7 @@
 @if (capitulo(); as cap) {
   <div class="crumb">{{ cap.modulo }} · Capítulo {{ cap.num }}</div>
 
-  <div #cuerpo class="cuerpo">
+  <div #cuerpo>
   <h1 class="ch-title"><span class="ico">{{ cap.icono }}</span>{{ cap.titulo }}</h1>
 
   <div class="chips">
@@ -12,7 +12,7 @@
     }
   </div>
 
-  <app-lector [raiz]="cuerpo" [clave]="cursoId() + '/' + cap.num" />
+  <app-lector #lector [raiz]="cuerpo" [clave]="cursoId() + '/' + cap.num" />
 
   <div class="progreso-cap">
     <div class="lbl">
@@ -31,6 +31,19 @@
       [abierto]="abiertos()[i]"
       (abiertoChange)="alAbrir(i, $event)"
     >
+      @if (lector.disponible) {
+        <!-- Dentro del <summary>: sin preventDefault, pulsarlo también plegaría el acordeón. -->
+        <button
+          accion
+          class="leer-seccion"
+          type="button"
+          title="Escuchar desde este tema"
+          aria-label="Escuchar desde este tema"
+          (click)="$event.preventDefault(); $event.stopPropagation(); lector.leerSeccion(i)"
+        >
+          ▶
+        </button>
+      }
       <div [appContenido]="acc.html" (hidratado)="montarLaboratorios($event)"></div>
     </app-acordeon>
   }

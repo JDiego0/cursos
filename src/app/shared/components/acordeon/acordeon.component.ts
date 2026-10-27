@@ -15,6 +15,7 @@ import { ChangeDetectionStrategy, Component, input, model } from '@angular/core'
   template: `
     <details class="acc" [open]="abierto()" (toggle)="alAlternar($event)">
       <summary>
+        <ng-content select="[accion]" />
         <span class="ttl">{{ titulo() }}</span>
         @if (leido()) {
           <span class="tick">✓ leído</span>

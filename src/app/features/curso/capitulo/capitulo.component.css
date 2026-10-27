@@ -82,7 +82,22 @@
   }
 }
 
-/* Referencia del botón «Leer desde aquí» del lector. */
-.cuerpo {
-  position: relative;
+.leer-seccion {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--t), color var(--t), transform var(--t);
+}
+
+.leer-seccion:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+  transform: scale(1.1);
 }
