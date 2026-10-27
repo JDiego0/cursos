@@ -523,6 +523,16 @@ ol.steps ul {
   margin-bottom: 0;
 }
 
+/* --- Bloque que está leyendo el lector en voz alta ---
+   Global porque marca elementos del contenido, que entra por
+   [innerHTML] y no lo alcanza el estilo del componente. */
+.leyendo {
+  background: rgba(var(--accent-rgb), 0.13);
+  box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.13);
+  border-radius: 3px;
+  transition: background var(--t), box-shadow var(--t);
+}
+
 /* --- Tablas --- */
 .tbl-wrap {
   overflow-x: auto;

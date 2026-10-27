@@ -1,0 +1,44 @@
+@if (voz.disponible) {
+  @if (estado() === 'parado') {
+    <button class="btn escuchar" type="button" (click)="alternar()" title="Leer el capítulo en voz alta">
+      🎧 Escuchar el capítulo
+    </button>
+  } @else {
+    <div class="barra" role="region" aria-label="Lector en voz alta">
+      <div class="controles">
+        <button class="icono" type="button" title="Bloque anterior" aria-label="Bloque anterior" (click)="saltar(-1)">⏮</button>
+        <button
+          class="icono principal"
+          type="button"
+          [title]="estado() === 'sonando' ? 'Pausar' : 'Reanudar'"
+          [attr.aria-label]="estado() === 'sonando' ? 'Pausar' : 'Reanudar'"
+          (click)="alternar()"
+        >
+          {{ estado() === 'sonando' ? '❚❚' : '▶' }}
+        </button>
+        <button class="icono" type="button" title="Bloque siguiente" aria-label="Bloque siguiente" (click)="saltar(1)">⏭</button>
+        <button class="icono" type="button" title="Detener" aria-label="Detener" (click)="detener()">■</button>
+      </div>
+
+      <div class="donde">
+        <span class="seccion">{{ posicion().seccion }}</span>
+        <span class="cuenta">{{ posicion().actual }} / {{ posicion().total }}</span>
+      </div>
+
+      <div class="ajustes">
+        <select aria-label="Velocidad" (change)="elegirVelocidad($event)">
+          @for (v of VELOCIDADES; track v) {
+            <option [value]="v" [selected]="v === voz.velocidad()">{{ v }}×</option>
+          }
+        </select>
+        @if (voz.voces().length > 1) {
+          <select class="voces" aria-label="Voz" (change)="elegirVoz($event)">
+            @for (v of voz.voces(); track v.name) {
+              <option [value]="v.name" [selected]="v.name === voz.voz()?.name">{{ etiqueta(v) }}</option>
+            }
+          </select>
+        }
+      </div>
+    </div>
+  }
+}

@@ -16,6 +16,7 @@ import { Router, RouterLink } from '@angular/router';
 import { RUTAS } from '@core/rutas';
 import { ProgresoStore } from '@core/state/progreso.store';
 import { AcordeonComponent } from '@shared/components/acordeon/acordeon.component';
+import { LectorComponent } from '@shared/components/lector/lector.component';
 import { ContenidoDirective } from '@shared/directives/contenido.directive';
 import { HtmlSeguroPipe } from '@shared/pipes/html-seguro.pipe';
 import { NivelClasePipe } from '@shared/pipes/nivel.pipe';
@@ -35,7 +36,7 @@ import { CursoActualStore } from '../curso-actual.store';
 @Component({
   selector: 'app-capitulo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, AcordeonComponent, ContenidoDirective, HtmlSeguroPipe, NivelClasePipe],
+  imports: [RouterLink, AcordeonComponent, LectorComponent, ContenidoDirective, HtmlSeguroPipe, NivelClasePipe],
   templateUrl: './capitulo.component.html',
   styleUrl: './capitulo.component.css',
 })

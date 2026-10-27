@@ -1,6 +1,7 @@
 @if (capitulo(); as cap) {
   <div class="crumb">{{ cap.modulo }} · Capítulo {{ cap.num }}</div>
 
+  <div #cuerpo>
   <h1 class="ch-title"><span class="ico">{{ cap.icono }}</span>{{ cap.titulo }}</h1>
 
   <div class="chips">
@@ -10,6 +11,8 @@
       <span class="chip key">{{ concepto }}</span>
     }
   </div>
+
+  <app-lector [raiz]="cuerpo" [clave]="cursoId() + '/' + cap.num" />
 
   <div class="progreso-cap">
     <div class="lbl">
@@ -31,6 +34,7 @@
       <div [appContenido]="acc.html" (hidratado)="montarLaboratorios($event)"></div>
     </app-acordeon>
   }
+  </div>
 
   <div class="barra-completar">
     <span class="txt">
