@@ -81,3 +81,8 @@
     flex-direction: column;
   }
 }
+
+/* Referencia del botón «Leer desde aquí» del lector. */
+.cuerpo {
+  position: relative;
+}

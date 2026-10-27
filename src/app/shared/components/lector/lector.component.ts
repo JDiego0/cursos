@@ -10,14 +10,22 @@ import {
   untracked,
 } from '@angular/core';
 
+import { AlmacenamientoService } from '@core/services/almacenamiento.service';
 import { VELOCIDADES, VozService, prepararParaVoz, trocear } from '@core/services/voz.service';
 
-/** Lo que se lee: prosa. Código, tablas y diagramas no se entienden de oído. */
-const LEGIBLE = 'h1, h2, h3, h4, p, li, dt, dd, summary .ttl, .note > b.t, .q-text';
+/** Lo que se lee: prosa. Código, tablas y diagramas no se entienden de oído.
+    Los títulos de las tarjetas (`.tag`, `.svc`) son texto suelto dentro
+    de un `<div>`: sin nombrarlos aquí, de cada tarjeta sólo sonaba el cuerpo. */
+const LEGIBLE = 'h1, h2, h3, h4, p, li, dt, dd, summary .ttl, .note > b.t, .card > .tag, .card > .svc, .q-text';
 /* Las respuestas de la autoevaluación tampoco: leerlas las destripa. */
 const EXCLUIDO = '.code-block, pre, .code-note, .diagram, .tbl-wrap, table, .q-ans, .lab, .hint, .sol, app-lector';
 
 const CLASE_ACTIVO = 'leyendo';
+
+/* Dónde se paró cada capítulo, por `clave`. */
+const CLAVE_MARCAS = 'cursos-lector-posicion-v1';
+/* Ancho del botón «Leer desde aquí» más su separación del texto. */
+const HUECO_BOTON = 34;
 
 interface Bloque {
   el: HTMLElement;
@@ -26,6 +34,18 @@ interface Bloque {
 }
 
 type Estado = 'parado' | 'sonando' | 'pausado';
+
+interface Marca {
+  indice: number;
+  seccion: string;
+}
+
+/** El botón flotante, colocado junto al bloque que tiene debajo el puntero. */
+interface Senalado {
+  el: HTMLElement;
+  top: number;
+  left: number;
+}
 
 /**
  * Lee en voz alta el capítulo que hay dentro de `raiz`, bloque a
@@ -47,6 +67,7 @@ export class LectorComponent {
   readonly clave = input<unknown>();
 
   protected readonly voz = inject(VozService);
+  private readonly almacen = inject(AlmacenamientoService);
   protected readonly VELOCIDADES = VELOCIDADES;
 
   protected readonly estado = signal<Estado>('parado');
@@ -55,6 +76,10 @@ export class LectorComponent {
   /* Fragmento dentro del bloque: no lo pinta nadie, pero es estado. */
   private readonly fragmento = signal(0);
 
+  /** Dónde se quedó la última lectura de este capítulo, si no llegó al final. */
+  protected readonly guardada = signal<Marca | null>(null);
+  protected readonly senalado = signal<Senalado | null>(null);
+
   protected readonly posicion = computed(() => {
     const bloque = this.bloques()[this.indice()];
     return { seccion: bloque?.seccion ?? '', actual: this.indice() + 1, total: this.bloques().length };
@@ -62,8 +87,37 @@ export class LectorComponent {
 
   constructor() {
     effect(() => {
-      this.clave();
-      untracked(() => this.detener());
+      const clave = String(this.clave());
+      untracked(() => {
+        this.detener();
+        this.senalado.set(null);
+        this.guardada.set(this.leerMarcas()[clave] ?? null);
+      });
+    });
+
+    /* Se guarda en cada bloque y no sólo al detener: si el alumno
+       cierra la pestaña a media lectura, también debe poder seguir. */
+    effect(() => {
+      const bloque = this.bloques()[this.indice()];
+      if (!bloque) return;
+      const marca = { indice: this.indice(), seccion: bloque.seccion };
+      untracked(() => this.guardarMarca(String(this.clave()), marca));
+    });
+
+    /* Un solo botón que se mueve al bloque señalado, en vez de uno por
+       párrafo: no hay que tocar el contenido ni pintar cientos de botones.
+       `pointerover` también salta al tocar en móvil, así que sirve para
+       los dos casos. */
+    effect((alLimpiar) => {
+      const raiz = this.raiz();
+      const alPasar = (e: PointerEvent) => this.senalar(e.target);
+      const alSalir = () => this.senalado.set(null);
+      raiz.addEventListener('pointerover', alPasar);
+      raiz.addEventListener('pointerleave', alSalir);
+      alLimpiar(() => {
+        raiz.removeEventListener('pointerover', alPasar);
+        raiz.removeEventListener('pointerleave', alSalir);
+      });
     });
 
     /* Cambiar de voz o de velocidad se oye al momento: se repite el
@@ -87,14 +141,26 @@ export class LectorComponent {
       return;
     }
     if (estado === 'parado') {
-      const bloques = this.extraer();
-      if (!bloques.length) return;
-      this.bloques.set(bloques);
-      this.indice.set(this.primeroEnPantalla(bloques));
-      this.fragmento.set(0);
+      this.empezar(this.guardada()?.indice ?? 0);
+      return;
     }
     this.estado.set('sonando');
     this.leerActual();
+  }
+
+  protected empezar(indice: number): void {
+    const bloques = this.extraer();
+    if (!bloques.length) return;
+    /* Si el contenido cambió desde que se guardó, la marca puede
+       apuntar más allá del final: mejor empezar que no sonar. */
+    this.ir(bloques, indice < bloques.length ? indice : 0);
+  }
+
+  /** Lee desde el bloque señalado, esté sonando, en pausa o parado. */
+  protected leerDesde(el: HTMLElement): void {
+    const bloques = this.estado() === 'parado' ? this.extraer() : this.bloques();
+    const indice = bloques.findIndex((b) => b.el === el);
+    if (indice >= 0) this.ir(bloques, indice);
   }
 
   protected saltar(paso: 1 | -1): void {
@@ -108,6 +174,8 @@ export class LectorComponent {
 
   protected detener(): void {
     this.voz.callar();
+    const bloque = this.bloques()[this.indice()];
+    if (bloque) this.guardada.set({ indice: this.indice(), seccion: bloque.seccion });
     this.estado.set('parado');
     /* Todos, no sólo el actual: al acabar el capítulo el índice ya
        apunta más allá del último y su resaltado quedaría puesto. */
@@ -135,9 +203,20 @@ export class LectorComponent {
     return `${nombre}${natural} · ${v.lang}`;
   }
 
+  private ir(bloques: Bloque[], indice: number): void {
+    this.bloques.set(bloques);
+    this.indice.set(indice);
+    this.fragmento.set(0);
+    this.estado.set('sonando');
+    this.leerActual();
+  }
+
   private leerActual(): void {
     const bloque = this.bloques()[this.indice()];
     if (!bloque) {
+      /* Capítulo leído entero: la próxima vez se empieza de cero. */
+      this.guardarMarca(String(this.clave()), null);
+      this.guardada.set(null);
       this.detener();
       return;
     }
@@ -190,17 +269,51 @@ export class LectorComponent {
     return el.closest('.goal') ? 'Objetivo' : 'Introducción';
   }
 
-  /**
-   * Si el alumno ya bajó por el capítulo, empieza por lo que tiene
-   * delante en vez de devolverle al título.
-   */
-  private primeroEnPantalla(bloques: Bloque[]): number {
-    if (scrollY < 200) return 0;
-    const i = bloques.findIndex((b) => {
-      const caja = b.el.getBoundingClientRect();
-      return b.el.getClientRects().length > 0 && caja.top >= 70;
-    });
-    return Math.max(i, 0);
+  private senalar(objetivo: EventTarget | null): void {
+    const el = this.bloqueDe(objetivo);
+    /* Sobre un hueco entre bloques o sobre el propio botón, el botón
+       se queda donde está: si no, se escaparía al ir a pulsarlo. */
+    if (!el) return;
+
+    const raiz = this.raiz().getBoundingClientRect();
+    const caja = el.getBoundingClientRect();
+    const izquierda = caja.left - raiz.left;
+    /* En el margen izquierdo si cabe; en móvil no hay margen y se
+       sube a la esquina superior derecha del bloque. */
+    const senalado =
+      izquierda >= HUECO_BOTON
+        ? { el, top: caja.top - raiz.top, left: izquierda - HUECO_BOTON }
+        : { el, top: caja.top - raiz.top - 24, left: caja.right - raiz.left - 28 };
+
+    const previo = this.senalado();
+    if (previo?.el === el && previo.top === senalado.top && previo.left === senalado.left) return;
+    this.senalado.set(senalado);
+  }
+
+  /** El bloque que leería `extraer` para este punto del contenido. */
+  private bloqueDe(objetivo: EventTarget | null): HTMLElement | null {
+    if (!(objetivo instanceof Element)) return null;
+    const raiz = this.raiz();
+    let el = objetivo.closest<HTMLElement>(LEGIBLE);
+    if (!el || !raiz.contains(el) || el.closest(EXCLUIDO)) return null;
+    /* Igual que en `extraer`: el bloque es el `LEGIBLE` más externo. */
+    for (let padre = el.parentElement?.closest<HTMLElement>(LEGIBLE); padre && raiz.contains(padre); ) {
+      el = padre;
+      padre = padre.parentElement?.closest<HTMLElement>(LEGIBLE);
+    }
+    return el;
+  }
+
+  private leerMarcas(): Record<string, Marca> {
+    return this.almacen.leerJson<Record<string, Marca>>(CLAVE_MARCAS) ?? {};
+  }
+
+  private guardarMarca(clave: string, marca: Marca | null): void {
+    const marcas = this.leerMarcas();
+    /* Volver a empezar no merece un «Continuar». */
+    if (marca && marca.indice > 0) marcas[clave] = marca;
+    else delete marcas[clave];
+    this.almacen.escribirJson(CLAVE_MARCAS, marcas);
   }
 }
 
