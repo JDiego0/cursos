@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 
 import { AlmacenamientoService } from '@core/services/almacenamiento.service';
-import { VELOCIDADES, VozService, prepararParaVoz, trocear } from '@core/services/voz.service';
+import { VELOCIDADES, VozService, prepararParaVoz, siguientePalabra, trocear } from '@core/services/voz.service';
 
 /** Lo que se lee: prosa. Código, tablas y diagramas no se entienden de oído.
     Los títulos de las tarjetas (`.tag`, `.svc`) son texto suelto dentro
@@ -99,7 +99,7 @@ export class LectorComponent {
     });
 
     /* Cambiar de voz o de velocidad se oye al momento: se sigue desde
-       la palabra en curso con los nuevos ajustes. */
+       la palabra siguiente con los nuevos ajustes. */
     effect(() => {
       this.voz.voz();
       this.voz.velocidad();
@@ -207,23 +207,33 @@ export class LectorComponent {
       this.detener();
       return;
     }
+    const texto = bloque.fragmentos[this.fragmento()];
     const base = this.desplazamiento();
+    const avanzar = () => {
+      if (this.fragmento() + 1 < bloque.fragmentos.length) {
+        this.fragmento.update((f) => f + 1);
+      } else {
+        this.indice.update((i) => i + 1);
+        this.fragmento.set(0);
+      }
+      this.desplazamiento.set(0);
+      this.leerActual();
+    };
+    /* Se pausó en la última palabra del fragmento: no queda nada que
+       decir, y una locución vacía no siempre emite `onend`. */
+    if (base >= texto.length) {
+      avanzar();
+      return;
+    }
     if (this.fragmento() === 0 && base === 0) this.resaltar();
 
     this.voz.decir(
-      bloque.fragmentos[this.fragmento()].slice(base),
-      () => {
-        if (this.fragmento() + 1 < bloque.fragmentos.length) {
-          this.fragmento.update((f) => f + 1);
-        } else {
-          this.indice.update((i) => i + 1);
-          this.fragmento.set(0);
-        }
-        this.desplazamiento.set(0);
-        this.leerActual();
-      },
-      /* La posición llega relativa al trozo que se dijo, no al fragmento. */
-      (posicion) => this.desplazamiento.set(base + posicion),
+      texto.slice(base),
+      avanzar,
+      /* La posición llega relativa al trozo que se dijo, no al fragmento.
+         Se guarda la de la palabra siguiente: la que está sonando ya
+         se ha oído, y repetirla al reanudar molesta. */
+      (posicion) => this.desplazamiento.set(siguientePalabra(texto, base + posicion)),
     );
   }
 

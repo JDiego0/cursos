@@ -149,6 +149,13 @@ export function prepararParaVoz(texto: string): string {
     .replace(/^[\s,]+|[\s,]+$/g, '');
 }
 
+/** Dónde empieza la palabra que sigue a la que empieza en `desde`; el largo del texto si no hay más. */
+export function siguientePalabra(texto: string, desde: number): number {
+  const resto = /\S*\s+/y;
+  resto.lastIndex = desde;
+  return resto.test(texto) ? resto.lastIndex : texto.length;
+}
+
 /**
  * Parte un texto largo en fragmentos de frase.
  *

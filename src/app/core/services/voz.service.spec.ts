@@ -1,4 +1,4 @@
-import { ordenarVoces, prepararParaVoz, puntuarVoz, trocear } from './voz.service';
+import { ordenarVoces, prepararParaVoz, puntuarVoz, siguientePalabra, trocear } from './voz.service';
 
 const voz = (name: string, lang: string) => ({ name, lang }) as SpeechSynthesisVoice;
 
@@ -31,6 +31,18 @@ describe('prepararParaVoz', () => {
     expect(prepararParaVoz('📖 Teoría')).toBe('Teoría');
     expect(prepararParaVoz('Cliente → API · Base de datos')).toBe('Cliente, API, Base de datos');
     expect(prepararParaVoz('  ⚠️  Errores   comunes ')).toBe('Errores comunes');
+  });
+});
+
+describe('siguientePalabra', () => {
+  it('salta la palabra que empieza en la posición dada', () => {
+    const texto = 'Aprende JAVA  con LibroTech';
+    expect(texto.slice(siguientePalabra(texto, 0))).toBe('JAVA  con LibroTech');
+    expect(texto.slice(siguientePalabra(texto, 8))).toBe('con LibroTech');
+  });
+
+  it('devuelve el final del texto en la última palabra', () => {
+    expect(siguientePalabra('Aprende JAVA', 8)).toBe(12);
   });
 });
 
