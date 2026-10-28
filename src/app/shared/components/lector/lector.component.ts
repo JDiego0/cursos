@@ -68,6 +68,9 @@ export class LectorComponent {
   private readonly indice = signal(0);
   /* Fragmento dentro del bloque: no lo pinta nadie, pero es estado. */
   private readonly fragmento = signal(0);
+  /* Carácter del fragmento donde empieza la última palabra que sonó:
+     reanudar sigue desde ahí en lugar de repetir el fragmento. */
+  private readonly desplazamiento = signal(0);
 
   /** Dónde se quedó la última lectura de este capítulo, si no llegó al final. */
   protected readonly guardada = signal<Marca | null>(null);
@@ -95,8 +98,8 @@ export class LectorComponent {
       untracked(() => this.guardarMarca(String(this.clave()), marca));
     });
 
-    /* Cambiar de voz o de velocidad se oye al momento: se repite el
-       fragmento en curso con los nuevos ajustes. */
+    /* Cambiar de voz o de velocidad se oye al momento: se sigue desde
+       la palabra en curso con los nuevos ajustes. */
     effect(() => {
       this.voz.voz();
       this.voz.velocidad();
@@ -149,6 +152,7 @@ export class LectorComponent {
     if (destino < 0 || destino >= this.bloques().length) return;
     this.indice.set(destino);
     this.fragmento.set(0);
+    this.desplazamiento.set(0);
     if (this.estado() === 'sonando') this.leerActual();
     else this.resaltar();
   }
@@ -164,6 +168,7 @@ export class LectorComponent {
     this.bloques.set([]);
     this.indice.set(0);
     this.fragmento.set(0);
+    this.desplazamiento.set(0);
   }
 
   protected elegirVoz(evento: Event): void {
@@ -188,6 +193,7 @@ export class LectorComponent {
     this.bloques.set(bloques);
     this.indice.set(indice);
     this.fragmento.set(0);
+    this.desplazamiento.set(0);
     this.estado.set('sonando');
     this.leerActual();
   }
@@ -201,17 +207,24 @@ export class LectorComponent {
       this.detener();
       return;
     }
-    if (this.fragmento() === 0) this.resaltar();
+    const base = this.desplazamiento();
+    if (this.fragmento() === 0 && base === 0) this.resaltar();
 
-    this.voz.decir(bloque.fragmentos[this.fragmento()], () => {
-      if (this.fragmento() + 1 < bloque.fragmentos.length) {
-        this.fragmento.update((f) => f + 1);
-      } else {
-        this.indice.update((i) => i + 1);
-        this.fragmento.set(0);
-      }
-      this.leerActual();
-    });
+    this.voz.decir(
+      bloque.fragmentos[this.fragmento()].slice(base),
+      () => {
+        if (this.fragmento() + 1 < bloque.fragmentos.length) {
+          this.fragmento.update((f) => f + 1);
+        } else {
+          this.indice.update((i) => i + 1);
+          this.fragmento.set(0);
+        }
+        this.desplazamiento.set(0);
+        this.leerActual();
+      },
+      /* La posición llega relativa al trozo que se dijo, no al fragmento. */
+      (posicion) => this.desplazamiento.set(base + posicion),
+    );
   }
 
   private resaltar(): void {

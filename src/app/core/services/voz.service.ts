@@ -57,8 +57,12 @@ export class VozService {
     });
   }
 
-  /** Dice `texto` y llama a `alTerminar` cuando acaba (o falla). */
-  decir(texto: string, alTerminar: () => void): void {
+  /**
+   * Dice `texto` y llama a `alTerminar` cuando acaba (o falla).
+   * `alLlegar` recibe la posición en `texto` de cada palabra que
+   * empieza a sonar, para poder reanudar desde ella.
+   */
+  decir(texto: string, alTerminar: () => void, alLlegar?: (posicion: number) => void): void {
     if (!this.disponible) return;
     speechSynthesis.cancel();
 
@@ -78,6 +82,11 @@ export class VozService {
        dejar la lectura colgada. `interrupted` y `canceled` son
        nuestros propios `cancel()` y ya los filtra `fin`. */
     locucion.onerror = fin;
+    /* No todas las voces emiten `boundary`: con las que no, reanudar
+       vuelve al principio del fragmento, como antes. */
+    locucion.onboundary = (e) => {
+      if (this.actual === locucion && e.name !== 'sentence') alLlegar?.(e.charIndex);
+    };
 
     this.actual = locucion;
     speechSynthesis.speak(locucion);
@@ -88,7 +97,8 @@ export class VozService {
    *
    * No se usa `speechSynthesis.pause()`: con las voces en línea de
    * Chrome y Edge no reanuda o reanuda en silencio. Pausar es callar
-   * y, al reanudar, volver a decir el fragmento.
+   * y, al reanudar, volver a decir el fragmento desde la última
+   * palabra que llegó por `alLlegar`.
    */
   callar(): void {
     this.actual = null;
