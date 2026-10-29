@@ -31390,7 +31390,548 @@ git log --oneline | head -9</code></pre>
     </details>
   </section>
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-46"
+    data-num="46"
+    data-title="Repaso exprés: el dossier de NakaHire entero en una lectura"
+    data-short="Repaso exprés del dossier"
+    data-module="Módulo 16 · Repaso y recuperación"
+    data-time="60 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Java|JVM|Spring|SQL|JavaScript|React|HTTP|Seguridad|Docker|Arquitectura|STAR">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar el dossier completo de NakaHire en una sola lectura</strong>: cada tema técnico y de RR. HH.
+      reducido a las respuestas de 30 segundos que más se preguntan, con la idea que las sostiene y el matiz que separa a un
+      Junior de un Senior. Está pensado para la semana de la entrevista o para recuperar el curso tras un tiempo.</p>
+      <p><strong>Cómo usarlo:</strong> tapa la columna de la respuesta y contesta en voz alta antes de mirarla. Si una respuesta
+      no te sale, vuelve al capítulo indicado entre paréntesis. El capítulo siguiente reúne las diferencias transversales, las
+      plantillas de respuesta y un simulacro final.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El dossier en un diagrama</h3>
+        <div class="diagram">  RR. HH.  ───────  método CAR/STAR · «háblame de ti» · fortalezas y debilidades ·      (37–45)
+                     motivación · trayectoria · competencias · preguntas trampa · simulacro
+                ▲
+  CIERRE    ───────  pruebas · comportamiento · diseño de sistemas · simulacro técnico      (34–36)
+                ▲
+  DISEÑO E IA ─────  SOLID y patrones · arquitectura · LLM y RAG                          (31–33)
+                ▲
+  PRODUCCIÓN ──────  HTTP · autenticación · vulnerabilidades · Git · Docker · CI/CD ·       (24–30)
+                     observabilidad
+                ▲
+  FRONTEND  ───────  HTML/CSS · DOM · JavaScript · asincronía · TypeScript · React          (18–23)
+                ▲
+  DATOS     ───────  Spring · JPA · transacciones · SQL · índices · NoSQL                   (11–17)
+                ▲
+  JAVA      ───────  POO · igualdad · colecciones · excepciones · streams · JVM · hilos     (3–10)
+                ▲
+  MÉTODO    ───────  cómo se evalúa · tipos y memoria · Big O y los 5 pasos                (0–2)</div>
+
+        <h3>La forma de toda respuesta técnica</h3>
+        <div class="diagram">  QUÉ ES  ──▶  POR QUÉ IMPORTA  ──▶  CUÁNDO NO (o qué cuesta)      30–40 segundos
+
+  Junior: define.   Mid: ha tropezado con ello.   Senior: anticipa el coste y dice cuándo no.</div>
+        <ul class="clean">
+          <li>Una pregunta técnica mide tres capas: <b>conocimiento</b> (se memoriza), <b>comprensión</b> y <b>criterio</b> (deciden el puesto).</li>
+          <li>«No lo sé, pero razonaría así» suma; inventar con seguridad es el error más caro.</li>
+          <li>Pensar en voz alta es la habilidad más evaluada. Reconocer no es recordar: <b>ensaya en voz alta</b>.</li>
+        </ul>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Ordena el repaso por confianza baja, no por gusto: marca cada fila que no te salga a la primera y vuelve a ella al día
+        siguiente. Los dos últimos días no se estudia materia nueva: sólo se ensaya.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧭 Bloque 1 · Método, tipos, memoria y complejidad (cap. 0–2)</summary>
+      <div class="acc-body">
+
+        <h3>Las respuestas de 30 segundos</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Respuesta</th></tr></thead>
+          <tbody>
+            <tr><td>¿Estático/dinámico y fuerte/débil?</td><td>Estático/dinámico es <b>cuándo</b> se comprueban los tipos; fuerte/débil, <b>cuánto</b> convierte solo el lenguaje. Java: estático y fuerte.</td></tr>
+            <tr><td>¿Stack y heap?</td><td>Stack: locales y llamadas, uno por hilo, se libera solo. Heap: objetos, compartido, lo limpia el recolector.</td></tr>
+            <tr><td>¿Java pasa por valor o por referencia?</td><td>Siempre por valor; con objetos se copia la referencia: puedes mutar lo apuntado, no reapuntar la variable del llamador.</td></tr>
+            <tr><td>¿Por qué inmutabilidad?</td><td>Se comparte sin miedo y es segura entre hilos gratis; el coste es crear objetos nuevos. Getters con copia defensiva.</td></tr>
+            <tr><td>¿Cómo combates null?</td><td>Con estrategia: validar en la frontera, <code>Optional</code> al retornar, colecciones vacías. No capturando la excepción.</td></tr>
+            <tr><td>¿Dinero con double?</td><td>Nunca: <code>BigDecimal</code> desde cadena o enteros en céntimos.</td></tr>
+            <tr><td>¿Qué mide Big O?</td><td>Crecimiento, no segundos. Anidados multiplican, seguidos suman; cuenta también lo que llamas dentro (<code>contains</code> en una lista).</td></tr>
+            <tr><td>¿<code>ArrayList.add()</code> es O(1)?</td><td>Amortizado: el array dobla al llenarse; una inserción concreta puede ser O(n).</td></tr>
+            <tr><td>¿<code>HashMap.get()</code>?</td><td>O(1) de media, si <code>hashCode()</code> reparte bien.</td></tr>
+            <tr><td>¿Se puede ordenar en menos de O(n log n)?</td><td>No comparando elementos: es un límite demostrable.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Los 5 pasos en un ejercicio en vivo (2)</h3>
+        <ol class="steps">
+          <li><b>Reformular</b>: «busco dos posiciones distintas cuya suma sea el objetivo y devuelvo índices, ¿correcto?».</li>
+          <li><b>Preguntar</b> casos borde (varias soluciones, repetidos, negativos, ¿siempre existe?): lo que más puntúa.</li>
+          <li><b>Ejemplo a mano</b>: <code>[2, 7, 11, 15]</code>, objetivo 9 → <code>[0, 1]</code>.</li>
+          <li><b>Fuerza bruta</b> dicha (y escrita si hace falta): dos bucles, O(n²) / O(1).</li>
+          <li><b>Optimizar diciendo el compromiso</b>: un HashMap de lo visto, O(n) en tiempo a cambio de O(n) en memoria.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>☕ Bloque 2 · Java: POO, igualdad, colecciones, excepciones, streams, JVM e hilos (cap. 3–10)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Respuesta</th></tr></thead>
+          <tbody>
+            <tr><td>¿Qué es encapsular? (3)</td><td>Que el objeto proteja sus reglas exponiendo operaciones de negocio, de modo que el estado inválido sea imposible. No es poner getters y setters.</td></tr>
+            <tr><td>¿<code>static</code> y <code>final</code>? (3)</td><td>static = de la clase; final = no se reasigna. No tienen relación, y final no es inmutable.</td></tr>
+            <tr><td>¿record o clase? (3)</td><td>record para datos inmutables (DTO, objetos de valor); clase si hay comportamiento o estado que cambia. No sirve como entidad JPA. Muchos opcionales: builder o fábricas.</td></tr>
+            <tr><td>¿Sobrecarga y sobreescritura? (4)</td><td>Sobrecarga se resuelve al compilar por el tipo declarado; sobreescritura al ejecutar por el tipo real. <code>@Override</code> hace que el compilador verifique.</td></tr>
+            <tr><td>¿Interfaz o clase abstracta? (4)</td><td>Interfaz por defecto; abstracta si hay estado o código común y la relación «es un» es real. Desde Java 8 las interfaces tienen código, no estado.</td></tr>
+            <tr><td>¿Por qué componer en vez de heredar? (4)</td><td>Heredar acopla a la implementación del padre. Liskov: si lo que funcionaba con la base falla con la derivada, la herencia está mal.</td></tr>
+            <tr><td><code>==</code> frente a <code>equals()</code> (5)</td><td>== compara referencias (valores en primitivos); equals contenido, si alguien lo implementó. El pool hace que == «funcione» con literales y falle con cadenas construidas.</td></tr>
+            <tr><td>¿Por qué <code>hashCode()</code> con <code>equals()</code>? (5)</td><td>El HashMap localiza el bucket con el hash y sólo dentro usa equals. Iguales deben dar el mismo hash; si no, objetos inalcanzables. Claves inmutables.</td></tr>
+            <tr><td>¿ArrayList o LinkedList? (6)</td><td>ArrayList: la ventaja teórica de LinkedList casi nunca aparece por la memoria contigua y la caché de la CPU.</td></tr>
+            <tr><td>¿Cómo funciona un HashMap? (6)</td><td>Array de buckets: hash → bucket → equals. O(1) medio, O(log n) peor caso desde Java 8 (árbol). Factor de carga 0,75: al superarlo duplica y recoloca.</td></tr>
+            <tr><td>¿ConcurrentModificationException? (6)</td><td>Fail-fast en un solo hilo al modificar mientras recorres: <code>removeIf</code> o <code>Iterator.remove()</code>. Con hilos, ConcurrentHashMap (no Hashtable).</td></tr>
+            <tr><td>¿Checked o unchecked? (7)</td><td>Checked si quien llama puede hacer algo útil; unchecked si es un bug; Error, no se captura. El ecosistema moderno tiende a unchecked.</td></tr>
+            <tr><td>Antipatrones de excepciones (7)</td><td>catch vacío, perder la causa, <code>printStackTrace()</code>, <code>return</code> en finally. Registra o relanza, no las dos.</td></tr>
+            <tr><td>¿Qué es un Stream? (8)</td><td>Una tubería: no almacena, se consume una vez, intermedias perezosas y elementos de uno en uno (cortocircuito). flatMap aplana. parallelStream casi nunca.</td></tr>
+            <tr><td>¿Cómo se usa Optional? (8)</td><td>Encadenando (<code>map</code>, <code>orElseThrow</code>), no preguntando con <code>isPresent()</code>.</td></tr>
+            <tr><td>¿Qué hace el JIT? (9)</td><td>Compila a nativo lo que se repite, con datos reales: Java «se calienta» y hay que descartar las primeras mediciones.</td></tr>
+            <tr><td>¿Hay fugas de memoria en Java? (9)</td><td>Sí: lo inútil pero alcanzable no se libera (colección estática que sólo crece). Diagnóstico: gráfico del heap, volcado y camino de retención.</td></tr>
+            <tr><td>¿Por qué <code>i++</code> no es seguro entre hilos? (10)</td><td>Son tres operaciones (leer, sumar, escribir): condición de carrera. Dos problemas distintos: atomicidad y visibilidad; <code>volatile</code> sólo resuelve el segundo.</td></tr>
+            <tr><td>¿Cómo sincronizas? (10)</td><td>Por orden: no compartir estado → Atomic para contadores → synchronized para varias operaciones. «Comprobar y actuar» sigue siendo una carrera aunque la estructura sea concurrente.</td></tr>
+            <tr><td>¿Deadlock? (10)</td><td>Se evita con un orden global de adquisición de bloqueos; se diagnostica con <code>jstack</code>. Pools dimensionados por tipo de tarea y cerrados con <code>shutdown()</code>.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🗄 Bloque 3 · Spring, JPA, transacciones, SQL, índices y NoSQL (cap. 11–17)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Respuesta</th></tr></thead>
+          <tbody>
+            <tr><td>¿IoC e inyección de dependencias? (11)</td><td>IoC es el principio (el contenedor crea y conecta); DI la técnica. Por constructor: <code>final</code>, sin objetos incompletos, tests triviales.</td></tr>
+            <tr><td>¿Por qué los beans no tienen estado? (11)</td><td>Scope singleton: una instancia para todas las peticiones a la vez.</td></tr>
+            <tr><td>¿Por qué falla <code>@Transactional</code> a veces? (11)</td><td>Spring usa proxies: no actúa en auto-invocación, métodos no públicos ni instancias creadas con <code>new</code>.</td></tr>
+            <tr><td>¿Qué hace Spring Boot? (12)</td><td>Spring + autoconfiguración condicional (tu configuración gana) + starters + servidor embebido.</td></tr>
+            <tr><td>¿Por qué no devolver entidades? (12)</td><td>Seguridad, acoplamiento, relaciones perezosas y formas distintas de entrada y salida: DTOs.</td></tr>
+            <tr><td>¿Dónde se valida? (12)</td><td>Formato en el DTO con anotaciones (400); negocio en el servicio (409). Errores centralizados con <code>@RestControllerAdvice</code>.</td></tr>
+            <tr><td>¿JPA, Hibernate, Spring Data? (13)</td><td>Especificación, implementación y repositorios generados. El contexto de persistencia explica dirty checking y la caché de primer nivel.</td></tr>
+            <tr><td>¿Qué es el N+1? (13)</td><td>Una consulta para la lista y una por elemento; no da error. Fetch join o <code>@EntityGraph</code>; <code>@BatchSize</code> agrupa; proyección a DTO lo evita.</td></tr>
+            <tr><td>¿LazyInitializationException? (13)</td><td>Entidad separada. No se arregla con EAGER: se trae lo necesario dentro de la transacción. <code>open-in-view=false</code>.</td></tr>
+            <tr><td>¿ACID? (14)</td><td>Atomicidad y durabilidad las da el motor; el aislamiento se ajusta; la consistencia depende de tus restricciones.</td></tr>
+            <tr><td>¿Niveles de aislamiento? (14)</td><td>Tres anomalías (sucia, no repetible, fantasma) y cuatro niveles; más aislamiento, menos concurrencia. PostgreSQL READ COMMITTED; MySQL REPEATABLE READ.</td></tr>
+            <tr><td>¿Optimista o pesimista? (14)</td><td>Optimista (<code>@Version</code>) si pasan minutos entre leer y escribir; pesimista en operaciones cortas y críticas. El conflicto optimista → 409. Spring no revierte con checked sin <code>rollbackFor</code>.</td></tr>
+            <tr><td>¿INNER o LEFT JOIN? (15)</td><td>INNER lo que casa; LEFT toda la izquierda. Un filtro de la derecha en el WHERE convierte el LEFT en INNER. «Los que no tienen»: LEFT … IS NULL.</td></tr>
+            <tr><td>¿Orden de ejecución de un SELECT? (15)</td><td>FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT. NULL no es igual a nada (cuidado con NOT IN). UNION ALL por defecto.</td></tr>
+            <tr><td>¿Qué es un índice? (16)</td><td>Un árbol ordenado valor → puntero: acelera lecturas y ralentiza escrituras. La FK no crea índice; el único admite varios NULL.</td></tr>
+            <tr><td>¿Por qué no se usa un índice? (16)</td><td>Función sobre la columna, <code>LIKE '%…'</code>, baja selectividad u orden del compuesto (prefijo izquierdo). En un plan, primero estimadas frente a reales.</td></tr>
+            <tr><td>¿SQL o NoSQL? (17)</td><td>Relacional por defecto; NoSQL con un motivo. Cuatro familias: documental, clave-valor, columnar y grafo. En NoSQL se modela desde las consultas y se duplica a propósito.</td></tr>
+            <tr><td>¿Teorema CAP? (17)</td><td>Ante una partición (que no se elige) se escoge consistencia o disponibilidad, sólo durante la partición. Consistencia eventual también con réplicas SQL.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌐 Bloque 4 · Navegador, JavaScript, TypeScript y React (cap. 18–23)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Respuesta</th></tr></thead>
+          <tbody>
+            <tr><td>¿Por qué HTML semántico? (18)</td><td>Accesibilidad, teclado, SEO y mantenimiento; un <code>div</code> con clic pierde las cuatro.</td></tr>
+            <tr><td>¿Especificidad? (18)</td><td>id (100) &gt; clase (10) &gt; elemento (1); a igualdad, gana el último. <code>!important</code> suele ser síntoma.</td></tr>
+            <tr><td>¿Flex o Grid? (18)</td><td>Flex una dimensión, Grid dos; Grid fuera y Flex dentro. <code>z-index</code> compite sólo dentro de su contexto de apilamiento.</td></tr>
+            <tr><td>¿Fases de un evento? (19)</td><td>Captura, objetivo y burbujeo. <code>stopPropagation</code> corta el recorrido; <code>preventDefault</code> cancela la acción del navegador.</td></tr>
+            <tr><td>¿Delegación de eventos? (19)</td><td>Un escuchador en el ancestro + <code>e.target.closest()</code>; sirve para elementos que aún no existen.</td></tr>
+            <tr><td>¿Reflow? (19)</td><td>Recalcular posiciones, caro; alternar lecturas y escrituras es layout thrashing. <code>defer</code> por defecto. Debounce (estado final) y throttle (proceso).</td></tr>
+            <tr><td><code>var</code>, <code>let</code>, <code>const</code> (20)</td><td>var de función; let/const de bloque (con hoisting en zona muerta temporal). const no es inmutable.</td></tr>
+            <tr><td>¿Qué es un closure? (20)</td><td>Una función que recuerda su ámbito de creación: estado privado, debounce, hooks; también fugas. El bucle con var imprime 3,3,3.</td></tr>
+            <tr><td>¿De qué depende <code>this</code>? (20)</td><td>De cómo se llama: new, bind, el punto o nada; las flechas no tienen this propio. Usa <code>===</code> y <code>??</code>.</td></tr>
+            <tr><td>¿Bucle de eventos? (21)</td><td>Un hilo; el entorno hace lo lento. Microtareas (promesas) se vacían antes de cada macrotarea (setTimeout, eventos). Asíncrono no es paralelo.</td></tr>
+            <tr><td>¿all, allSettled, race, any? (21)</td><td>Todo o nada / independientes / tiempo máximo / el primero que funcione. <code>forEach</code> ignora promesas; <code>fetch</code> no rechaza con 404.</td></tr>
+            <tr><td>¿Qué aporta TypeScript? (22)</td><td>Errores en el editor, autocompletado, refactorización segura; los tipos se borran al compilar. Tipado estructural.</td></tr>
+            <tr><td>¿interface o type? ¿any o unknown? (22)</td><td>interface para objetos y APIs (fusión); type para uniones y tipos calculados. unknown en los límites, nunca any. Zod para validar datos ajenos.</td></tr>
+            <tr><td>¿Cuándo se re-renderiza un componente? (23)</td><td>Por su estado, su contexto o su padre. Renderizar no es tocar el DOM.</td></tr>
+            <tr><td>¿Para qué la key? (23)</td><td>Corrección: con el índice, el estado de un elemento salta a otro.</td></tr>
+            <tr><td>¿useEffect? (23)</td><td>Para sincronizar con lo externo, con dependencias y limpieza; nunca para valores derivados. Memoizar sólo tras medir.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔐 Bloque 5 · HTTP, seguridad, Git, Docker, CI/CD y observabilidad (cap. 24–30)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Respuesta</th></tr></thead>
+          <tbody>
+            <tr><td>¿Seguro e idempotente? (24)</td><td>Seguro no modifica; idempotente da el mismo resultado al repetirlo. POST no lo es: por eso existe la clave de idempotencia.</td></tr>
+            <tr><td>Códigos que se confunden (24)</td><td>400 no te entiendo · 401 no autenticado · 403 sin permiso · 409 conflicto · 422 te entiendo y no tiene sentido. Nunca 5xx por culpa del cliente.</td></tr>
+            <tr><td>¿Qué es CORS? (24, 26)</td><td>Una regla del navegador que el servidor relaja; no protege la API. Preflight OPTIONS sin credenciales; con cookies, Allow-Origin no puede ser *.</td></tr>
+            <tr><td>¿Cómo guardas contraseñas? (25)</td><td>bcrypt, scrypt o Argon2: lentos a propósito y con sal única por usuario.</td></tr>
+            <tr><td>¿Qué es un JWT? (25)</td><td>Tres partes; la firma da integridad, no confidencialidad. Valida firma, exp, iss y aud y fija el algoritmo. No se invalida: acceso corto + refresco con rotación. En cookie httpOnly, Secure, SameSite.</td></tr>
+            <tr><td>¿Por qué funcionan las consultas parametrizadas? (26)</td><td>El motor recibe la estructura antes que los datos. El ORM no cubre SQL nativo concatenado ni nombres de columna (lista blanca).</td></tr>
+            <tr><td>¿XSS y CSRF? (26)</td><td>XSS: almacenado, reflejado o de DOM; se escapa en la salida según el contexto. CSRF: provoca el efecto sin leer la respuesta; SameSite, testigo y verbos correctos.</td></tr>
+            <tr><td>¿Fallo más frecuente? (26)</td><td>Control de acceso roto / IDOR: el dueño va en la consulta, no en un if.</td></tr>
+            <tr><td>¿Merge o rebase? (27)</td><td>Merge conserva la historia; rebase la reescribe. Nunca rebases lo compartido. revert en compartido, reset en local; <code>reflog</code> recupera casi todo.</td></tr>
+            <tr><td>¿Contenedor o VM? (28)</td><td>El contenedor comparte kernel (namespaces y cgroups): megas y milisegundos frente a gigas y minutos. Multi-etapa, nunca root ni <code>:latest</code>; un secreto en una capa se lee con <code>docker history</code>.</td></tr>
+            <tr><td>¿CI, entrega y despliegue continuos? (29)</td><td>Entre los dos últimos hay una decisión humana. Fallar rápido; artefacto construido una vez y promocionado; misma imagen en todos los entornos.</td></tr>
+            <tr><td>¿Blue-green o canary? (29)</td><td>Blue-green: vuelta atrás inmediata, cuesta el doble. Canary: limita el daño, exige métricas. La BD no vuelve atrás: expandir, migrar, contraer.</td></tr>
+            <tr><td>¿Qué pasa al escribir una URL? (30)</td><td>Cachés, DNS (TTL), TCP, TLS, HTTP y proxy inverso (TLS, balanceo, estáticos, compresión, límites, <code>X-Forwarded-For</code>).</td></tr>
+            <tr><td>¿Logs, métricas, trazas? (30)</td><td>Métrica avisa, traza localiza, log explica. La media miente: p95/p99. Alertas sobre síntomas: latencia, tráfico, errores, saturación.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🏛 Bloque 6 · Diseño, arquitectura, IA, pruebas y entrevista completa (cap. 31–36)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Respuesta</th></tr></thead>
+          <tbody>
+            <tr><td>¿SOLID? (31)</td><td>Un ejemplo por letra; la D es la más útil (hace el código probable) y la interfaz pertenece a quien la usa.</td></tr>
+            <tr><td>¿DRY? ¿Sobreingeniería? (31)</td><td>DRY es sobre conocimiento, no líneas: «prefiero duplicación a la abstracción equivocada». Regla de tres y YAGNI. Deméter contra los trenes de puntos.</td></tr>
+            <tr><td>Patrones que se preguntan (31)</td><td>Estrategia, factoría y repositorio; y saber criticar el singleton.</td></tr>
+            <tr><td>¿Capas o hexagonal? (32)</td><td>Capas: un sitio para cada cambio (cuidado con el modelo anémico). Hexagonal: el dominio declara los puertos; cuesta archivos y traducción.</td></tr>
+            <tr><td>¿Microservicios? (32)</td><td>Monolito primero: resuelven un problema organizativo y cuestan red, transacciones y depuración. Sagas con compensación, outbox, consumidores idempotentes, timeouts y cortacircuitos.</td></tr>
+            <tr><td>¿Qué es un LLM y sus límites? (33)</td><td>Predice el texto siguiente: alucina y no recuerda. Token = precio y latencia. RAG para conocimiento, fine-tuning para comportamiento. Si hay solución determinista, ésa.</td></tr>
+            <tr><td>¿Unitaria o de integración? (34)</td><td>Unitaria: rápida, aislada, determinista; si levanta Spring o toca la BD, es de integración. Pirámide por economía.</td></tr>
+            <tr><td>¿Mock o stub? (34)</td><td>«Un stub responde; un mock exige.» Verifica estado salvo que el efecto sea la interacción. Cobertura mide ejecución; la mutación mide calidad.</td></tr>
+            <tr><td>¿Test intermitente? (34)</td><td>Prioritario: tiempo, orden, concurrencia, dependencia externa o colecciones sin orden.</td></tr>
+            <tr><td>¿Cómo cuentas un proyecto? (35)</td><td>Lo que distingue es la decisión difícil con sus alternativas y su coste.</td></tr>
+            <tr><td>¿Diseño de sistemas? (36)</td><td>Seis pasos: <b>acotar</b> (el que más puntúa) → números (orden de magnitud) → API → datos → dibujo → cuellos y escala (caché, réplicas, particionado, en ese orden).</td></tr>
+            <tr><td>¿Cómo cierras la entrevista? (36)</td><td>Tres preguntas preparadas, cierre con los plazos y apuntar el mismo día lo que te preguntaron.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🤝 Bloque 7 · RR. HH.: método, relato, competencias y preguntas difíciles (cap. 37–45)</summary>
+      <div class="acc-body">
+
+        <h3>Lo que se evalúa (37)</h3>
+        <p>RR. HH. casi nunca contrata, pero siempre puede descartar: la estrategia es <b>no perder puntos</b>. Mide encaje,
+        motivación real, competencias, riesgo y comunicación. El mejor predictor del futuro es el pasado: piden hechos.</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Método</th><th>Estructura</th><th>Cuándo</th></tr></thead>
+          <tbody>
+            <tr><td><b>CAR</b></td><td>Contexto · Acción · Resultado (45–75 s)</td><td>Respuestas cortas con tu papel evidente.</td></tr>
+            <tr><td><b>STAR</b></td><td>Situación + Tarea 20 % · Acción 60 % · Resultado 20 % (90–120 s)</td><td>Cuando hay que aclarar qué te tocaba a ti.</td></tr>
+            <tr><td><b>SBI</b></td><td>Situación · Comportamiento · Impacto</td><td>Cómo das feedback.</td></tr>
+          </tbody>
+        </table></div>
+        <p>Siempre en <b>primera persona</b>; siendo junior, termina en qué aprendiste. Seis historias cubren casi todo; la del error
+        es la más rentable.</p>
+
+        <h3>Las preguntas clave</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Cómo se responde</th></tr></thead>
+          <tbody>
+            <tr><td>«Háblame de ti» (38)</td><td>Presente → pasado → futuro → cierre que devuelve el turno, ~90 s; dos o tres hitos para esta oferta. Tres versiones: 30 s, 90 s y 3 min.</td></tr>
+            <tr><td>Un logro (38)</td><td>Verbo + qué + cómo + resultado medible; se cuantifica sin datos de empresa (tiempo, cantidad, antes/después). Aproximar y decirlo, nunca inventar.</td></tr>
+            <tr><td>Fortalezas (39)</td><td>Afirmación concreta + prueba en un hecho + relevancia para el puesto; tres y distintas.</td></tr>
+            <tr><td>Debilidad (39)</td><td>Real, no letal y con plan, en cuatro partes: nombrarla · ejemplo · qué haces ya · prueba de que mejora (50–60 s). Nada de «soy perfeccionista».</td></tr>
+            <tr><td>«¿Por qué contratarte?» (39)</td><td>Lo que pedís + lo que traigo con prueba + el límite honesto, en menos de un minuto.</td></tr>
+            <tr><td>«¿Por qué esta empresa?» (40)</td><td>Gancho verificable + por qué me interesa + qué aporto + pregunta (45–60 s). Si funciona cambiando el nombre de la empresa, no vale.</td></tr>
+            <tr><td>«¿Por qué cambias?» (41)</td><td>Hacia dónde vas: qué me llevo, qué busco, por qué aquí; algo bueno de donde vienes. Critica prácticas, nunca personas.</td></tr>
+            <tr><td>Metas (41)</td><td>Corto plazo concreto y posible aquí; largo plazo, dirección y capacidades, no cargos.</td></tr>
+            <tr><td>Conflicto (42)</td><td>El motivo real detrás del argumento y un criterio objetivo. Finales buenos: «tenía razón él» o «discrepé y lo apoyé».</td></tr>
+            <tr><td>Explicar a alguien no técnico (42)</td><td>Impacto → analogía → opciones con coste → recomendación, y comprobar que se entendió.</td></tr>
+            <tr><td>Presión (43)</td><td>Números, parar y listar, criterio de prioridad explícito, avisar pronto con propuesta, recortar alcance: casi nunca se negocia la fecha, casi siempre el qué.</td></tr>
+            <tr><td>Un error (43)</td><td>Qué pasó · impacto real · qué hiciste al momento · qué cambiaste (la que da valor). Nunca repartir la culpa.</td></tr>
+            <tr><td>Preguntas trampa e improcedentes (44)</td><td>Dos segundos de pausa; reformular o pedir el caso concreto; sostener el silencio. Improcedentes: tono cordial + negativa breve + responder a la preocupación laboral.</td></tr>
+            <tr><td>Simulacro (45)</td><td>Rúbrica de 6 criterios (estructura, concreción, primera persona, duración, aprendizaje, aplomo) de 0 a 3; corregir el más bajo y repetir al momento.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-47"
+    data-num="47"
+    data-title="Diferencias clave, plantillas de respuesta y simulacro final"
+    data-short="Diferencias y simulacro final"
+    data-module="Módulo 16 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Diferencias clave|Plantillas de respuesta|STAR|Diseño de sistemas|Simulacro">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>cerrar el dossier con lo que más se pregunta en forma de «diferencia entre…»</strong>, las plantillas
+      que estructuran cualquier respuesta (técnica o de RR. HH.), los errores que descartan a candidatos que sabían la materia
+      y un simulacro final de preguntas mezcladas, como en una entrevista real.</p>
+      <p><strong>Cómo usarlo:</strong> el simulacro se hace cronometrado y en voz alta: responde primero, graba si puedes y
+      sólo después despliega la respuesta. El último acordeón es la lista de la víspera.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Backend y datos</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia en una línea</th></tr></thead>
+          <tbody>
+            <tr><td><b>JDK / JRE / JVM</b></td><td>Herramientas + JRE / JVM + bibliotecas / ejecuta bytecode.</td></tr>
+            <tr><td><b>Stack / heap</b></td><td>Por hilo, se libera solo / compartido, lo limpia el GC. StackOverflowError inmediato; OutOfMemoryError con el tiempo.</td></tr>
+            <tr><td><b><code>==</code> / <code>equals()</code></b></td><td>Referencia / contenido implementado.</td></tr>
+            <tr><td><b><code>final</code> / inmutable</b></td><td>No se reasigna / no cambia su estado.</td></tr>
+            <tr><td><b>Sobrecarga / sobreescritura</b></td><td>Compilación por tipo declarado / ejecución por tipo real.</td></tr>
+            <tr><td><b>Interfaz / clase abstracta</b></td><td>Contrato sin estado, varias / estado y código común, una.</td></tr>
+            <tr><td><b>Heredar / componer</b></td><td>Acopla a la implementación / delega en una dependencia.</td></tr>
+            <tr><td><b>ArrayList / LinkedList</b></td><td>Memoria contigua, índice O(1) / nodos; casi nunca compensa.</td></tr>
+            <tr><td><b>HashMap / ConcurrentHashMap / Hashtable</b></td><td>Sin hilos / con hilos (sin null) / obsoleto.</td></tr>
+            <tr><td><b>Checked / unchecked / Error</b></td><td>Quien llama puede reaccionar / bug / la JVM está rota.</td></tr>
+            <tr><td><b><code>map</code> / <code>flatMap</code></b></td><td>Uno a uno / aplana colecciones anidadas.</td></tr>
+            <tr><td><b><code>volatile</code> / <code>synchronized</code> / Atomic</b></td><td>Visibilidad / atomicidad de varias operaciones / contador atómico.</td></tr>
+            <tr><td><b>IoC / DI</b></td><td>Principio / técnica.</td></tr>
+            <tr><td><b>JPA / Hibernate / Spring Data</b></td><td>Especificación / implementación / repositorios generados.</td></tr>
+            <tr><td><b>LAZY / EAGER</b></td><td>Al acceder / siempre (<code>@ManyToOne</code> es EAGER por defecto).</td></tr>
+            <tr><td><b>Optimista / pesimista</b></td><td>Versión al escribir / bloqueo al leer.</td></tr>
+            <tr><td><b>INNER / LEFT JOIN</b></td><td>Lo que casa / toda la izquierda.</td></tr>
+            <tr><td><b>WHERE / HAVING</b></td><td>Filtra filas antes / grupos después.</td></tr>
+            <tr><td><b>UNION / UNION ALL</b></td><td>Quita duplicados (ordena) / los conserva.</td></tr>
+            <tr><td><b>SQL / NoSQL</b></td><td>Estructura en el esquema / en el documento; modelar por entidades / por consultas.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Frontend, web y producción</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia en una línea</th></tr></thead>
+          <tbody>
+            <tr><td><b>Flex / Grid</b></td><td>Una dimensión / dos.</td></tr>
+            <tr><td><b><code>display: none</code> / <code>visibility: hidden</code> / <code>opacity: 0</code></b></td><td>Fuera del flujo / ocupa sitio / ocupa sitio y recibe clics.</td></tr>
+            <tr><td><b><code>stopPropagation</code> / <code>preventDefault</code></b></td><td>Corta el recorrido / cancela la acción del navegador.</td></tr>
+            <tr><td><b><code>defer</code> / <code>async</code></b></td><td>En orden tras el HTML / en cuanto llega, sin orden.</td></tr>
+            <tr><td><b>Debounce / throttle</b></td><td>Estado final / proceso a ritmo fijo.</td></tr>
+            <tr><td><b><code>var</code> / <code>let</code> / <code>const</code></b></td><td>Función / bloque / bloque sin reasignar.</td></tr>
+            <tr><td><b><code>==</code> / <code>===</code> (JS)</b></td><td>Con conversión / sin conversión.</td></tr>
+            <tr><td><b><code>||</code> / <code>??</code></b></td><td>Cualquier falso / sólo null o undefined.</td></tr>
+            <tr><td><b>Microtarea / macrotarea</b></td><td>Promesas, se vacían antes / setTimeout y eventos.</td></tr>
+            <tr><td><b><code>Promise.all</code> / <code>allSettled</code></b></td><td>Todo o nada / todas, con su resultado.</td></tr>
+            <tr><td><b><code>any</code> / <code>unknown</code></b></td><td>Desactiva comprobaciones / obliga a validar.</td></tr>
+            <tr><td><b>Props / estado</b></td><td>Entrada de solo lectura / memoria del componente.</td></tr>
+            <tr><td><b>401 / 403</b></td><td>No autenticado / sin permiso.</td></tr>
+            <tr><td><b>400 / 422 / 409</b></td><td>No te entiendo / te entiendo y no tiene sentido / conflicto con el estado.</td></tr>
+            <tr><td><b>Sesión / JWT</b></td><td>Control (se invalida) / escalabilidad (no se invalida).</td></tr>
+            <tr><td><b>Hash / cifrado</b></td><td>Irreversible (contraseñas) / reversible con clave.</td></tr>
+            <tr><td><b>XSS / CSRF</b></td><td>Ejecutar código en la víctima / provocar una acción en su nombre.</td></tr>
+            <tr><td><b>Merge / rebase</b></td><td>Conserva la historia / la reescribe.</td></tr>
+            <tr><td><b><code>reset</code> / <code>revert</code></b></td><td>Local, mueve la rama / compartido, crea un commit inverso.</td></tr>
+            <tr><td><b>Contenedor / VM</b></td><td>Comparte kernel / sistema operativo completo.</td></tr>
+            <tr><td><b>Entrega / despliegue continuo</b></td><td>Listo para un botón / sale solo.</td></tr>
+            <tr><td><b>Blue-green / canary</b></td><td>Cambio completo reversible / porcentaje creciente.</td></tr>
+            <tr><td><b>Log / métrica / traza</b></td><td>Explica / avisa / localiza.</td></tr>
+            <tr><td><b>Monolito / microservicios</b></td><td>Un despliegue / problema organizativo resuelto con red.</td></tr>
+            <tr><td><b>RAG / fine-tuning</b></td><td>Conocimiento / comportamiento.</td></tr>
+            <tr><td><b>Stub / mock</b></td><td>Responde / exige.</td></tr>
+            <tr><td><b>CAR / STAR</b></td><td>Corta, papel evidente / larga, aclara qué te tocaba.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Plantillas de respuesta</summary>
+      <div class="acc-body">
+
+        <h3>Pregunta técnica conceptual</h3>
+        <div class="diagram">  1. Qué es (una frase)          «Un índice es un árbol ordenado valor → puntero…»
+  2. Por qué importa             «…porque convierte una búsqueda O(n) en O(log n)…»
+  3. Cuándo no / qué cuesta      «…pero ralentiza cada escritura, así que no indexo todo.»
+  4. (Opcional) caso real        «En un proyecto, una FK sin índice hacía que borrar tardara segundos.»</div>
+
+        <h3>Ejercicio en vivo: los 5 pasos</h3>
+        <p><b>Reformular</b> → <b>preguntar casos borde</b> → <b>ejemplo a mano</b> → <b>fuerza bruta</b> (dicha) →
+        <b>optimizar diciendo el compromiso</b> (tiempo frente a memoria). Pensar en voz alta durante todo el proceso.</p>
+
+        <h3>Diseño de sistemas: los 6 pasos</h3>
+        <div class="diagram">  1. ACOTAR (5 min)      funciones, usuarios, lecturas/escrituras, latencia, consistencia
+  2. NÚMEROS (3 min)     orden de magnitud: usuarios, peticiones/s, GB al año
+  3. API (3 min)         3–4 endpoints con método y código
+  4. DATOS (7 min)       entidades, motor y por qué, índices
+  5. DIBUJO (7 min)      cliente → proxy → servicio → caché → BD (+ cola si hay algo asíncrono)
+  6. CUELLOS (5 min)     ¿qué se rompe al multiplicar por 10? caché → réplicas → particionado</div>
+
+        <h3>RR. HH.</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pregunta</th><th>Plantilla</th></tr></thead>
+          <tbody>
+            <tr><td>Comportamiento</td><td>STAR (S+T 20 %, A 60 %, R 20 %) o CAR, en primera persona, con número en el resultado y aprendizaje al final.</td></tr>
+            <tr><td>«Háblame de ti»</td><td>Presente → pasado → futuro → cierre que devuelve el turno.</td></tr>
+            <tr><td>Logro</td><td>Verbo + qué + cómo + resultado medible.</td></tr>
+            <tr><td>Fortaleza</td><td>Afirmación + prueba en un hecho + relevancia para el puesto.</td></tr>
+            <tr><td>Debilidad</td><td>Nombrarla · ejemplo · qué haces ya · prueba de que mejora.</td></tr>
+            <tr><td>Error</td><td>Qué pasó · impacto · qué hiciste al momento · qué cambiaste.</td></tr>
+            <tr><td>Por qué aquí</td><td>Gancho verificable + por qué me interesa + qué aporto + pregunta.</td></tr>
+            <tr><td>Por qué contratarte</td><td>Lo que pedís + lo que traigo con prueba + límite honesto.</td></tr>
+            <tr><td>Feedback</td><td>SBI: situación · comportamiento · impacto.</td></tr>
+            <tr><td>A alguien no técnico</td><td>Impacto → analogía → opciones con coste → recomendación → comprobar.</td></tr>
+            <tr><td>No lo sé</td><td>«No lo he usado, pero razonaría así…» y lo más parecido que sí conoces.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores que descartan a quien sabía la materia</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Error</th><th>Por qué descarta y qué hacer</th></tr></thead>
+          <tbody>
+            <tr><td>Estudiar leyendo</td><td>Reconocer no es recordar: en voz alta te quedas en blanco. Ensaya hablando y grabándote.</td></tr>
+            <tr><td>Respuestas de tres minutos</td><td>Se pierde el hilo y no da tiempo a más preguntas. 30–40 s técnicas; 90–120 s STAR.</td></tr>
+            <tr><td>Inventar con seguridad</td><td>La repregunta lo descubre y anula todo lo demás. «No lo sé, razonaría así».</td></tr>
+            <tr><td>Silencio en el ejercicio en vivo</td><td>Se interpreta como bloqueo. Piensa en voz alta.</td></tr>
+            <tr><td>Empezar a programar en el minuto dos</td><td>Se salta lo que más puntúa: reformular y preguntar.</td></tr>
+            <tr><td>Dar la complejidad sin justificarla</td><td>Parece memorizada. Cuenta bucles y operaciones internas.</td></tr>
+            <tr><td>Definir sin criterio</td><td>Correcto pero incompleto para Mid/Senior: añade por qué importa y cuándo no.</td></tr>
+            <tr><td>Dibujar el sistema sin acotar</td><td>El primer paso es el que más puntúa en diseño.</td></tr>
+            <tr><td>«Hicimos…»</td><td>No se puede evaluar tu papel. Primera persona.</td></tr>
+            <tr><td>Resultado sin número</td><td>No es un resultado: tiempo, cantidad, antes/después.</td></tr>
+            <tr><td>Debilidades falsas o letales</td><td>«Perfeccionista» resta; «me cuesta la constancia» descarta. Real, no letal y con plan.</td></tr>
+            <tr><td>Hablar mal de la empresa anterior</td><td>Señal de riesgo. Critica prácticas, nunca personas, en positivo.</td></tr>
+            <tr><td>Respuesta de «por qué aquí» genérica</td><td>Si vale para cualquier empresa, no vale. Gancho verificable.</td></tr>
+            <tr><td>Rellenar el silencio deliberado</td><td>Rebajas lo que dijiste. Sostenlo.</td></tr>
+            <tr><td>No tener preguntas al final</td><td>Se lee como falta de interés. Lleva tres preparadas.</td></tr>
+            <tr><td>Preparar sólo tecnología</td><td>RR. HH. puede descartar. Prepara seis historias y «háblame de ti».</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Simulacro · Backend Java y datos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Respondes «una transacción es un conjunto de operaciones que se ejecutan todas o ninguna» para un puesto Senior. ¿Qué falta?</p>
+            <div class="q-ans">El criterio: qué garantiza el motor y qué no (el aislamiento es ajustable y tiene anomalías), qué nivel usa tu base por defecto, que <code>@Transactional</code> no revierte con checked ni actúa en auto-invocación, y que no cubre efectos externos (por eso AFTER_COMMIT u outbox). Senior anticipa el coste.</div></div>
+          <div class="q"><p class="q-text">2. Metes un objeto en un HashSet, cambias un campo y <code>contains()</code> devuelve false. ¿Por qué?</p>
+            <div class="q-ans">El campo participa en <code>hashCode()</code>: el objeto sigue en el bucket del hash antiguo y la búsqueda mira en otro. Es una entrada fantasma. Las claves de colecciones hash deben ser inmutables.</div></div>
+          <div class="q"><p class="q-text">3. Un contador compartido por varios hilos con <code>volatile int</code> pierde incrementos. ¿Por qué?</p>
+            <div class="q-ans"><code>volatile</code> garantiza visibilidad, no atomicidad: <code>i++</code> son tres operaciones y dos hilos pueden leer el mismo valor. Se usa <code>AtomicInteger</code> (o synchronized si son varias operaciones).</div></div>
+          <div class="q"><p class="q-text">4. Un listado de 100 pedidos lanza 101 consultas. ¿Qué es y cómo lo arreglas?</p>
+            <div class="q-ans">N+1: una consulta para la lista y otra por cada relación perezosa. Fetch join o <code>@EntityGraph</code> para traerlo en una; <code>@BatchSize</code> para agrupar; o proyección directa a DTO. No se arregla con EAGER.</div></div>
+          <div class="q"><p class="q-text">5. «Clientes sin pedidos» con <code>NOT IN</code> devuelve cero filas. ¿Por qué?</p>
+            <div class="q-ans">La subconsulta tiene un NULL y <code>x NOT IN (…, NULL)</code> nunca es verdadero. Se usa <code>NOT EXISTS</code> o <code>LEFT JOIN … WHERE p.id IS NULL</code>.</div></div>
+          <div class="q"><p class="q-text">6. Hay un índice en <code>email</code> y <code>WHERE LOWER(email) = ?</code> no lo usa. ¿Por qué?</p>
+            <div class="q-ans">La función sobre la columna hace la condición no «sargable»: el índice guarda <code>email</code>, no <code>LOWER(email)</code>. Índice de expresión o guardar normalizado.</div></div>
+          <div class="q"><p class="q-text">7. Dos usuarios editan el mismo registro con minutos de diferencia. ¿Qué bloqueo usas?</p>
+            <div class="q-ans">Optimista con <code>@Version</code>: no se bloquea durante minutos; al guardar, si la versión cambió, se rechaza con 409 y el usuario decide. Pesimista sólo para operaciones cortas y críticas.</div></div>
+          <div class="q"><p class="q-text">8. ¿Por qué no devolver entidades JPA en la API?</p>
+            <div class="q-ans">Exponen campos internos, acoplan el contrato a la tabla, disparan cargas perezosas fuera de la transacción (o recursión en relaciones bidireccionales) y la entrada y la salida rara vez tienen la misma forma. DTOs.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Simulacro · Frontend y web</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Un bucle con <code>var</code> y <code>setTimeout</code> imprime 3, 3, 3. ¿Por qué y cómo se arregla?</p>
+            <div class="q-ans">Los closures capturan la variable, no su valor, y <code>var</code> es una sola variable de función que acaba valiendo 3. Con <code>let</code> cada vuelta tiene su propia variable de bloque.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué se imprime antes: un <code>setTimeout(…, 0)</code> o un <code>Promise.resolve().then(…)</code>?</p>
+            <div class="q-ans">La promesa: es una microtarea, y la cola de microtareas se vacía entera antes de coger la siguiente macrotarea (el setTimeout).</div></div>
+          <div class="q"><p class="q-text">3. Usas <code>forEach</code> con <code>await</code> dentro y el código sigue antes de terminar. ¿Por qué?</p>
+            <div class="q-ans"><code>forEach</code> ignora las promesas que devuelve el callback. Para secuencia, <code>for…of</code> con await; para paralelo, <code>await Promise.all(lista.map(…))</code>.</div></div>
+          <div class="q"><p class="q-text">4. Una lista con <code>key={index}</code> mezcla el estado de los inputs al borrar. ¿Por qué?</p>
+            <div class="q-ans">React identifica cada elemento por su key; con el índice, al borrar el primero el segundo hereda su posición y su estado. Hay que usar un id estable del dato.</div></div>
+          <div class="q"><p class="q-text">5. ¿Es CORS una medida de seguridad de tu API?</p>
+            <div class="q-ans">No: es una regla del navegador que restringe lecturas entre orígenes y que tu servidor relaja con cabeceras. Un atacante con curl la ignora. La API se protege con autenticación y autorización en el servidor.</div></div>
+          <div class="q"><p class="q-text">6. ¿Dónde guardas el token de sesión en el navegador?</p>
+            <div class="q-ans">En una cookie <code>httpOnly</code>, <code>Secure</code> y <code>SameSite</code>: JavaScript no puede leerla (protege de XSS) y SameSite mitiga CSRF. En localStorage cualquier script inyectado lo roba.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué gana TypeScript si los tipos desaparecen al compilar?</p>
+            <div class="q-ans">Errores detectados en el editor, autocompletado, refactorización segura y documentación viva. Lo que no hace es validar datos externos: para eso un esquema (Zod) del que se deriva el tipo.</div></div>
+          <div class="q"><p class="q-text">8. Un botón hecho con un <code>div</code> y un clic. ¿Qué problema tiene?</p>
+            <div class="q-ans">No es enfocable con teclado, no se activa con Enter/Espacio, no se anuncia como botón y no lo entiende un buscador. <code>&lt;button&gt;</code> trae todo eso gratis.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Simulacro · Producción, diseño e IA</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Diseña un acortador de URLs. ¿Por dónde empiezas?</p>
+            <div class="q-ans">Acotando: ¿URLs personalizadas? ¿caducan? ¿estadísticas? ¿cuántas creaciones y lecturas? (dominan las lecturas, ~100:1). Después números, API (POST para crear, GET con redirección 301/302), datos (código → URL con índice único), dibujo con caché delante y cuellos (caché, réplicas de lectura).</div></div>
+          <div class="q"><p class="q-text">2. ¿Monolito o microservicios para un producto nuevo con cuatro desarrolladores?</p>
+            <div class="q-ans">Monolito modular: los microservicios resuelven un problema organizativo (equipos independientes) a cambio de red, transacciones distribuidas, despliegues y depuración. Con fronteras claras, extraer un servicio después es viable.</div></div>
+          <div class="q"><p class="q-text">3. Subiste un secreto a Git hace una semana. ¿Qué haces primero?</p>
+            <div class="q-ans">Rotarlo: el secreto ya está comprometido. Después limpiar el historial (higiene, no solución), revisar si se usó y prevenir con escáner de secretos y variables de entorno.</div></div>
+          <div class="q"><p class="q-text">4. La latencia media es buena y los usuarios se quejan. ¿Qué miras?</p>
+            <div class="q-ans">Percentiles p95 y p99: la media esconde la cola, y con veinte llamadas por página el p99 es la experiencia habitual. Después trazas para localizar dónde se va el tiempo.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué no se puede «volver atrás» una base de datos en un despliegue?</p>
+            <div class="q-ans">Porque las migraciones cambian datos y esquema y el código antiguo puede no entender el nuevo. Se hacen en fases compatibles: expandir (añadir), migrar, cambiar el código y contraer (quitar lo viejo) en otro despliegue.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué principio SOLID usarías para hacer testeable un servicio y cómo?</p>
+            <div class="q-ans">La inversión de dependencias: el servicio depende de una interfaz (que le pertenece) y recibe la implementación por constructor. En el test se le pasa un doble sin base de datos ni red.</div></div>
+          <div class="q"><p class="q-text">7. Te piden un chatbot que responda sobre la documentación interna. ¿RAG o fine-tuning?</p>
+            <div class="q-ans">RAG: es conocimiento que cambia. Recupera los fragmentos relevantes, los añade al prompt y responde citando la fuente; actualizar es reindexar, no reentrenar, y permite aplicar control de acceso por documento. Fine-tuning es para comportamiento.</div></div>
+          <div class="q"><p class="q-text">8. Un test falla de vez en cuando en la CI. ¿Qué haces?</p>
+            <div class="q-ans">Tratarlo como fallo prioritario y buscar la causa típica: dependencia del tiempo, del orden de ejecución, concurrencia, un servicio externo o colecciones sin orden garantizado. Desactivarlo enseña a ignorar la CI.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Simulacro · RR. HH.</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. «Háblame de ti.» ¿Qué estructura y cuánto dura?</p>
+            <div class="q-ans">Presente (quién eres hoy y qué haces) → pasado (dos o tres hitos elegidos para esta oferta) → futuro (qué buscas y por qué encaja aquí) → cierre que devuelve el turno. Unos 90 segundos; ten preparadas también las versiones de 30 s y 3 min.</div></div>
+          <div class="q"><p class="q-text">2. «¿Cuál es tu mayor debilidad?»</p>
+            <div class="q-ans">Una real y no letal para el puesto, en cuatro partes: nombrarla sin rodeos, un ejemplo de cuándo se notó, qué haces ya en concreto y la prueba de que mejora. Nada de virtudes disfrazadas.</div></div>
+          <div class="q"><p class="q-text">3. «Cuéntame un error que cometiste.»</p>
+            <div class="q-ans">Qué pasó (concreto), el impacto real (sin exagerar ni minimizar), qué hiciste en el momento y qué cambiaste después para que no se repita, que es la parte que da valor. Sin repartir culpas.</div></div>
+          <div class="q"><p class="q-text">4. «¿Por qué quieres trabajar aquí?»</p>
+            <div class="q-ans">Un gancho verificable de la empresa (su blog de ingeniería, un producto, cómo trabajan), por qué te interesa a ti, qué aportas tú y una pregunta. Si la respuesta valdría cambiando el nombre de la empresa, no sirve.</div></div>
+          <div class="q"><p class="q-text">5. «Cuéntame un conflicto con un compañero.»</p>
+            <div class="q-ans">STAR centrado en el proceso: el motivo real detrás de la discrepancia, el criterio objetivo que propusiste para decidir y el desenlace (incluso «tenía razón él» o «se decidió lo contrario y lo apoyé»). Nunca la historia del héroe ni la de «nunca discuto».</div></div>
+          <div class="q"><p class="q-text">6. «¿Por qué dejas tu trabajo actual?»</p>
+            <div class="q-ans">Hacia dónde vas, no de qué huyes: qué te llevas de allí, qué buscas y por qué está aquí. Algo positivo de donde vienes y, si hay críticas, a prácticas, nunca a personas.</div></div>
+          <div class="q"><p class="q-text">7. Te hacen una pregunta improcedente sobre tu vida personal. ¿Qué haces?</p>
+            <div class="q-ans">Tono cordial, negativa breve y responder a la preocupación laboral que hay detrás (disponibilidad, compromiso). Y anotarlo: también informa sobre la empresa.</div></div>
+          <div class="q"><p class="q-text">8. «¿Tienes alguna pregunta para nosotros?»</p>
+            <div class="q-ans">Sí, siempre: tres preparadas sobre el trabajo real (cómo es un día, cómo se mide el éxito en el puesto, qué reto tiene el equipo) y una sobre los siguientes pasos y plazos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ La víspera: repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <h3>Lo que debe estar en tu cabeza</h3>
+        <ul class="clean">
+          <li><b>Forma</b>: qué es · por qué importa · cuándo no, en 30–40 s.</li>
+          <li><b>Código en vivo</b>: reformular, preguntar, ejemplo, fuerza bruta, optimizar diciendo el compromiso.</li>
+          <li><b>Diseño</b>: acotar primero; números, API, datos, dibujo, cuellos.</li>
+          <li><b>Java</b>: igualdad y hash, colecciones por complejidad, checked frente a unchecked, hilos (atomicidad ≠ visibilidad).</li>
+          <li><b>Datos</b>: N+1, transacciones y aislamiento, JOINs y NULL, índices y prefijo izquierdo.</li>
+          <li><b>Web</b>: closures, bucle de eventos, keys, CORS no protege, 401 ≠ 403, cookie httpOnly.</li>
+          <li><b>Producción</b>: una imagen para todos los entornos, rotar secretos, p95, migraciones expandir/contraer.</li>
+          <li><b>RR. HH.</b>: «háblame de ti» de 90 s, seis historias STAR, debilidad en cuatro partes, gancho de la empresa, tres preguntas finales.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ La víspera y el día</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Nada de materia nueva en los dos últimos días: sólo ensayo en voz alta de lo que ya sabes.</li>
+            <li>Relee tu ficha de la empresa y tus seis historias; cronometra «háblame de ti».</li>
+            <li>Durante la entrevista: dos segundos de pausa antes de responder y pensar en voz alta.</li>
+            <li>Al salir, apunta las preguntas que te hicieron y lo que cambiarías: el dossier no se termina, se mantiene.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de CLI</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

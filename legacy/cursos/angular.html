@@ -20866,6 +20866,707 @@ de qué se rompería con la alternativa, y mencionando UNA desventaja.</code></p
     </details>
   </section>
 
+  <section class="view chapter" id="cap-24"
+    data-num="24"
+    data-title="Repaso exprés: Angular y NakaGym de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Signals|input y output|Inyección de dependencias|Router|HttpClient|RxJS|Formularios reactivos|Zoneless|SSR">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del primer componente standalone a
+      NakaGym con store de signals, guards, interceptores, zoneless, SSR y despliegue. Cada concepto aparece con lo mínimo
+      para recordarlo —qué es, para qué sirve y cómo se escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a Angular tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  6 · NIVEL PROFESIONAL     arquitectura por features · migraciones · cierre      (22–23)
+                ▲
+  5 · PRODUCCIÓN            i18n · SSR e hidratación · build, Docker, CI/CD      (19–21)
+                ▲
+  4 · CALIDAD               TypeScript estricto · tokens y temas · a11y · tests  (15–18)
+                ▲
+  3 · APLICACIÓN COMPLETA   store · guards · interceptores · @defer · zoneless   (10–14)
+                ▲
+  2 · DATOS Y SERVICIOS     DI · rutas · HttpClient · RxJS · formularios         (5–9)
+                ▲
+  1 · PRIMEROS COMPONENTES  plantillas · signals · input/output · pipes          (0–4)</div>
+
+        <h3>La arquitectura de NakaGym</h3>
+        <div class="diagram">  src/app/
+  ├─ core/        sesión, interceptores (token → carga → reintento → errores), config
+  ├─ shared/      ui reutilizable sin dominio (appBoton, pipes, directivas)
+  └─ features/
+      ├─ clases/  data/ (ClaseService, ClaseStore) · ui/ (ClaseCard) · paginas/ (ClaseGrid…) · rutas
+      └─ socios/  …
+  Flujo: componente tonto ◀── input ── componente listo ◀── signals ── store/servicio ◀── HttpClient
+                          ── output ──▶                ── métodos ──▶</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Componentes</b></td><td>Plantillas declarativas sobre estado en signals.</td><td>Nunca mutes: reemplaza.</td></tr>
+            <tr><td><b>Comunicación</b></td><td>Datos bajan por input, eventos suben por output.</td><td>Muchos tontos, pocos listos.</td></tr>
+            <tr><td><b>Servicios y rutas</b></td><td>La lógica en servicios inyectados; la URL elige la pantalla.</td><td>Lectura pública, escritura privada.</td></tr>
+            <tr><td><b>Eventos y formularios</b></td><td>RxJS para el tiempo; formularios tipados en TS.</td><td>switchMap y catchError dentro.</td></tr>
+            <tr><td><b>Aplicación completa</b></td><td>Store, protección de rutas, HTTP centralizado, menos JS.</td><td>Un guard no es seguridad.</td></tr>
+            <tr><td><b>Calidad</b></td><td>Tipos que validan en la frontera, tokens, a11y y tests.</td><td>Los tipos no validan nada.</td></tr>
+            <tr><td><b>Producción</b></td><td>Idiomas, SSR por ruta y despliegue sin secretos.</td><td>Todo lo compilado es público.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Antes de cada bloque, intenta escribir de memoria su pieza clave (un componente con <code>input.required</code>, un
+        servicio con <code>asReadonly</code>, un buscador con <code>switchMap</code>, un guard funcional). Después compara.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🅰 Bloque 1 · Componentes, plantillas y signals (cap. 0–2)</summary>
+      <div class="acc-body">
+
+        <h3>Qué es Angular (0)</h3>
+        <ul class="clean">
+          <li><b>Framework</b>, no biblioteca: trae rutas, HTTP, formularios y tests decididos (libertad a cambio de consistencia).</li>
+          <li>Declarativo. Un componente = clase con <code>@Component</code> + plantilla. App = árbol de componentes. SPA con <code>&lt;app-root&gt;</code>.</li>
+          <li>Node, npm y el <b>CLI</b> (<code>ng new</code>, <code>ng g c</code>, <code>ng serve</code>, <code>ng build</code>, <code>ng test</code>) sólo en tu máquina.</li>
+          <li>TypeScript detecta errores también en las plantillas. <b>Standalone</b>: cada componente declara lo que usa en su <code>imports</code>; sin NgModules en código nuevo.</li>
+        </ul>
+
+        <h3>Plantillas (1)</h3>
+        <div class="code-block" data-lang="HTML · plantilla de ClaseGrid">
+<pre><code>&lt;h2&gt;{{ titulo }}&lt;/h2&gt;                                 &lt;!-- interpolación: texto escapado --&gt;
+&lt;button [disabled]="estaCompleta()" (click)="reservar(clase.id)"&gt;Reservar&lt;/button&gt;
+@let libres = clase.plazasLibres;
+@if (libres === 0) { &lt;span&gt;Completa&lt;/span&gt; }
+@else if (libres &lt; 3) { &lt;span&gt;Últimas plazas&lt;/span&gt; }
+@else { &lt;span&gt;{{ libres }} libres&lt;/span&gt; }
+@for (c of clases(); track c.id) {                      &lt;!-- track obligatorio --&gt;
+  &lt;app-clase-card [clase]="c" /&gt;
+} @empty { &lt;p&gt;No hay clases hoy.&lt;/p&gt; }</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> cuatro conexiones: <code>{{ }}</code> (texto), <code>[propiedad]</code> (valor
+        con su tipo: <code>disabled="{{ x }}"</code> pasa la cadena «false», que es verdadera), <code>(evento)</code> y
+        <code>[(…)]</code>. <code>@if</code>/<code>@for</code>/<code>@switch</code>/<code>@let</code> son sintaxis del compilador.
+        <code>track</code> con un id estable (con <code>$index</code>, el texto de un input salta de fila). Lo que un
+        <code>@if</code> no muestra no existe en el DOM. Nada de cálculos caros en la plantilla. Estilos encapsulados.</p>
+
+        <h3>Signals (2)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>readonly socios = signal&lt;Socio[]&gt;([]);
+readonly filtro = signal('');
+readonly visibles = computed(() =&gt;                       // perezoso y memorizado
+  this.socios().filter(s =&gt; s.nombre.includes(this.filtro())));
+readonly seleccionada = linkedSignal(() =&gt; this.visibles()[0]);   // derivado sobrescribible
+
+this.socios.update(lista =&gt; [...lista, nuevo]);          // nunca this.socios().push(nuevo)
+this.filtro.set('ana');
+
+effect(() =&gt; localStorage.setItem('filtro', this.filtro()));   // sólo para el mundo exterior</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> una signal es un valor que sabe quién lo lee; se lee con paréntesis.
+        <code>set</code> (valor nuevo) y <code>update</code> (depende del anterior). <b>Inmutabilidad</b>: mutar no da error, sólo
+        deja la pantalla desactualizada. <code>computed</code> mejor que un método. <code>effect</code> no calcula estado
+        (escribir signals en un computed da <code>NG0600</code>). Orden en el componente: signals de entrada → computeds →
+        acciones.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔗 Bloque 2 · input, output, proyección, directivas y pipes (cap. 3–4)</summary>
+      <div class="acc-body">
+
+        <h3>Comunicación entre componentes (3)</h3>
+        <div class="code-block" data-lang="TypeScript · ClaseCard">
+<pre><code>@Component({
+  selector: 'app-clase-card',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    &lt;ng-content select="[cabecera]" /&gt;
+    &lt;h3&gt;{{ clase().nombre }}&lt;/h3&gt; &lt;p&gt;{{ ocupacion() }} %&lt;/p&gt;
+    &lt;button (click)="reservar.emit(clase().id)"&gt;Reservar&lt;/button&gt;`,
+})
+export class ClaseCard {
+  readonly clase = input.required&lt;Clase&gt;();              // signal; falta → error de compilación
+  readonly reservar = output&lt;number&gt;();                  // el padre decide qué hacer
+  readonly ocupacion = computed(() =&gt;
+    Math.round(100 * (1 - this.clase().plazasLibres / this.clase().plazasTotales)));
+}
+// padre: &lt;app-clase-card [clase]="c" (reservar)="servicio.reservar($event)" /&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>datos bajan por <code>input()</code>, eventos suben por
+        <code>output()</code></b>; el estado vive en un solo sitio (el hijo no modifica lo que recibe). <code>model()</code> es
+        bidireccional: sólo para controles de valor. <code>&lt;ng-content&gt;</code> proyecta; el contenido proyectado pertenece
+        al padre (sus estilos vienen de él). Componentes <b>tontos</b> (reciben y avisan) frente a <b>listos</b> (estado y
+        servicios). <code>@if (x(); as y)</code> estrecha el tipo.</p>
+
+        <h3>Directivas y pipes (4)</h3>
+        <ul class="clean">
+          <li>Componente = marcado nuevo; <b>directiva</b> = comportamiento añadido (<code>selector: '[appResaltar]'</code> con bloque <code>host</code>: <code>[class.x]</code>, <code>[style.--var]</code>, <code>[attr.x]</code>); <b>pipe</b> = transformación para mostrar.</li>
+          <li>Un pipe <b>puro</b> memoriza: gana a un método en la plantilla. <code>pure: false</code> se ejecuta en cada ciclo: nunca para filtrar u ordenar (eso es un <code>computed</code>).</li>
+          <li>Formatos según <code>LOCALE_ID</code> + <code>registerLocaleData</code> (si no, fechas y precios en inglés).</li>
+          <li>Todo (componentes, directivas, pipes) se declara en <code>imports</code>. <code>hostDirectives</code> compone sin herencia.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧰 Bloque 3 · Servicios, rutas y HTTP (cap. 5–7)</summary>
+      <div class="acc-body">
+
+        <h3>Servicios e inyección (5)</h3>
+        <div class="code-block" data-lang="TypeScript · ClaseService">
+<pre><code>@Injectable({ providedIn: 'root' })                   // una instancia; se elimina si nadie la usa
+export class ClaseService {
+  private readonly http = inject(HttpClient);            // inject(), en el contexto de inyección
+  private readonly api = inject(API_URL);                // InjectionToken: lo que no es una clase
+  private readonly _clases = signal&lt;Clase[]&gt;([]);       // escritura privada
+  readonly clases = this._clases.asReadonly();           // lectura pública
+  readonly reservadas = computed(() =&gt; this._clases().filter(c =&gt; c.reservada));
+
+  reservar(id: number) {
+    if (this.reservadas().length &gt;= 3) return 'limite';   // la regla de negocio, aquí
+    /* … */
+  }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> DI = el componente pide lo que necesita y Angular decide qué instancia darle.
+        <code>inject()</code> mejor que el constructor (funciona en funciones). Los inyectores forman un árbol: se busca hacia
+        arriba y gana el primero (en <code>providers</code> de un componente, una instancia por componente). Si el dato tendría
+        sentido en otra pantalla, va al servicio.</p>
+
+        <h3>Rutas (6)</h3>
+        <div class="code-block" data-lang="TypeScript · app.routes.ts">
+<pre><code>export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'clases' },
+  { path: 'clases', component: ClaseGrid, title: 'Clases' },
+  { path: 'clases/:id', component: ClaseDetalle },
+  { path: '**', component: NoEncontrado },              // siempre la última
+];
+// provideRouter(routes, withComponentInputBinding(), withInMemoryScrolling(...))
+
+export class ClaseDetalle {
+  readonly id = input.required({ transform: (v: string) =&gt; Number(v) });   // el parámetro llega como input
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el router elige un componente y lo monta en <code>&lt;router-outlet /&gt;</code>.
+        Orden: lo específico arriba. <b><code>routerLink</code>, nunca <code>href</code></b> (recarga y pierde el estado).
+        <code>withComponentInputBinding()</code> entrega los parámetros como inputs (signals): adiós al bug del snapshot que no
+        cambia de <code>/clases/1</code> a <code>/clases/3</code>. Llegan como texto. Filtros en <code>queryParams</code> con
+        <code>replaceUrl</code> y <code>queryParamsHandling: 'merge'</code>.</p>
+
+        <h3>HttpClient (7)</h3>
+        <ul class="clean">
+          <li><code>provideHttpClient(withFetch())</code>. Un observable es <b>perezoso</b>: sin <code>subscribe</code> no sale la petición (ni error).</li>
+          <li>Cuatro estados pintados: cargando, error, datos y vacío. <code>_cargando.set(false)</code> en las dos ramas.</li>
+          <li>El genérico <code>get&lt;Clase[]&gt;</code> <b>no valida</b>: las fechas llegan como texto. Adapta en la entrada con un tipo propio (<code>ClaseApi</code> → <code>Clase</code>).</li>
+          <li><b>Optimista</b> para lo frecuente y reversible; pesimista para lo irreversible. Errores HTTP traducidos, nunca <code>err.message</code>.</li>
+          <li><code>toSignal</code> convierte un observable en signal y se desuscribe solo (no gestiona carga ni error). Los componentes no inyectan <code>HttpClient</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌊 Bloque 4 · RxJS y formularios reactivos (cap. 8–9)</summary>
+      <div class="acc-body">
+
+        <h3>RxJS lo justo (8)</h3>
+        <div class="code-block" data-lang="TypeScript · buscador de socios">
+<pre><code>readonly termino = signal('');
+readonly resultados = toSignal(
+  toObservable(this.termino).pipe(
+    debounceTime(300),
+    distinctUntilChanged(),
+    switchMap(t =&gt; this.socios.buscar(t).pipe(           // cancela la búsqueda anterior
+      catchError(() =&gt; of([])),                          // DENTRO: si no, mata el flujo
+    )),
+  ),
+  { initialValue: [] },
+);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>signals para el estado, RxJS para los eventos en el tiempo</b> (esperar,
+        cancelar, reintentar, combinar). Un error termina el flujo. Los cuatro aplanados: <b>switchMap</b> cancela (búsquedas),
+        <b>concatMap</b> encola, <b>mergeMap</b> paraleliza, <b>exhaustMap</b> ignora mientras hay uno en curso (doble clic en
+        Guardar). <code>takeUntilDestroyed()</code> en lo que no completa (HttpClient completa solo). <code>retry</code> sólo en lo
+        seguro de repetir.</p>
+
+        <h3>Formularios reactivos (9)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>private readonly fb = inject(FormBuilder);
+readonly form = this.fb.nonNullable.group({                // nonNullable: tipos sin null y reset() correcto
+  nombre: ['', [Validators.required, Validators.maxLength(60)]],
+  aforo: [10, [Validators.required, Validators.min(1)]],
+  inicio: [''], fin: [''],
+}, { validators: [fechasCoherentes()] });                // regla de dos campos: validador de grupo
+
+guardar() {
+  if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+  this.servicio.crear(this.form.getRawValue());          // getRawValue: incluye deshabilitados
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> la estructura vive en TypeScript, tipada y testeable. Error visible cuando
+        <code>invalid &amp;&amp; (touched || enviado)</code>. Un validador devuelve <code>null</code> si es válido y un objeto si
+        no; los propios no comprueban el vacío (eso es <code>required</code>). Validación asíncrona = timer + switchMap +
+        catchError, con estado <code>pending</code>. <code>FormArray</code> para listas dinámicas. No deshabilites el botón:
+        muestra los errores al enviar.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🏗 Bloque 5 · Store, guards, interceptores, carga diferida y zoneless (cap. 10–14)</summary>
+      <div class="acc-body">
+
+        <h3>Store con signals (10)</h3>
+        <ul class="clean">
+          <li>Cuatro tipos de estado: <b>servidor</b>, <b>aplicación</b>, <b>vista</b> y <b>URL</b>, cada uno en su sitio.</li>
+          <li>Store = fuente única + lectura pública / escritura privada + derivados. Un servicio con signals (<code>ClaseStore</code>) ya lo es.</li>
+          <li><b>Normalizar</b>: entidades por id + listas de ids (sin copias que se desincronizan). Selectores = <code>computed</code> públicos.</li>
+          <li>Persistir sólo ids y preferencias; al restaurar, <code>try/catch</code>, validar y versionar la clave. Casi nunca hace falta NgRx.</li>
+        </ul>
+
+        <h3>Guards y resolvers (11)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>export const conRol: CanActivateFn = (ruta, estado) =&gt; {
+  const sesion = inject(SesionService);
+  const router = inject(Router);
+  if (!sesion.usuario()) return router.createUrlTree(['/login'], { queryParams: { volver: estado.url } });
+  const roles = ruta.data['roles'] as Rol[];
+  return roles.includes(sesion.usuario()!.rol) || router.createUrlTree(['/']);   // UrlTree, no false
+};
+// { path: 'admin', canMatch: [coincideRol], data: { roles: ['admin'] }, loadChildren: … }</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un guard responde «¿se puede?» con <code>true</code>, <code>false</code> o una
+        <b>UrlTree</b> (mejor: el usuario acaba en algún sitio). <code>CanActivate</code> general; <b><code>CanMatch</code></b>
+        para que la ruta ni exista ni se descargue; <code>CanDeactivate</code> contra la pérdida de datos. Un guard genérico +
+        <code>data</code>. <b>Un guard no es seguridad</b>: la protege el servidor. Los resolvers bloquean la navegación: sólo
+        datos rápidos, con <code>catchError</code>.</p>
+
+        <h3>Interceptores (12)</h3>
+        <ul class="clean">
+          <li>Funciones que ven todas las peticiones: <code>req.clone({ setHeaders })</code> (son inmutables) y <b><code>siguiente(req)</code> en todos los caminos</b>.</li>
+          <li>Cadena de ida y vuelta: <code>tokenInterceptor → cargaInterceptor → reintentoInterceptor → erroresInterceptor</code>.</li>
+          <li>El de errores informa y <b>relanza</b> con <code>throwError</code>. <code>finalize</code> (no <code>tap</code>) para apagar contadores: corre también al cancelar.</li>
+          <li>Reintentar sólo lo idempotente (GET, HEAD). Refresco de token con bandera compartida (si no, cinco refrescos). <code>HttpContext</code> para excepciones puntuales.</li>
+        </ul>
+
+        <h3>Carga diferida (13)</h3>
+        <ul class="clean">
+          <li><code>loadComponent</code> (una pantalla) y <code>loadChildren</code> (una sección); la ruta de entrada nunca se difiere.</li>
+          <li><b><code>@defer</code></b> dentro de una plantilla con <code>@placeholder</code> (mismo tamaño que el final, o CLS), <code>@loading</code>, <code>@error</code>; <code>on viewport</code>, <code>prefetch on hover</code>.</li>
+          <li>Precarga selectiva. <b>Presupuestos</b> en <code>angular.json</code>: el build falla si engorda. <code>NgOptimizedImage</code> (<code>priority</code> sólo en el LCP).</li>
+        </ul>
+
+        <h3>Detección de cambios y zoneless (14)</h3>
+        <ul class="clean">
+          <li>Zone.js parcheaba lo asíncrono para revisar todo el árbol. <b>OnPush</b> revisa sólo si cambia la referencia de un input, hay un evento propio, cambia una signal leída o se llama a <code>markForCheck()</code>.</li>
+          <li><b>Zoneless</b> (<code>provideZonelessChangeDetection()</code>): sin Zone.js; las signals notifican con precisión. Trampa: escribir una propiedad normal no actualiza nada y no da error.</li>
+          <li><code>ExpressionChangedAfterItHasBeenChecked</code> = tu vista no es función pura de tu estado (no se tapa con <code>setTimeout</code>).</li>
+          <li><code>afterNextRender</code> para tocar el DOM (existe y no corre en el servidor). La inmutabilidad del capítulo 2 es lo que hizo que OnPush no rompiera nada.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>✅ Bloque 6 · TypeScript, estilos, accesibilidad y tests (cap. 15–18)</summary>
+      <div class="acc-body">
+
+        <h3>TypeScript en serio (15)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>type Estado&lt;T&gt; =
+  | { tipo: 'cargando' }
+  | { tipo: 'error'; mensaje: string }
+  | { tipo: 'listo'; datos: T };
+
+function casoNoContemplado(x: never): never { throw new Error(`Caso no contemplado: ${x}`); }
+
+// plantilla: @let e = estado();  @switch (e.tipo) { @case ('error') { {{ e.mensaje }} } … }</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>strict</code> siempre. <b>Los tipos desaparecen al compilar y no validan
+        nada</b>: lo que entra de fuera (API, localStorage, URL) se valida en ejecución, con <code>unknown</code> en vez de
+        <code>any</code>. Las uniones discriminadas hacen imposibles los estados imposibles; captura con <code>@let</code> para que
+        el estrechamiento funcione en la plantilla. Deriva tipos (<code>Omit</code>, <code>Pick</code>, <code>Partial</code>,
+        <code>Record</code>). Tipos nominales para ids que no deben confundirse. <code>satisfies</code> comprueba sin perder precisión.</p>
+
+        <h3>Estilos y sistema de diseño (16)</h3>
+        <ul class="clean">
+          <li>La encapsulación añade atributos únicos a los selectores. <code>:host</code> (declara su <code>display</code>) y <code>:host-context</code>.</li>
+          <li><code>::ng-deep</code> desaconsejado; si se usa, siempre con <code>:host</code> delante (si no, se filtra a toda la app).</li>
+          <li><b>Variables CSS</b> atraviesan la encapsulación: la vía limpia para configurar un componente. Tokens en tres niveles: primitivos → semánticos → de componente.</li>
+          <li>Tema con tres modos, la elección del usuario gana (<code>:not([data-tema])</code>), script previo al pintado contra el destello. <code>:focus-visible</code> y <code>prefers-reduced-motion</code>.</li>
+        </ul>
+
+        <h3>Accesibilidad (17)</h3>
+        <ul class="clean">
+          <li><b>HTML semántico antes que ARIA</b>. Un <code>&lt;div (click)&gt;</code> no se alcanza con teclado: si algo no se puede hacer con teclado, está roto. Nunca <code>tabindex</code> positivo.</li>
+          <li>En una SPA hay que <b>mover el foco y anunciar</b> la pantalla nueva al navegar; Angular no lo hace solo.</li>
+          <li>Regiones live que existen antes del mensaje (no dentro de un <code>@if</code>); <code>polite</code> por defecto, <code>role="alert"</code> para lo grave.</li>
+          <li>Nombres accesibles con contexto («Reservar Yoga suave»). Trampa de foco en diálogos. Resumen de errores en formularios.</li>
+        </ul>
+
+        <h3>Tests (18)</h3>
+        <div class="code-block" data-lang="TypeScript · ClaseCard.spec.ts">
+<pre><code>it('emite reservar con el id', async () =&gt; {
+  const fixture = TestBed.createComponent(ClaseCard);
+  fixture.componentRef.setInput('clase', crearClase({ id: 7, nombre: 'Yoga suave' }));
+  await fixture.whenStable();                                 // zoneless: async/await, no fakeAsync
+  const emitidos: number[] = [];
+  fixture.componentInstance.reservar.subscribe(id =&gt; emitidos.push(id));
+  fixture.nativeElement.querySelector('button[aria-label="Reservar Yoga suave"]').click();
+  expect(emitidos).toEqual([7]);
+});</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> pirámide: muchos unitarios, algunos de componente, pocos E2E. Prueba
+        comportamiento, no implementación. <code>setInput()</code> para inputs y <code>await fixture.whenStable()</code> en
+        zoneless. Busca por rol y nombre accesible. <code>HttpTestingController</code> con <code>expectOne</code>,
+        <code>expectNone</code> y <code>verify()</code>. Constructores de datos con <code>Partial</code>. Tests independientes del orden.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · i18n, SSR, despliegue y arquitectura (cap. 19–23)</summary>
+      <div class="acc-body">
+
+        <h3>Internacionalización (19)</h3>
+        <ul class="clean">
+          <li>Traduce <b>frases completas</b>, nunca fragmentos concatenados. El i18n integrado traduce <b>en compilación</b>: una app por idioma, sin coste en ejecución.</li>
+          <li><code>i18n="significado|descripción@@id"</code> con <code>@@id</code> siempre (si no, cambiar el original invalida la traducción); <code>i18n-aria-label</code> para atributos.</li>
+          <li>Plurales ICU: <code>{n, plural, =0 {Sin plazas} =1 {Queda 1 plaza} other {Quedan {{n}} plazas}}</code>. Las claves de un <code>select</code> no se traducen.</li>
+          <li>Los servicios devuelven códigos (<code>'completa'</code>); la traducción vive en la presentación. Selector de idioma con <code>location.href</code>; el servidor con <code>try_files</code> por idioma.</li>
+        </ul>
+
+        <h3>SSR e hidratación (20)</h3>
+        <ul class="clean">
+          <li>El SSR envía HTML pintado: mejor LCP, SEO y vistas previas; a cambio, servidor Node y peor TTFB.</li>
+          <li>Tres modos <b>por ruta</b>: prerender (estático), servidor (público cambiante), cliente (privado: lo de la sesión nunca en el servidor).</li>
+          <li><b>Hidratación</b> adopta el HTML en vez de repintarlo; <code>withEventReplay()</code> conserva los clics previos; <code>withIncrementalHydration()</code> se apoya en <code>@defer</code>.</li>
+          <li>En el servidor no hay <code>window</code>, <code>localStorage</code> ni <code>navigator</code>: <code>afterNextRender</code> (preferido), <code>isPlatformBrowser</code> o <code>inject(DOCUMENT)</code>. <code>TransferState</code> evita la doble petición.</li>
+        </ul>
+
+        <h3>Build y despliegue (21)</h3>
+        <ul class="clean">
+          <li><code>ng build</code>: AOT, código no usado fuera, minificado, paquetes con hash.</li>
+          <li><b>Todo lo compilado es público</b>: nada de secretos en <code>environment</code>. Configuración en un <code>config.json</code> externo: <b>una imagen, muchos entornos</b>; se despliega el artefacto probado.</li>
+          <li>Docker multietapa con <code>.dockerignore</code>, <code>USER node</code>, <code>HEALTHCHECK</code> y tests dentro del build.</li>
+          <li>Caché: un año para archivos con hash; nunca para <code>index.html</code> ni <code>config.json</code>. Cabeceras de seguridad y CSP (primero en modo informe). Mapas de código ocultos. Monitorizar errores sin datos personales.</li>
+        </ul>
+
+        <h3>Arquitectura por features y código antiguo (22–23)</h3>
+        <ul class="clean">
+          <li>Organiza por <b>funcionalidad</b>: <code>core/</code> (transversal), <code>shared/</code> (sin dominio), <code>features/</code> (negocio, con <code>data/</code>, <code>ui/</code>, <code>paginas/</code>). Las dependencias nunca en horizontal entre features.</li>
+          <li><code>index.ts</code> como API pública mínima (los barriles que reexportan de más rompen la carga diferida). Las reglas, en el linter.</li>
+          <li>El código antiguo (NgModules, <code>*ngIf</code>, <code>| async</code>) no está mal: es de antes. Migraciones con los esquemas del CLI, una por commit.</li>
+          <li>El 70 % es transferible a cualquier framework: estado reactivo, separación de responsabilidades, tres estados de una petición, a11y, tests y despliegue.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Diferencias clave y preparación de entrevista técnica de Angular"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Signals vs RxJS|computed vs effect|switchMap vs exhaustMap|CanActivate vs CanMatch|OnPush vs zoneless|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> de Angular moderno: las parejas de conceptos
+      que parecen iguales, los patrones que aplicaste en NakaGym, los errores que todo el mundo se encuentra y las preguntas
+      típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después despliega
+      la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Componentes, plantillas y estado</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Framework / biblioteca</b></td><td>Trae rutas, HTTP, formularios y tests decididos / sólo la vista.</td><td>Angular en equipos grandes que valoran la consistencia.</td></tr>
+            <tr><td><b>Standalone / NgModule</b></td><td>Cada componente declara lo que usa / un módulo agrupa declaraciones.</td><td>Standalone en código nuevo.</td></tr>
+            <tr><td><b><code>{{ x }}</code> / <code>[prop]="x"</code></b></td><td>Texto / valor con su tipo.</td><td>Booleanos, números y objetos con corchetes.</td></tr>
+            <tr><td><b><code>[disabled]</code> / <code>[class.x]</code> / <code>[attr.x]</code></b></td><td>Propiedad del DOM / clase condicional / atributo HTML (null lo quita).</td><td><code>attr</code> para aria-* sin propiedad.</td></tr>
+            <tr><td><b><code>@if</code> / ocultar con CSS</b></td><td>No existe en el DOM / existe pero no se ve.</td><td>@if por defecto.</td></tr>
+            <tr><td><b><code>track c.id</code> / <code>track $index</code></b></td><td>Identidad del dato / posición.</td><td>Siempre el id.</td></tr>
+            <tr><td><b>Método / <code>computed</code> / pipe puro</b></td><td>Se ejecuta en cada ciclo / memorizado por dependencias / memorizado por argumentos.</td><td>computed para estado; pipe para formato.</td></tr>
+            <tr><td><b><code>computed</code> / <code>effect</code> / <code>linkedSignal</code></b></td><td>Valor derivado / efecto hacia fuera / derivado que se puede sobrescribir.</td><td>Si el resultado es un valor, computed.</td></tr>
+            <tr><td><b><code>set</code> / <code>update</code></b></td><td>Valor nuevo / a partir del anterior.</td><td>—</td></tr>
+            <tr><td><b><code>input()</code> / <code>output()</code> / <code>model()</code></b></td><td>Datos hacia abajo / eventos hacia arriba / bidireccional.</td><td>model sólo para controles de valor.</td></tr>
+            <tr><td><b>Componente tonto / listo</b></td><td>Recibe y avisa / posee estado y servicios.</td><td>Muchos tontos, pocos listos.</td></tr>
+            <tr><td><b>Componente / directiva / pipe</b></td><td>Marcado nuevo / comportamiento añadido / transformación para mostrar.</td><td>—</td></tr>
+            <tr><td><b>Pipe puro / impuro</b></td><td>Recalcula si cambia la referencia del argumento / en cada ciclo.</td><td>Nunca impuro para filtrar.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Servicios, datos y formularios</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b><code>inject()</code> / constructor</b></td><td>Función en el contexto de inyección / parámetros del constructor.</td><td>inject() en código moderno.</td></tr>
+            <tr><td><b><code>providedIn: 'root'</code> / <code>providers</code> del componente</b></td><td>Una instancia global / una por componente.</td><td>Estado de una pantalla concreta → providers.</td></tr>
+            <tr><td><b>Clase / <code>InjectionToken</code></b></td><td>Se inyecta por tipo / para lo que no es una clase (configuración).</td><td>—</td></tr>
+            <tr><td><b><code>routerLink</code> / <code>href</code></b></td><td>Navega sin recargar / recarga la app.</td><td>routerLink siempre.</td></tr>
+            <tr><td><b>Parámetro de ruta / query param</b></td><td>Identidad del recurso / filtros, búsqueda, página.</td><td>—</td></tr>
+            <tr><td><b>Signals / RxJS</b></td><td>Estado sincrónico con dependencias / eventos en el tiempo.</td><td>Signals para estado; RxJS para esperar, cancelar, reintentar.</td></tr>
+            <tr><td><b>Promesa / observable</b></td><td>Un valor, empieza al crearse / muchos valores, perezoso, cancelable.</td><td>—</td></tr>
+            <tr><td><b><code>switchMap</code> / <code>concatMap</code> / <code>mergeMap</code> / <code>exhaustMap</code></b></td><td>Cancela el anterior / encola / paraleliza / ignora mientras hay uno.</td><td>Buscador / orden importa / independientes / doble clic.</td></tr>
+            <tr><td><b><code>toSignal</code> / <code>toObservable</code></b></td><td>Observable → signal / signal → observable.</td><td>RxJS dentro, signals fuera.</td></tr>
+            <tr><td><b>Optimista / pesimista</b></td><td>Pinta antes y revierte si falla / espera la confirmación.</td><td>Reversible y frecuente / irreversible.</td></tr>
+            <tr><td><b>Formularios reactivos / de plantilla</b></td><td>Estructura en TS, tipada / estructura en el HTML.</td><td>Reactivos por defecto.</td></tr>
+            <tr><td><b><code>value</code> / <code>getRawValue()</code></b></td><td>Omite deshabilitados / todos los campos.</td><td>getRawValue al guardar.</td></tr>
+            <tr><td><b>Validador de control / de grupo / asíncrono</b></td><td>Un campo / regla entre campos / consulta al servidor.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Aplicación, calidad y producción</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Estado de servidor / aplicación / vista / URL</b></td><td>Copia de la API / compartido / de una pantalla / compartible por enlace.</td><td>Cada uno en su sitio.</td></tr>
+            <tr><td><b>Store con signals / NgRx</b></td><td>Servicio con signals / acciones, reducers y efectos.</td><td>Signals salvo problema que lo justifique.</td></tr>
+            <tr><td><b><code>CanActivate</code> / <code>CanMatch</code> / <code>CanDeactivate</code></b></td><td>¿Entrar? / ¿existe la ruta? (no descarga) / ¿salir?</td><td>CanMatch con carga diferida por rol.</td></tr>
+            <tr><td><b>Guard / resolver</b></td><td>Decide si se navega / carga datos antes de entrar.</td><td>Resolver sólo para datos rápidos.</td></tr>
+            <tr><td><b><code>finalize</code> / <code>tap</code></b></td><td>Corre al completar, fallar o cancelar / sólo con valores o error.</td><td>finalize para contadores.</td></tr>
+            <tr><td><b><code>loadComponent</code> / <code>loadChildren</code> / <code>@defer</code></b></td><td>Pantalla / sección con rutas / parte de una plantilla.</td><td>—</td></tr>
+            <tr><td><b>Default / OnPush / zoneless</b></td><td>Revisa todo / revisa si cambia input, evento, signal o markForCheck / sin Zone.js, notifican las signals.</td><td>OnPush + zoneless hoy.</td></tr>
+            <tr><td><b><code>ngAfterViewInit</code> / <code>afterNextRender</code></b></td><td>Hook del ciclo de vida / tras pintar, sólo en el navegador.</td><td>afterNextRender para el DOM.</td></tr>
+            <tr><td><b><code>any</code> / <code>unknown</code></b></td><td>Desactiva la comprobación / obliga a validar.</td><td>unknown en la frontera.</td></tr>
+            <tr><td><b><code>:host</code> / <code>::ng-deep</code> / variables CSS</b></td><td>El propio componente / atraviesa la encapsulación (desaconsejado) / configuración limpia.</td><td>Variables CSS.</td></tr>
+            <tr><td><b>i18n integrado / en ejecución</b></td><td>Una app por idioma, sin coste / cambio sin recargar, con coste.</td><td>—</td></tr>
+            <tr><td><b>Prerender / SSR / CSR por ruta</b></td><td>HTML en el build / por petición / en el navegador.</td><td>Lo privado, siempre CSR.</td></tr>
+            <tr><td><b><code>environment.ts</code> / <code>config.json</code> externo</b></td><td>Compilado (una build por entorno) / leído al arrancar (una imagen, muchos entornos).</td><td>config.json.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en NakaGym</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Estado derivado con computed</b></td><td>Datos duplicados y cálculos repetidos.</td><td><code>ocupacion</code>, filtros (2–3)</td></tr>
+            <tr><td><b>Tonto / listo</b></td><td>Componentes enormes e intestables.</td><td><code>ClaseCard</code> / <code>ClaseGrid</code> (3)</td></tr>
+            <tr><td><b>Lectura pública, escritura privada</b></td><td>Cualquiera cambia el estado.</td><td><code>asReadonly()</code> en <code>ClaseService</code> (5)</td></tr>
+            <tr><td><b>InjectionToken de configuración</b></td><td>Configuración no sustituible.</td><td><code>API_URL</code> (5)</td></tr>
+            <tr><td><b>Parámetros como inputs</b></td><td>Pantallas que no reaccionan al cambiar la URL.</td><td><code>withComponentInputBinding</code> (6)</td></tr>
+            <tr><td><b>Adaptador en la entrada</b></td><td>Fechas como texto y campos ajenos.</td><td><code>ClaseApi</code> → <code>Clase</code> (7)</td></tr>
+            <tr><td><b>Buscador reactivo</b></td><td>Peticiones por tecla y respuestas viejas.</td><td>debounce + switchMap (8)</td></tr>
+            <tr><td><b>Store normalizado</b></td><td>Copias desincronizadas.</td><td><code>ClaseStore</code>, <code>EntidadStore</code> (10)</td></tr>
+            <tr><td><b>Guard genérico por datos de ruta</b></td><td>Un guard por combinación de roles.</td><td><code>conRol</code> + <code>data.roles</code> (11)</td></tr>
+            <tr><td><b>Cadena de interceptores</b></td><td>Token, errores y reintentos repetidos.</td><td>token → carga → reintento → errores (12)</td></tr>
+            <tr><td><b>Unión discriminada de estado</b></td><td>Estados imposibles.</td><td><code>Estado&lt;T&gt;</code> (15)</td></tr>
+            <tr><td><b>Tokens de diseño en tres niveles</b></td><td>Colores sueltos y temas imposibles.</td><td>Sistema de diseño (16)</td></tr>
+            <tr><td><b>Una imagen, muchos entornos</b></td><td>Recompilar por entorno.</td><td><code>config.json</code> (21)</td></tr>
+            <tr><td><b>Arquitectura por features</b></td><td>Carpetas por tipo que no escalan.</td><td><code>core/shared/features</code> (22)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>Inmutabilidad siempre</b>: es la base de signals, OnPush y zoneless.</li>
+          <li><b><code>input.required</code></b> por defecto: convierte un fallo en error de compilación.</li>
+          <li><b>La lógica de negocio en servicios</b>, no en plantillas ni componentes.</li>
+          <li><b>Cuatro estados</b> en toda pantalla con datos.</li>
+          <li><b>catchError dentro del aplanado</b> y <code>takeUntilDestroyed</code> en lo que no completa.</li>
+          <li><b>Valida en la frontera</b>: los tipos no validan.</li>
+          <li><b>Un guard no protege datos</b>: la seguridad está en el servidor.</li>
+          <li><b>HTML semántico y teclado</b> antes que ARIA.</li>
+          <li><b>Nada de secretos en el paquete</b>: todo lo compilado es público.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>'app-x' is not a known element</code></td><td>Falta en el <code>imports</code> del componente que lo usa, o selector mal escrito.</td></tr>
+            <tr><td><code>NG5002: @for loop must have a "track" expression</code></td><td>Añade <code>track c.id</code>.</td></tr>
+            <tr><td>Botón siempre desactivado</td><td><code>disabled="{{ x }}"</code> pasa una cadena. Usa <code>[disabled]="x"</code>.</td></tr>
+            <tr><td>La plantilla muestra <code>function computed(...)</code></td><td>Falta leer la signal con paréntesis.</td></tr>
+            <tr><td>Cambio el dato y la pantalla no se actualiza</td><td>Mutaste (<code>push</code>) en vez de reemplazar, o en zoneless escribiste una propiedad normal.</td></tr>
+            <tr><td><code>NG0600: Writing to signals is not allowed in a computed</code></td><td>Escritura dentro de un computed. Sepáralo.</td></tr>
+            <tr><td><code>NG0203: inject() must be called from an injection context</code></td><td><code>inject()</code> fuera de campos o constructor (o en un callback).</td></tr>
+            <tr><td><code>NullInjectorError: No provider for X</code></td><td>Falta <code>providedIn</code>, <code>provideHttpClient()</code> o el provider en el test.</td></tr>
+            <tr><td>Se recarga la app al pulsar un enlace</td><td><code>href</code> en vez de <code>routerLink</code>.</td></tr>
+            <tr><td>La ficha no cambia de <code>/clases/1</code> a <code>/clases/3</code></td><td>Lectura del snapshot. Parámetros como inputs con <code>withComponentInputBinding</code>.</td></tr>
+            <tr><td>F5 en una ruta interna da 404 del servidor</td><td>Falta el fallback a <code>index.html</code> (o <code>try_files</code>).</td></tr>
+            <tr><td>La petición HTTP no sale</td><td>Nadie se suscribe al observable.</td></tr>
+            <tr><td>El indicador de carga gira para siempre</td><td>No se apaga en la rama de error (o en el interceptor falta <code>finalize</code>).</td></tr>
+            <tr><td><code>Invalid Date</code></td><td>El JSON trae fechas como texto: adapta en la entrada.</td></tr>
+            <tr><td>El buscador deja de responder tras un error</td><td><code>catchError</code> fuera del <code>switchMap</code>: el error mató el flujo.</td></tr>
+            <tr><td>Doble clic crea dos registros</td><td>Usa <code>exhaustMap</code> o bloquea mientras está pendiente.</td></tr>
+            <tr><td>Un campo llega vacío al guardar</td><td>Está deshabilitado y usaste <code>value</code>. <code>getRawValue()</code>.</td></tr>
+            <tr><td>Bucle infinito de redirecciones</td><td>El guard protege también la ruta a la que redirige.</td></tr>
+            <tr><td>La petición nunca sale y no hay error (interceptor)</td><td>Un camino del interceptor no llama a <code>siguiente(req)</code>.</td></tr>
+            <tr><td><code>NG0100: ExpressionChangedAfterItHasBeenChecked</code></td><td>La vista no es función pura del estado. Corrige el flujo, no lo tapes con setTimeout.</td></tr>
+            <tr><td><code>::ng-deep</code> afecta a otras pantallas</td><td>Sin <code>:host</code> delante. Mejor variables CSS.</td></tr>
+            <tr><td>La región live no anuncia nada</td><td>Se crea con el mensaje dentro de un <code>@if</code>. Debe existir antes.</td></tr>
+            <tr><td><code>localStorage is not defined</code> en el servidor</td><td>Código de navegador en SSR. <code>afterNextRender</code> o <code>isPlatformBrowser</code>.</td></tr>
+            <tr><td>Pantalla en blanco tras desplegar</td><td><code>index.html</code> cacheado apunta a paquetes que ya no existen. Nunca cachees index.html.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Componentes y signals</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es una signal y qué problema resuelve?</p>
+            <div class="q-ans">Un valor reactivo que sabe quién lo lee. Angular construye un grafo de dependencias y, cuando cambia, actualiza exactamente lo que depende de él (computeds, plantillas, efectos). Resuelve la detección de cambios precisa sin revisar todo el árbol, y es la base de zoneless.</div></div>
+          <div class="q"><p class="q-text">2. Ejecutas <code>this.socios().push(nuevo)</code> y la tabla no cambia. ¿Por qué?</p>
+            <div class="q-ans">Mutaste el array: la referencia es la misma y la signal no se entera de que cambió. Hay que reemplazarlo: <code>this.socios.update(l =&gt; [...l, nuevo])</code>. La inmutabilidad es obligatoria con signals y OnPush.</div></div>
+          <div class="q"><p class="q-text">3. ¿Método, computed o effect para mostrar el número de clases completas?</p>
+            <div class="q-ans">computed: es un valor derivado. Se calcula sólo cuando cambian sus dependencias y se memoriza. Un método se ejecutaría en cada ciclo de detección; un effect que escribe en otra signal es un antipatrón (y en un computed daría error).</div></div>
+          <div class="q"><p class="q-text">4. ¿Cómo se comunican padre e hijo?</p>
+            <div class="q-ans">El padre pasa datos con <code>input()</code> (signals, mejor <code>input.required</code>) y el hijo avisa con <code>output()</code>; el padre decide qué hacer. El estado vive en un solo sitio. <code>model()</code> sólo para controles de valor; para compartir entre componentes no relacionados, un servicio.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué el estilo del padre no llega al contenido proyectado del hijo (o al revés)?</p>
+            <div class="q-ans">Por la encapsulación: cada componente añade atributos únicos a sus selectores. El contenido proyectado pertenece al padre, así que recibe los estilos del padre, no los del componente que lo proyecta. Para configurar desde fuera, variables CSS.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué un pipe puro es mejor que un método en la plantilla?</p>
+            <div class="q-ans">El pipe puro sólo se recalcula si cambia la referencia de su entrada; el método se ejecuta en cada ciclo. Para formatear valores, pipe. Para filtrar u ordenar listas, un computed (un pipe impuro sería aún peor).</div></div>
+          <div class="q"><p class="q-text">7. ¿Directiva o componente para cerrar paneles con Escape?</p>
+            <div class="q-ans">Directiva: añade comportamiento a elementos existentes sin crear marcado. Con el bloque <code>host</code> escucha <code>keydown.escape</code> y emite o ejecuta el cierre.</div></div>
+          <div class="q"><p class="q-text">8. ¿Qué significa standalone y qué cambia frente a NgModule?</p>
+            <div class="q-ans">Que cada componente declara en su propio <code>imports</code> lo que su plantilla usa, sin un módulo intermedio. Las dependencias son explícitas por componente, la carga diferida es más sencilla (<code>loadComponent</code>) y desaparece la ceremonia de declarar en módulos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Servicios, rutas, HTTP y RxJS</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es la inyección de dependencias en Angular?</p>
+            <div class="q-ans">Que un componente o servicio pide lo que necesita (con <code>inject()</code>) en vez de crearlo, y Angular decide qué instancia darle buscando en el árbol de inyectores. Permite compartir instancias, sustituir implementaciones por entorno o en tests y desacoplar.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué exponer el estado con <code>asReadonly()</code>?</p>
+            <div class="q-ans">Para que sólo el servicio pueda modificarlo, a través de métodos que aplican las reglas (máximo de reservas, validaciones). Si la signal fuera escribible desde fuera, cualquier componente podría saltárselas.</div></div>
+          <div class="q"><p class="q-text">3. La URL pasa de <code>/clases/3</code> a <code>/clases/5</code> pero la ficha sigue mostrando la 3. ¿Qué pasa?</p>
+            <div class="q-ans">Angular reutiliza el componente al cambiar sólo el parámetro, y el código leyó el snapshot una vez. Con <code>withComponentInputBinding()</code> el parámetro llega como input (signal) y los computeds que dependen de él se recalculan.</div></div>
+          <div class="q"><p class="q-text">4. Llamas a <code>http.get()</code> y no pasa nada, sin errores. ¿Por qué?</p>
+            <div class="q-ans">Los observables son perezosos: sin suscripción no se ejecuta la petición. Hay que suscribirse, usar <code>toSignal</code> o el pipe <code>async</code>.</div></div>
+          <div class="q"><p class="q-text">5. El buscador muestra a veces resultados de una búsqueda anterior. ¿Qué operador cambias?</p>
+            <div class="q-ans">Probablemente usa <code>mergeMap</code>, que deja vivas todas las peticiones y la más lenta llega al final. <code>switchMap</code> cancela la anterior al llegar un término nuevo. Con <code>debounceTime</code> y <code>distinctUntilChanged</code> delante.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué <code>catchError</code> va dentro del <code>switchMap</code>?</p>
+            <div class="q-ans">Porque un error termina el observable en el que ocurre. Fuera, mataría el flujo principal y el buscador dejaría de responder para siempre sin avisar. Dentro, sólo termina la petición interna y el flujo exterior sigue escuchando.</div></div>
+          <div class="q"><p class="q-text">7. ¿Signals o RxJS para el estado?</p>
+            <div class="q-ans">Signals para el estado: síncronas, con dependencias automáticas y lectura directa. RxJS para eventos en el tiempo: esperar, cancelar, reintentar, combinar flujos. Se conectan con <code>toSignal</code> y <code>toObservable</code>: RxJS dentro, signals fuera.</div></div>
+          <div class="q"><p class="q-text">8. Un campo deshabilitado no llega al servidor al guardar. ¿Por qué?</p>
+            <div class="q-ans"><code>form.value</code> omite los controles deshabilitados. Hay que usar <code>getRawValue()</code>. Con <code>nonNullable</code>, además, los tipos no incluyen null y <code>reset()</code> vuelve a los valores iniciales.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Arquitectura, rendimiento y seguridad</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Necesitas NgRx?</p>
+            <div class="q-ans">Casi nunca en Angular moderno: un servicio con signals privadas, lectura pública y computeds como selectores ya es un store. NgRx compensa cuando puedes nombrar el problema (trazabilidad de acciones, equipos muy grandes, efectos complejos); instalarlo «por si crece» añade ceremonia.</div></div>
+          <div class="q"><p class="q-text">2. «Con los guards, la zona de administración está protegida». ¿Qué respondes?</p>
+            <div class="q-ans">Que los guards sólo deciden qué se muestra en el navegador: cualquiera puede llamar a la API directamente o modificar el JavaScript. La protección real está en el servidor, que comprueba sesión y permisos en cada petición. El guard mejora la experiencia (y con CanMatch evita descargar código).</div></div>
+          <div class="q"><p class="q-text">3. ¿CanActivate o CanMatch para <code>/admin</code> con carga diferida?</p>
+            <div class="q-ans">CanMatch: si no pasa, la ruta ni siquiera coincide y el paquete de administración no se descarga. CanActivate se evalúa después de que la ruta coincide, cuando el código ya se ha pedido.</div></div>
+          <div class="q"><p class="q-text">4. ¿En qué orden pones los interceptores y por qué?</p>
+            <div class="q-ans">token → carga → reintento → errores. La cadena es de ida y vuelta: lo que modifica la petición va arriba (añadir el token antes de nada) y lo que reacciona a la respuesta abajo; el de errores, al final de la vuelta, ve el resultado tras los reintentos y relanza para que el servicio se entere.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué hace OnPush y por qué no rompió nada en NakaGym?</p>
+            <div class="q-ans">Revisa un componente sólo si cambia la referencia de un input, hay un evento propio, cambia una signal que lee o se llama a markForCheck. No rompió nada porque todo el estado ya era inmutable y en signals: cada cambio producía referencias nuevas o notificaciones.</div></div>
+          <div class="q"><p class="q-text">6. Migras a zoneless y un contador con <code>setInterval</code> se congela. ¿Por qué?</p>
+            <div class="q-ans">Sin Zone.js nadie avisa a Angular de que el temporizador cambió algo: escribir una propiedad normal no notifica. Hay que convertir ese estado en una signal (o, como último recurso, llamar a markForCheck).</div></div>
+          <div class="q"><p class="q-text">7. ¿Cómo evitas que el paquete engorde sin que nadie se entere?</p>
+            <div class="q-ans">Con presupuestos en <code>angular.json</code> que hacen fallar el build si se superan, carga diferida por rutas, <code>@defer</code> para lo pesado dentro de una pantalla y barriles que no reexporten de más.</div></div>
+          <div class="q"><p class="q-text">8. Un compañero tapa un <code>ExpressionChangedAfterItHasBeenChecked</code> con <code>setTimeout</code>. ¿Bien?</p>
+            <div class="q-ans">No: el error dice que la vista cambia durante su propia comprobación, es decir, que no es función pura del estado. setTimeout lo esconde y provoca un segundo ciclo. Hay que mover el cambio a su origen (un computed, un evento) para que el estado sea coherente antes de pintar.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Calidad y producción</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. «Con <code>http.get&lt;Socio[]&gt;</code> ya sé que la respuesta es correcta». ¿Qué contestas?</p>
+            <div class="q-ans">Que el genérico es una promesa del programador: los tipos desaparecen al compilar y no comprueban nada en ejecución. Si la API devuelve otra forma, el error aparece lejos. Hay que validar en la frontera (recibir <code>unknown</code> y comprobar la forma) y adaptar.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué gana <code>Estado&lt;T&gt;</code> frente a tres signals cargando, error y datos?</p>
+            <div class="q-ans">Que los estados imposibles (cargando y con error a la vez) no se pueden representar, y el compilador obliga a tratar cada caso en el <code>@switch</code>; con <code>casoNoContemplado(x: never)</code>, añadir un estado nuevo marca todos los sitios que no lo tratan.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué no usar un <code>&lt;div (click)&gt;</code> como botón?</p>
+            <div class="q-ans">No es alcanzable con el teclado, no se activa con Enter ni Espacio y no se anuncia como botón. Habría que reimplementar todo con tabindex, eventos y ARIA. Un <code>&lt;button&gt;</code> estilizado lo trae gratis.</div></div>
+          <div class="q"><p class="q-text">4. ¿Cómo pruebas un componente en una app zoneless?</p>
+            <div class="q-ans">Con TestBed, dando valores con <code>fixture.componentRef.setInput()</code>, esperando con <code>await fixture.whenStable()</code> (no fakeAsync/tick), buscando elementos por rol o nombre accesible y comprobando el comportamiento (lo que se ve y lo que se emite), no detalles internos.</div></div>
+          <div class="q"><p class="q-text">5. ¿Cómo pruebas un servicio HTTP sin servidor?</p>
+            <div class="q-ans">Con <code>provideHttpClientTesting()</code> y <code>HttpTestingController</code>: <code>expectOne</code> para la petición esperada, <code>flush</code> para responder (o error), <code>expectNone</code> para lo que no debe ocurrir y <code>verify()</code> al final para detectar peticiones duplicadas o colgadas.</div></div>
+          <div class="q"><p class="q-text">6. ¿Pondrías SSR en un panel interno tras login?</p>
+            <div class="q-ans">No: el SSR aporta LCP, SEO y vistas previas, que un panel privado no necesita, y añade servidor, TTFB y riesgo de fugas entre usuarios si se renderizan datos de sesión. Lo privado se renderiza en el cliente; SSR o prerender para lo público.</div></div>
+          <div class="q"><p class="q-text">7. ¿Es seguro poner una clave de API en <code>environment.prod.ts</code>?</p>
+            <div class="q-ans">No: se compila dentro del JavaScript que descarga cualquier usuario. Los secretos van en el servidor. Para configuración por entorno sin recompilar, un <code>config.json</code> externo leído al arrancar.</div></div>
+          <div class="q"><p class="q-text">8. Tras desplegar, algunos usuarios ven pantalla en blanco. ¿Qué pasó?</p>
+            <div class="q-ans">Su navegador tiene cacheado un <code>index.html</code> antiguo que apunta a paquetes con hash que ya no existen. Los archivos con hash se cachean un año, pero <code>index.html</code> (y <code>config.json</code>) nunca.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Framework declarativo, standalone, CLI; Node sólo en desarrollo.</li>
+          <li><b>1</b> · <code>{{ }}</code>, <code>[ ]</code>, <code>( )</code>; @if, @for con track, @switch, @let.</li>
+          <li><b>2</b> · signal, computed, effect, linkedSignal; nunca mutar.</li>
+          <li><b>3</b> · input.required, output, model con cuidado, ng-content; tontos y listos.</li>
+          <li><b>4</b> · Directivas con host; pipes puros; LOCALE_ID + registerLocaleData.</li>
+          <li><b>5</b> · inject(), providedIn root, asReadonly, InjectionToken.</li>
+          <li><b>6</b> · Rutas en orden, routerLink, parámetros como inputs, queryParams.</li>
+          <li><b>7</b> · HttpClient perezoso; cuatro estados; adaptar en la entrada.</li>
+          <li><b>8</b> · debounce + distinct + switchMap; catchError dentro; takeUntilDestroyed.</li>
+          <li><b>9</b> · Reactivos, nonNullable, getRawValue, validadores de grupo y asíncronos.</li>
+          <li><b>10</b> · Store con signals; estado normalizado; persistir con cuidado.</li>
+          <li><b>11</b> · Guards con UrlTree; CanMatch; un guard no es seguridad.</li>
+          <li><b>12</b> · Interceptores en cadena; clone; finalize; reintentos idempotentes.</li>
+          <li><b>13</b> · loadComponent, loadChildren, @defer, presupuestos.</li>
+          <li><b>14</b> · OnPush, zoneless, afterNextRender; NG0100 no se tapa.</li>
+          <li><b>15</b> · Los tipos no validan; uniones discriminadas; never.</li>
+          <li><b>16</b> · Encapsulación, :host, variables CSS, tokens en tres niveles, tema.</li>
+          <li><b>17</b> · Semántica, teclado, foco al navegar, regiones live.</li>
+          <li><b>18</b> · TestBed, setInput, whenStable, HttpTestingController.</li>
+          <li><b>19</b> · i18n con @@id, plurales ICU, una app por idioma.</li>
+          <li><b>20</b> · SSR por ruta, hidratación, withEventReplay, sin window en el servidor.</li>
+          <li><b>21</b> · Build con hash, config.json externo, Docker multietapa, cabeceras y CSP.</li>
+          <li><b>22</b> · core/shared/features; reglas en el linter; migraciones del CLI.</li>
+          <li><b>23</b> · Decisiones con su porqué; construir algo propio.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Una vez por semana, añade a NakaGym una pantalla pequeña con su servicio, su ruta y su test.</li>
+            <li>Antes de una entrevista, rehaz de memoria un buscador con debounce y switchMap, un guard funcional y un formulario tipado.</li>
+            <li>Practica explicar por qué signals + OnPush + zoneless funcionan juntos: es la pregunta de fondo del Angular actual.</li>
+            <li>Si heredas código antiguo, recuerda el capítulo 22: convive, migra con los esquemas y no reescribas.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

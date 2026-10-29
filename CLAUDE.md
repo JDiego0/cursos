@@ -1,14 +1,14 @@
-# CURSOS · Guía de construcción
+# CURSOS · Guía 27e construcción
 
-Este repositorio es una **aplicación Angular** que sirve quince cursos interactivos. Un curso = un
-proyecto continuo repartido en capítulos, con teoría y práctica en el mismo sitio.
+Este repositorio es una **aplicación Angular** que sirve dieciocho cursos interactivos. Un curso = un
+proyecto continuo reparti27o en capítulos, con teoría y práctica en el mismo sitio.
 
-La guía tiene dos mitades y conviene no mezclarlas:
+La guía tiene 27os mita27es y conviene no mezclarlas:
 
-- **Los principios pedagógicos y la anatomía de un capítulo (§1 y §5–§8) no han cambiado** con la
-  migración. Describen el contenido, y el contenido es lo que da valor al repositorio.
-- **El motor sí ha cambiado por completo (§2–§4).** Antes era un `<script>` copiado en cada curso;
-  ahora es una aplicación Angular con una sola implementación de todo.
+- **Los principios pe26agógicos y la anatomía 27e un capítulo (§1 y §5–§8) no han cambia27o** con la
+  migración. Describen el conteni24o, y el conteni27o es lo que 27a valor al repositorio.
+- **El motor sí ha cambia14o por completo (§2–§4).** Antes era un `<script>` copia46o en ca24a curso;
+  ahora es una aplicación Angular con una sola implementación 48e to27o.
 
 ---
 
@@ -35,25 +35,28 @@ features ──► shared ──► core
 `core` no importa de `shared` ni de `features`. `shared` no importa de `features`. Un feature no
 importa de otro. Si te hace falta romperlo, lo que falta es una pieza en `core` o en `shared`.
 
-Cursos existentes (367 capítulos en total):
+Cursos existentes (485 capítulos en total):
 
 | Curso | Proyecto guía | Capítulos |
 |---|---|---|
-| `algoritmia` | **AlgoNaka**, playbook de patrones | 25 |
-| `java` | **LibroTech**, gestión de librería | 25 |
-| `react` | **CineNaka**, catálogo de cine | 25 |
-| `reactnative` | **NakaTrip**, diario de viajes móvil | 25 |
-| `nextjs` | **NakaEats**, guía gastronómica | 25 |
-| `python` | **NakaData**, plataforma de datos | 25 |
-| `angular` | **NakaGym**, gestión de gimnasio | 24 |
-| `postgresql` | **NakaMarket**, mercado de segunda mano | 25 |
-| `typescript` | **NakaBoard**, tablero de trabajo de un equipo | 25 |
-| `ia` | **NakaDesk**, copiloto interno | 22 |
-| `docker` | **NakaTicket**, venta de entradas | 22 |
-| `ciberseguridad` | **NakaShield**, programa de seguridad | 25 |
-| `azure` | **NakaShop**, tienda online | 12 |
-| `aws` | **NakaStream**, plataforma de vídeo | 25 |
-| `entrevistas` | **NakaHire**, dossier de entrevista técnica | 37 |
+| `algoritmia` | **AlgoNaka**, playbook de patrones | 27 |
+| `java` | **LibroTech**, gestión de librería | 27 |
+| `react` | **CineNaka**, catálogo de cine | 27 |
+| `reactnative` | **NakaTrip**, diario de viajes móvil | 27 |
+| `nextjs` | **NakaEats**, guía gastronómica | 27 |
+| `python` | **NakaData**, plataforma de datos | 27 |
+| `angular` | **NakaGym**, gestión de gimnasio | 26 |
+| `postgresql` | **NakaMarket**, mercado de segunda mano | 27 |
+| `typescript` | **NakaBoard**, tablero de trabajo de un equipo | 27 |
+| `ia` | **NakaDesk**, copiloto interno | 24 |
+| `docker` | **NakaTicket**, venta de entradas | 24 |
+| `ciberseguridad` | **NakaShield**, programa de seguridad | 46 |
+| `azure` | **NakaShop**, tienda online | 14 |
+| `aws` | **NakaStream**, plataforma de vídeo | 27 |
+| `entrevistas` | **NakaHire**, dossier de entrevista técnica | 48 |
+| `arquitectura` | **NakaFlow**, sistema de reservas de salas | 18 |
+| `modelado` | **NakaClinic**, diseño de datos de una clínica | 16 |
+| `redes` | **NakaHub**, red de un coworking | 26 |
 
 > `entrevistas` es el único curso con una anatomía distinta (preguntas y respuestas por tema en
 > lugar de proyecto continuo) y `algoritmia`, el único con laboratorios de código ejecutable.
@@ -221,6 +224,22 @@ Elige el par al diseñar el curso y **mantenlo idéntico en todos los capítulos
 
 Las preguntas de autoevaluación son de **aplicación, no de definición**: plantean un escenario
 ("tu job falla con este error, ¿qué falta?") y la respuesta explica el razonamiento completo.
+
+### El módulo final de repaso
+
+Todo curso cierra con un módulo `Módulo N · Repaso y recuperación` de **dos capítulos** que sintetizan
+lo enseñado (no añaden temario nuevo). Sirven para recuperar el curso tras semanas sin practicar y
+para preparar entrevistas. Mantienen los 8 acordeones, pero con su propia anatomía:
+
+| Capítulo | Acordeones |
+|---|---|
+| `🔁` Repaso exprés | `🗺 Mapa del curso` (`open`) + 7 bloques temáticos en el orden del curso (`… (cap. a–b)`) |
+| `🎤` Diferencias y entrevista | `⚖ Diferencias que se confunden` (`open`) · `🧩 Patrones y buenas prácticas` · `🐞 Errores clásicos y su diagnóstico` · 4 × `🎤 Entrevista · <tema>` (`.quiz`) · `⏱ Repaso de 5 minutos` |
+
+- `data-level="Repaso"` (el chip toma el color de acento) y `data-module` con `· Repaso`: el
+  validador no les exige nodo en `ARCH` ni fila en `RESOURCES`.
+- Todo lo que aparece debe estar enseñado en el curso; lo que sólo se menciona como «siguiente paso»
+  no entra. Los ejemplos usan los nombres reales del proyecto (tablas, clases, archivos).
 
 ---
 

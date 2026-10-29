@@ -3,7 +3,8 @@ import { EstadoCurso } from '@core/models';
 
 /**
  * Nivel del capítulo → clase del chip que lo colorea.
- * «Principiante» → lv1 (verde) · «Intermedio» → lv2 (ámbar) · resto → lv3 (rojo).
+ * «Principiante» → lv1 (verde) · «Intermedio» → lv2 (ámbar) · «Repaso» → key (acento) ·
+ * resto → lv3 (rojo). El repaso recorre todo el curso, así que no encaja en ningún nivel.
  */
 @Pipe({ name: 'nivelClase' })
 export class NivelClasePipe implements PipeTransform {
@@ -11,6 +12,7 @@ export class NivelClasePipe implements PipeTransform {
     const n = (nivel ?? '').toLowerCase();
     if (n.startsWith('princip')) return 'lv1';
     if (n.startsWith('inter')) return 'lv2';
+    if (n.startsWith('repaso')) return 'key';
     return 'lv3';
   }
 }

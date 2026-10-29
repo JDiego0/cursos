@@ -18639,6 +18639,850 @@ def salasNecesarias(reuniones):
     </details>
   </section>
 
+  <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: algoritmos y estructuras de datos en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 11 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Big O|Hash|Búsqueda binaria|Dos punteros|Ventana deslizante|Recursión|Grafos|Backtracking|Programación dinámica">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria el playbook de AlgoNaka</strong> en una sola lectura: el método, el coste de
+      cada operación y las plantillas de cada patrón, del FizzBuzz a la programación dinámica. Cada técnica aparece con su
+      señal en el enunciado, su plantilla mínima y su complejidad.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas tras semanas sin practicar, o salta al bloque que
+      necesites. Las plantillas van en Python; las diferencias con Java y JavaScript están en el capítulo siguiente, junto
+      con el árbol de decisión y el simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  9 · EXPLORAR Y OPTIMIZAR   backtracking · DP · montículos · voraz    (21–23)
+                ▲
+  8 · RAMIFICADAS           árboles · grafos BFS/DFS · cuadrículas     (19–20)
+                ▲
+  7 · DINÁMICAS             pilas · colas · listas enlazadas           (17–18)
+                ▲
+  6 · SECUENCIAS            dos punteros · ventana · prefijos · Kadane (14–16)
+                ▲
+  5 · ORDEN Y BÚSQUEDA      sort con criterio · búsqueda binaria       (12–13)
+                ▲
+  4 · BUSCAR EN O(1)        conjuntos · diccionarios                    (10–11)
+                ▲
+  3 · DIVIDIR               funciones · recursión · memoización        (7–9)
+                ▲
+  2 · DATOS EN FILA         cadenas · arrays · números                  (4–6)
+                ▲
+  1 · PENSAR                método · condicionales · bucles · Big O    (0–3)
+  10 · LA ENTREVISTA        protocolo de 45 min y árbol de decisión    (24)</div>
+
+        <h3>La escala de costes que hay que llevar en la cabeza</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Coste</th><th>Ejemplo típico</th><th>n máximo razonable (≈10⁸ op/s)</th></tr></thead>
+          <tbody>
+            <tr><td><b>O(1)</b></td><td>Índice de un array, consulta en set/dict</td><td>Cualquiera</td></tr>
+            <tr><td><b>O(log n)</b></td><td>Búsqueda binaria, montículo, dividir por 2</td><td>Cualquiera</td></tr>
+            <tr><td><b>O(n)</b></td><td>Un recorrido, dos punteros, ventana, hash</td><td>~10⁷–10⁸</td></tr>
+            <tr><td><b>O(n log n)</b></td><td>Ordenar, n operaciones de montículo</td><td>~10⁶</td></tr>
+            <tr><td><b>O(n²)</b></td><td>Doble bucle, DP de dos cadenas</td><td>~10⁴</td></tr>
+            <tr><td><b>O(2ⁿ) / O(n!)</b></td><td>Subconjuntos / permutaciones</td><td>~20 / ~10</td></tr>
+          </tbody>
+        </table></div>
+        <p>El <b>tamaño máximo de n</b> del enunciado te dice qué complejidad se espera: con n = 200.000, un O(n²) no pasa.</p>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Para cada bloque, escribe la plantilla de memoria en una hoja antes de mirarla, y después resuelve en el laboratorio
+        el ejercicio del capítulo correspondiente sin consultar la solución. Reconocer el patrón sólo se entrena así.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧠 Bloque 1 · El método, la lógica y Big O (cap. 0–3)</summary>
+      <div class="acc-body">
+
+        <h3>El método de los 5 pasos (0)</h3>
+        <ol class="steps">
+          <li><b>Entender</b>: entradas, salida, restricciones. Preguntar los casos borde (vacío, un elemento, todos iguales, negativos, sin respuesta).</li>
+          <li><b>Ejemplos</b>: resolver a mano. Si no sabes hacerlo a mano, no es un problema de sintaxis.</li>
+          <li><b>Plan</b>: primero la fuerza bruta en voz alta; luego, qué trabajo repite.</li>
+          <li><b>Código</b>: traducir el plan.</li>
+          <li><b>Revisar</b>: trazar un ejemplo y los casos borde; dar la complejidad.</li>
+        </ol>
+
+        <h3>Condicionales y bucles (1–2)</h3>
+        <ul class="clean">
+          <li><code>%</code> es el operador más rentable: <code>n % k == 0</code> (múltiplo), <code>n % 10</code> (último dígito). Con negativos, Python da el signo del divisor; Java y JS, el del dividendo.</li>
+          <li>Las condiciones se evalúan de arriba abajo y paran en la primera verdadera: <b>la más específica primero</b> (FizzBuzz: el 15 antes que el 3).</li>
+          <li><code>return cond</code> en vez de <code>if cond: return True else: return False</code>. <code>and</code>/<code>or</code> son perezosos: comprueba que existe antes de usar.</li>
+          <li><code>for</code> cuando sabes sobre qué iteras; <code>while</code> cuando sabes cuándo parar.</li>
+        </ul>
+        <div class="code-block" data-lang="Python · los cuatro patrones de bucle">
+<pre><code>total = 0                       # 1. acumular: arranca en el neutro (0 suma, 1 producto)
+for x in nums: total += x
+
+veces = 0                       # 2. contar
+for x in nums:
+    if x % 2 == 0: veces += 1
+
+mejor = nums[0]                 # 3. el mejor hasta ahora: arranca en el PRIMER elemento real
+for x in nums[1:]:
+    if x &gt; mejor: mejor = x
+
+def es_creciente(nums):         # 4. ¿todos cumplen? busca el contraejemplo y sal
+    for i in range(1, len(nums)):          # comparar consecutivos: desde 1, mirando atrás
+        if nums[i] &lt;= nums[i - 1]: return False
+    return True                            # [] y [x] se resuelven solos</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> identificar cuál de los cuatro patrones pide el problema te da el esqueleto
+        entero. <code>mejor = 0</code> falla con todos negativos. La salida temprana sustituye a las banderas. La
+        <b>invariante</b> es la frase que explica por qué el bucle es correcto.</p>
+
+        <h3>Big O (3)</h3>
+        <ul class="clean">
+          <li>Responde a «si los datos crecen, ¿cuánto crece el coste?». Se mide el <b>peor caso</b>.</li>
+          <li>Bucles seguidos se <b>suman</b>; anidados se <b>multiplican</b>; constantes y términos menores fuera (no existe «O(2n)»).</li>
+          <li>Espacio = memoria <b>extra</b>, incluida la pila de la recursión.</li>
+          <li>Trampas ocultas O(n) dentro de un bucle: <code>x in lista</code>, <code>insert(0, …)</code>, <code>pop(0)</code>, concatenar texto, rebanar, <code>max</code>/<code>sum</code>.</li>
+          <li><code>while n &gt; 1: n //= 2</code> es <b>O(log n)</b>.</li>
+          <li>El mayor salto no viene de pulir el mismo algoritmo, sino de <b>cambiar de algoritmo</b>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔤 Bloque 2 · Cadenas, arrays y números (cap. 4–6)</summary>
+      <div class="acc-body">
+
+        <h3>Cadenas (4)</h3>
+        <div class="code-block" data-lang="Python · palíndromo con dos índices">
+<pre><code>def es_palindromo(texto):
+    s = [c.lower() for c in texto if c.isalnum()]   # normalizar en un paso aparte
+    izq, der = 0, len(s) - 1
+    while izq &lt; der:                                # estricto: el centro no se compara
+        if s[izq] != s[der]: return False
+        izq += 1; der -= 1
+    return True
+
+partes = []                                         # construir: lista + join, O(n)
+for i in range(n): partes.append(str(i))
+salida = ",".join(partes)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> las cadenas son <b>inmutables</b> en los tres lenguajes: <code>s.upper()</code>
+        devuelve otra. Concatenar en un bucle es <b>O(n²)</b>: lista + <code>join</code> (Python), <code>StringBuilder</code>
+        (Java), array + <code>join</code> (JS). Normalizar antes de comparar convierte muchos problemas en triviales. Los dos
+        índices que se acercan resuelven la simetría en O(1) de espacio.</p>
+
+        <h3>Arrays y listas (5)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Operación</th><th>Coste</th></tr></thead>
+          <tbody>
+            <tr><td>Leer/escribir por índice, añadir al final</td><td><b>O(1)</b> (amortizado al final)</td></tr>
+            <tr><td>Buscar un valor, insertar/borrar al principio o en medio, copiar, rebanar</td><td><b>O(n)</b></td></tr>
+            <tr><td>Ordenar</td><td><b>O(n log n)</b></td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="Python · lee / escribe en el sitio">
+<pre><code>def quitar_duplicados_ordenado(a):       # O(n) tiempo, O(1) espacio, conserva el orden
+    if not a: return 0
+    escribe = 1
+    for lee in range(1, len(a)):
+        if a[lee] != a[escribe - 1]:
+            a[escribe] = a[lee]
+            escribe += 1
+    return escribe                       # cuántos únicos quedan al principio</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> asignar una lista a otra variable <b>no la copia</b> (<code>a[:]</code>,
+        <code>clone()</code>, <code>slice()</code> = copia superficial). <code>[[0]*c]*f</code> crea filas compartidas: usa una
+        comprensión. En una matriz, <code>len(m)</code> filas y <code>len(m[0])</code> columnas; prueba con una rectangular.
+        Pregunta si se puede modificar la entrada.</p>
+
+        <h3>Números (6)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def es_primo(n):                         # O(√n)
+    if n &lt; 2: return False               # 0, 1 y negativos no son primos
+    i = 2
+    while i * i &lt;= n:                    # i*i, no sqrt: sin errores de coma flotante
+        if n % i == 0: return False
+        i += 1
+    return True
+
+def criba(n):                            # todos los primos ≤ n: O(n log log n)
+    es = [True] * (n + 1); es[0:2] = [False, False]
+    for i in range(2, int(n ** 0.5) + 1):
+        if es[i]:
+            for j in range(i * i, n + 1, i): es[j] = False   # desde i*i
+    return [i for i, p in enumerate(es) if p]
+
+def mcd(a, b):                           # Euclides, O(log n); mcm = a // mcd(a, b) * b
+    while b: a, b = b, a % b
+    return a</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> dígitos con <code>n % 10</code> y <code>n //= 10</code>, O(log n). Basta probar
+        divisores hasta √n. Criba para muchos primos de un rango; uno a uno para un número enorme. En Java, <code>int</code>
+        desborda en silencio pasado 2.147.483.647: <code>long</code> y <b>castear antes de operar</b>
+        (<code>(long) a * b</code>). En JS, enteros exactos hasta 2⁵³.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🪆 Bloque 3 · Funciones, recursión y memoización (cap. 7–9)</summary>
+      <div class="acc-body">
+
+        <h3>Funciones (7)</h3>
+        <ul class="clean">
+          <li>Contrato antes del cuerpo: qué recibe, qué devuelve, qué supone. <b>Función pura</b> = sólo depende de sus argumentos y no cambia nada de fuera.</li>
+          <li>Descomponer: escribe los pasos en español; cada paso con nombre es una función; la principal se lee como el enunciado. Tres recorridos claros siguen siendo O(n).</li>
+          <li>En Python, nunca una lista o dict como valor por defecto (se comparte entre llamadas). Nombre con verbo; si necesita «y», pártela.</li>
+          <li>Java: <code>/ 100</code> entre enteros trunca; <code>/ 100.0</code>.</li>
+        </ul>
+
+        <h3>Recursión (8)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def suma(n):
+    if n &lt;= 1: return n              # caso base: atrapa TODOS los valores de parada
+    return n + suma(n - 1)           # paso: el problema se hace más pequeño
+
+def potencia(b, e):                  # O(log e)
+    if e == 0: return 1
+    mitad = potencia(b, e // 2)      # guardar en variable: una sola llamada
+    return mitad * mitad if e % 2 == 0 else mitad * mitad * b</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> caso base + paso recursivo; el base, primero y con <code>&lt;=</code>.
+        <b>Acto de fe</b>: asume que la llamada pequeña funciona y piensa sólo en combinar. Cada llamada pendiente ocupa la pila:
+        espacio O(profundidad). Una llamada por nivel → O(n); dos → O(2ⁿ); partir por la mitad → O(log n) <b>si no repites la
+        llamada</b>. <code>f(lista[1:])</code> esconde O(n²): pasa índices. Recursión cuando la estructura es recursiva
+        (árboles, carpetas); bucle cuando el recorrido es lineal.</p>
+
+        <h3>Memoización (9)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def fib(n, memo=None):               # top-down: recursión + caché
+    if memo is None: memo = {}
+    if n &lt;= 1: return n
+    if n in memo: return memo[n]     # 1. mirar la caché
+    memo[n] = fib(n - 1, memo) + fib(n - 2, memo)   # 2. calcular  3. guardar
+    return memo[n]
+
+def fib_iter(n):                     # bottom-up con ventana: O(n) tiempo, O(1) espacio
+    a, b = 0, 1
+    for _ in range(n): a, b = b, a + b
+    return a</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> si una recursión repite subproblemas, memoizar pasa de O(2ⁿ) a O(n) sin cambiar
+        el algoritmo. La <b>clave</b> debe incluir todos los argumentos que cambian. La caché, fuera de la función (si se crea
+        dentro de cada llamada, no sirve). <b>Top-down</b> = recursión + caché; <b>bottom-up</b> = tabla + bucle (no desborda la
+        pila). Si sólo usas los últimos valores, guarda una ventana. Sólo funciones deterministas.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔑 Bloque 4 · Conjuntos, diccionarios, ordenar y búsqueda binaria (cap. 10–13)</summary>
+      <div class="acc-body">
+
+        <h3>Conjuntos y diccionarios (10–11)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def hay_duplicado(nums):                 # «¿ya lo he visto?» → set, O(n)
+    vistos = set()
+    for x in nums:
+        if x in vistos: return True      # preguntar primero…
+        vistos.add(x)                    # …añadir después
+    return False
+
+def two_sum(nums, objetivo):             # índice inverso: valor → posición
+    pos = {}
+    for i, x in enumerate(nums):
+        if objetivo - x in pos: return [pos[objetivo - x], i]   # consultar antes de guardar
+        pos[x] = i
+    return []
+
+veces = {}
+for c in texto: veces[c] = veces.get(c, 0) + 1          # mapa de conteo
+
+grupos = {}
+for p in palabras: grupos.setdefault("".join(sorted(p)), []).append(p)   # agrupar anagramas</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> una tabla hash <b>calcula</b> la posición en vez de buscarla: O(1) de media.
+        Cambiar <code>in lista</code> por <code>in set</code> dentro de un bucle baja de O(n²) a O(n). Señales: «duplicado»,
+        «único», «en común», «ya visitado». Sin orden; sin elementos mutables (posiciones como tuplas en Python, cadena o número
+        codificado en Java/JS). Tres usos del diccionario: <b>contar</b>, <b>indexar</b> y <b>agrupar</b>. Con claves enteras
+        pequeñas y acotadas, un array (26 letras) es más simple.</p>
+
+        <h3>Ordenar con criterio (12)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>empleados.sort(key=lambda e: (e.depto, -e.salario))   # depto asc, salario desc
+ordenada = sorted(nums)                                  # copia; .sort() modifica y devuelve None</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> ordenar comparando es <b>O(n log n)</b> y es un límite teórico; usa el sort del
+        lenguaje. <b>Estable</b> = conserva el orden de los empatados (Python, Java con objetos y JS moderno). Para mezclar
+        direcciones, niega el criterio numérico (no <code>reverse=True</code>). En JS, <code>sort()</code> sin comparador ordena
+        como texto. Ordenar primero simplifica: duplicados, anagramas, intervalos, top-k, dos punteros. <b>Counting sort</b>
+        O(n + k) para enteros en un rango pequeño. Merge sort (estable, O(n) extra) y quick sort (en el sitio, O(n²) en el peor caso).</p>
+
+        <h3>Búsqueda binaria (13)</h3>
+        <div class="code-block" data-lang="Python · las dos plantillas">
+<pre><code>def buscar(a, x):                        # valor exacto
+    izq, der = 0, len(a) - 1
+    while izq &lt;= der:                    # &lt;=  y  medio ± 1: las dos cosas juntas
+        medio = izq + (der - izq) // 2   # sin desbordar
+        if a[medio] == x: return medio
+        if a[medio] &lt; x: izq = medio + 1
+        else: der = medio - 1
+    return -1
+
+def primera_valida(lo, hi, cumple):      # primera posición donde cumple() es True
+    while lo &lt; hi:                       # rango [lo, hi], hi puede ser «ninguna»
+        medio = lo + (hi - lo) // 2
+        if cumple(medio): hi = medio
+        else: lo = medio + 1
+    return lo</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> O(log n): mil millones en 30 pasos. Exige datos <b>ordenados</b> (ordenar para
+        una sola búsqueda no compensa). La segunda plantilla resuelve «primera aparición» con duplicados y la <b>búsqueda binaria
+        sobre la respuesta</b>: cuando la solución es un número en un rango y la propiedad es monótona (capacidad mínima del
+        camión en d días). Prueba con vacío, uno, dos, primero, último y ausente.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>↔ Bloque 5 · Dos punteros, ventana deslizante, prefijos y Kadane (cap. 14–16)</summary>
+      <div class="acc-body">
+
+        <h3>Dos punteros (14)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def par_que_suma(a, k):                  # a ORDENADO: O(n) tiempo, O(1) espacio
+    izq, der = 0, len(a) - 1
+    while izq &lt; der:
+        s = a[izq] + a[der]
+        if s == k: return [izq, der]
+        if s &lt; k: izq += 1               # descarta todas las parejas de a[izq]
+        else: der -= 1
+    return []</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> dos variantes: <b>extremos que se acercan</b> (necesita orden o simetría) y
+        <b>mismo sentido</b> (lee/escribe o lento/rápido). Funciona porque cada movimiento descarta una fila entera de parejas.
+        Sin orden no aplica; si hay que devolver índices originales de un array desordenado, diccionario. Tres que sumen K =
+        ordenar + dos punteros por elemento: O(n²). Contenedor con más agua: mueve el lado más bajo.</p>
+
+        <h3>Ventana deslizante (15)</h3>
+        <div class="code-block" data-lang="Python · ventana variable">
+<pre><code>def mas_larga_sin_repetir(s):
+    en_ventana = set()
+    izq = mejor = 0
+    for der, c in enumerate(s):
+        while c in en_ventana:           # 1. crecer por la derecha → 2. encoger si es inválida
+            en_ventana.remove(s[izq])
+            izq += 1
+        en_ventana.add(c)
+        mejor = max(mejor, der - izq + 1)   # 3. actualizar (tamaño = der - izq + 1)
+    return mejor</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> señal: <b>«contiguo»</b> (subarray, subcadena). Mantener un resumen en vez de
+        recalcular. Tamaño fijo: entra uno, sale otro. Variable: crecer, encoger mientras sea inválida, actualizar. El
+        <code>while</code> dentro del <code>for</code> sigue siendo <b>O(n) amortizado</b> (izq sólo avanza). Para «el más corto»,
+        se actualiza dentro del bucle de encoger. Con un mapa de conteo, borra la clave al llegar a 0. <b>No sirve con negativos</b>
+        si el estado es una suma.</p>
+
+        <h3>Sumas de prefijos y Kadane (16)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>pref = [0]                                   # 0 inicial: centinela
+for x in nums: pref.append(pref[-1] + x)
+suma_rango = pref[j + 1] - pref[i]           # suma de nums[i..j] en O(1)
+
+def subarrays_que_suman(nums, k):            # con negativos: prefijo + diccionario
+    cuenta, acc, vistos = 0, 0, {0: 1}       # {0: 1}: subarrays que empiezan en 0
+    for x in nums:
+        acc += x
+        cuenta += vistos.get(acc - k, 0)     # consultar antes de guardar
+        vistos[acc] = vistos.get(acc, 0) + 1
+    return cuenta
+
+def kadane(nums):                            # subarray de suma máxima, O(n) / O(1)
+    actual = mejor = nums[0]                 # no vacío: arranca en nums[0], no en 0
+    for x in nums[1:]:
+        actual = max(x, actual + x)          # empezar de nuevo o continuar
+        mejor = max(mejor, actual)
+    return mejor</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> árbol de decisión de subarrays: contiguo + positivos → <b>ventana</b>; contiguo +
+        negativos + máximo → <b>Kadane</b>; contiguo + negativos + suma exacta → <b>prefijos + diccionario</b> (Two Sum sobre
+        acumulados); no contiguo → <b>DP</b>. Kadane es DP con la tabla reducida a una variable. Para el producto máximo no
+        basta: hay que llevar máximo y mínimo.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌳 Bloque 6 · Pilas, colas, listas enlazadas, árboles y grafos (cap. 17–20)</summary>
+      <div class="acc-body">
+
+        <h3>Pilas y colas (17)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def equilibrado(s):
+    pares = {")": "(", "]": "[", "}": "{"}
+    pila = []
+    for c in s:
+        if c in "([{": pila.append(c)
+        elif not pila or pila.pop() != pares[c]: return False   # vacía primero
+    return not pila                            # aperturas sin cerrar → False
+
+def siguiente_mayor(t):                        # pila monótona de ÍNDICES, O(n)
+    res, pila = [0] * len(t), []
+    for i, x in enumerate(t):
+        while pila and t[pila[-1]] &lt; x:
+            j = pila.pop(); res[j] = i - j     # x resuelve a los que esperaban
+        pila.append(i)
+    return res
+
+from collections import deque
+cola = deque(); cola.append(x); cola.popleft()   # O(1); list.pop(0) es O(n)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> pila = LIFO, cola = FIFO, ambas O(1). <code>pop(0)</code>,
+        <code>shift()</code> y <code>remove(0)</code> son O(n) y vuelven cuadrático un BFS. Java: <code>ArrayDeque</code> para
+        las dos. Contar paréntesis no basta: importa el orden. <b>DFS es una pila; BFS es una cola.</b></p>
+
+        <h3>Listas enlazadas (18)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def invertir(cabeza):
+    anterior, actual = None, cabeza
+    while actual:
+        siguiente = actual.siguiente       # 1. guardar
+        actual.siguiente = anterior        # 2. dar la vuelta a la flecha
+        anterior, actual = actual, siguiente   # 3. avanzar los dos
+    return anterior
+
+def tiene_ciclo(cabeza):                   # Floyd: O(1) de espacio
+    lento = rapido = cabeza
+    while rapido and rapido.siguiente:     # las dos comprobaciones, en este orden
+        lento, rapido = lento.siguiente, rapido.siguiente.siguiente
+        if lento is rapido: return True    # comparar DESPUÉS de mover
+    return False</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> acceso por posición O(n); insertar/borrar estando ahí, O(1). Nunca recorras con
+        la cabeza: usa <code>actual</code>. El <b>nodo centinela</b> elimina el caso especial de la cabeza. Lento/rápido: centro
+        en una pasada y ciclos. Dos punteros separados k: el k-ésimo desde el final. <b>Dibuja antes de programar.</b></p>
+
+        <h3>Árboles binarios (19)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>def altura(nodo):                          # plantilla: base nulo, recursión, combinar
+    if nodo is None: return 0              # el nulo, nunca la hoja
+    return 1 + max(altura(nodo.izq), altura(nodo.der))
+
+def es_bst(nodo, lo=float("-inf"), hi=float("inf")):   # arrastrar un rango
+    if nodo is None: return True
+    if not (lo &lt; nodo.val &lt; hi): return False
+    return es_bst(nodo.izq, lo, nodo.val) and es_bst(nodo.der, nodo.val, hi)
+
+def por_niveles(raiz):                     # BFS: medir len(cola) separa los niveles
+    if not raiz: return []
+    res, cola = [], deque([raiz])
+    while cola:
+        nivel = []
+        for _ in range(len(cola)):
+            n = cola.popleft(); nivel.append(n.val)
+            if n.izq: cola.append(n.izq)
+            if n.der: cola.append(n.der)
+        res.append(nivel)
+    return res</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> preorden (procesar antes), <b>inorden</b> (en medio: en un BST sale
+        <b>ordenado</b>), postorden (después). BFS para lo que depende de la distancia a la raíz. Buscar en un BST: O(altura),
+        O(log n) equilibrado y O(n) degenerado. Validar un BST comparando sólo con los hijos acepta árboles inválidos.</p>
+
+        <h3>Grafos (20)</h3>
+        <div class="code-block" data-lang="Python · BFS en cuadrícula">
+<pre><code>def distancia(grid, inicio, fin):
+    filas, cols = len(grid), len(grid[0])
+    cola, visto = deque([(inicio, 0)]), {inicio}
+    while cola:
+        (f, c), d = cola.popleft()
+        if (f, c) == fin: return d
+        for df, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nf, nc = f + df, c + dc
+            if 0 &lt;= nf &lt; filas and 0 &lt;= nc &lt; cols and grid[nf][nc] != "#" and (nf, nc) not in visto:
+                visto.add((nf, nc))                 # marcar al ENCOLAR
+                cola.append(((nf, nc), d + 1))
+    return -1</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> grafo = nodos + aristas, en <b>lista de adyacencia</b> (en no dirigidos, cada
+        arista dos veces). La diferencia con un árbol es <b>el conjunto de visitados</b>. Marca al encolar. <b>BFS da el camino
+        más corto en pasos; DFS no</b> (con pesos, Dijkstra). Coste O(V + E). Una cuadrícula es un grafo: direcciones + límites.
+        Contar islas = bucle sobre casillas + recorrido que marca la región: O(filas · columnas). Laberintos, dependencias y
+        transformaciones paso a paso son grafos sin decirlo.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎯 Bloque 7 · Backtracking, programación dinámica, montículos y voraces (cap. 21–23)</summary>
+      <div class="acc-body">
+
+        <h3>Backtracking (21)</h3>
+        <div class="code-block" data-lang="Python · los tres esqueletos">
+<pre><code>def subconjuntos(nums):                  # coger / no coger: 2ⁿ
+    res, actual = [], []
+    def bt(i):
+        if i == len(nums):
+            res.append(actual[:])        # guardar una COPIA
+            return
+        actual.append(nums[i]); bt(i + 1); actual.pop()   # elegir → explorar → deshacer
+        bt(i + 1)
+    bt(0)
+    return res
+
+def permutaciones(nums):                 # elegir el siguiente: n!
+    res, actual, usado = [], [], [False] * len(nums)
+    def bt():
+        if len(actual) == len(nums): res.append(actual[:]); return
+        for i, x in enumerate(nums):
+            if usado[i]: continue
+            usado[i] = True; actual.append(x)
+            bt()
+            actual.pop(); usado[i] = False      # deshacer TODO el estado
+    bt()
+    return res
+
+# combinaciones: for j in range(i, n): … bt(j + 1) …  (avanzar sin volver atrás)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> backtracking = DFS sobre el árbol de decisiones. <b>Elegir → explorar →
+        deshacer</b>, siempre. Guardar <code>actual[:]</code>, no <code>actual</code> (si no, todo sale vacío). La <b>poda</b>
+        (cortar en cuanto la rama no puede llevar a solución) lo hace viable; debe ser segura. N reinas: columnas y diagonales
+        <code>f - c</code> y <code>f + c</code> en conjuntos. Límite práctico: n ≈ 20 subconjuntos, n ≈ 10 permutaciones. Si
+        piden <b>cuántas</b> y no <b>cuáles</b>, casi seguro es DP.</p>
+
+        <h3>Programación dinámica (22)</h3>
+        <div class="code-block" data-lang="Python · cambio de monedas">
+<pre><code>def min_monedas(monedas, objetivo):
+    INF = objetivo + 1                   # «infinito» pequeño: no desborda al sumar 1
+    dp = [0] + [INF] * objetivo          # dp[v] = mínimo de monedas para sumar v
+    for v in range(1, objetivo + 1):
+        for m in monedas:                # ¿cuál fue la ÚLTIMA moneda?
+            if m &lt;= v: dp[v] = min(dp[v], dp[v - m] + 1)
+    return dp[objetivo] if dp[objetivo] != INF else -1</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> hace falta con <b>subproblemas solapados</b> y <b>subestructura óptima</b>.
+        Método: definir el subproblema → recurrencia → casos base → orden de relleno (los dos primeros, en español). La pregunta
+        que revela la recurrencia: <b>«¿cuál fue la última decisión?»</b>. Contar → suma y base 1; optimizar → min/max con base
+        0 o infinito. Si <code>dp[i]</code> sólo depende de k celdas anteriores, espacio O(k). En tablas de cadenas con fila de
+        ceros, <code>dp[i]</code> corresponde a <code>s[i-1]</code>. Catálogo: escaleras, monedas, mochila, subsecuencia común
+        más larga, subsecuencia creciente más larga, distancia de edición.</p>
+
+        <h3>Montículos y algoritmos voraces (23)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>import heapq
+def k_mayores(nums, k):                  # montículo de MÍNIMOS de tamaño k: O(n log k)
+    h = []
+    for x in nums:
+        heapq.heappush(h, x)
+        if len(h) &gt; k: heapq.heappop(h)  # echa al más pequeño de los k
+    return h                             # h[0] es el k-ésimo mayor
+
+def max_actividades(intervalos):         # voraz: ordenar por FIN
+    n, fin = 0, float("-inf")
+    for ini, f in sorted(intervalos, key=lambda x: x[1]):
+        if ini &gt;= fin: n += 1; fin = f
+    return n</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un montículo da el mínimo en O(1) e inserta/extrae en O(log n); no está
+        ordenado, sólo garantiza la raíz. Python sólo tiene mínimos (niega para máximos); Java <code>PriorityQueue</code>; JS no
+        trae. Un <b>voraz</b> decide sin mirar atrás: búscale un <b>contraejemplo</b> (monedas 1, 3, 4 con objetivo 6); si lo hay,
+        es DP; si no, justifícalo con un argumento de intercambio. En intervalos, el criterio de orden es el algoritmo: por fin
+        para maximizar actividades, por inicio para fusionar o contar salas. Mediana de un flujo: dos montículos.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave, árbol de decisión y simulacro de entrevista de algoritmos"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 11 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Árbol de decisión|BFS vs DFS|Ventana vs prefijos|Voraz vs DP|Top-down vs bottom-up|Casos borde">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que decide una entrevista de algoritmos</strong>: distinguir técnicas que se parecen,
+      reconocer la señal del enunciado que activa cada una, evitar los errores que cuestan el ejercicio y responder las
+      preguntas típicas con el razonamiento completo.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, di en voz alta la técnica y la complejidad antes de
+      desplegar la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Técnicas que se parecen</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada una</th></tr></thead>
+          <tbody>
+            <tr><td><b>O(log n) / O(n log n)</b></td><td>Dividir a la mitad una vez / n veces algo logarítmico (ordenar).</td><td>—</td></tr>
+            <tr><td><b>Tiempo / espacio</b></td><td>Operaciones / memoria extra (incluida la pila).</td><td>Di siempre las dos.</td></tr>
+            <tr><td><b>Set / diccionario</b></td><td>«¿Está?» / «¿cuántas veces? ¿dónde?».</td><td>Si necesitas un dato asociado, diccionario.</td></tr>
+            <tr><td><b>Diccionario / array de conteo</b></td><td>Claves cualesquiera / claves enteras pequeñas.</td><td>Array con 26 letras o edades 0–120.</td></tr>
+            <tr><td><b>Búsqueda lineal / binaria</b></td><td>O(n) sin requisitos / O(log n) con datos ordenados.</td><td>Ordenar para una sola búsqueda no compensa.</td></tr>
+            <tr><td><b>Binaria sobre el array / sobre la respuesta</b></td><td>Buscar un valor / buscar el mínimo número que cumple una propiedad monótona.</td><td>«Mínima capacidad», «máximo tamaño que…».</td></tr>
+            <tr><td><b>Dos punteros / diccionario (Two Sum)</b></td><td>O(1) espacio, exige orden / O(n) espacio, conserva índices.</td><td>Índices originales de un array desordenado → diccionario.</td></tr>
+            <tr><td><b>Ventana / prefijos + diccionario / Kadane</b></td><td>Contiguo con positivos / suma exacta con negativos / máximo con negativos.</td><td>Mira los signos y qué se pide.</td></tr>
+            <tr><td><b>Subarray / subsecuencia</b></td><td>Contiguo / no necesariamente contiguo.</td><td>Subsecuencia → DP, nunca ventana.</td></tr>
+            <tr><td><b>Pila / cola</b></td><td>LIFO / FIFO.</td><td>Paréntesis, deshacer, DFS / turnos, BFS.</td></tr>
+            <tr><td><b>Array / lista enlazada</b></td><td>Índice O(1), insertar en medio O(n) / índice O(n), insertar estando ahí O(1).</td><td>Array casi siempre.</td></tr>
+            <tr><td><b>Preorden / inorden / postorden</b></td><td>Nodo antes / entre / después de los hijos.</td><td>Inorden de un BST = ordenado. Postorden para combinar hijos.</td></tr>
+            <tr><td><b>Árbol / grafo</b></td><td>Sin ciclos, un camino / ciclos posibles.</td><td>Grafo → conjunto de visitados.</td></tr>
+            <tr><td><b>BFS / DFS</b></td><td>Cola, por niveles, camino más corto en pasos / pila o recursión, en profundidad.</td><td>Distancia → BFS; explorar todo o regiones → cualquiera.</td></tr>
+            <tr><td><b>Recursión / iteración</b></td><td>Natural en estructuras recursivas, usa pila / natural en recorridos lineales.</td><td>Profundidad enorme → iterativo.</td></tr>
+            <tr><td><b>Memoización / tabulación</b></td><td>Top-down (recursión + caché) / bottom-up (tabla + bucle, sin riesgo de pila).</td><td>Top-down para escribir rápido; bottom-up para reducir espacio.</td></tr>
+            <tr><td><b>Backtracking / DP</b></td><td>Enumera <b>cuáles</b> / cuenta u optimiza <b>cuántas</b> o la mejor.</td><td>«Lista todas» → backtracking; «cuántas» o «mínimo» → DP.</td></tr>
+            <tr><td><b>Voraz / DP</b></td><td>Decide sin volver atrás / prueba todas las últimas decisiones.</td><td>Busca un contraejemplo al voraz; si existe, DP.</td></tr>
+            <tr><td><b>Ordenar / montículo (top-k)</b></td><td>O(n log n) y O(n) / O(n log k) y O(k).</td><td>k pequeño o datos que no caben → montículo.</td></tr>
+            <tr><td><b>Merge sort / quick sort</b></td><td>Estable, O(n log n) siempre, O(n) extra / en el sitio, O(n²) en el peor caso.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Los tres lenguajes, sin sorpresas</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Asunto</th><th>Python</th><th>Java</th><th>JavaScript</th></tr></thead>
+          <tbody>
+            <tr><td><b>Longitud</b></td><td><code>len(x)</code></td><td><code>s.length()</code> · <code>a.length</code> · <code>list.size()</code></td><td><code>x.length</code></td></tr>
+            <tr><td><b>Comparar cadenas</b></td><td><code>==</code></td><td><code>equals</code> (nunca <code>==</code>)</td><td><code>===</code></td></tr>
+            <tr><td><b>División entera</b></td><td><code>//</code></td><td><code>/</code> entre int</td><td><code>Math.floor(a / b)</code></td></tr>
+            <tr><td><b>Construir texto</b></td><td>lista + <code>join</code></td><td><code>StringBuilder</code></td><td>array + <code>join</code></td></tr>
+            <tr><td><b>Set / Map</b></td><td><code>set()</code> · <code>{}</code></td><td><code>HashSet</code> · <code>HashMap</code> (<code>getOrDefault</code>)</td><td><code>Set</code> · <code>Map</code> (no objetos con claves numéricas)</td></tr>
+            <tr><td><b>Pila / cola</b></td><td>lista · <code>deque</code></td><td><code>ArrayDeque</code></td><td>array · array + índice de cabeza</td></tr>
+            <tr><td><b>Montículo</b></td><td><code>heapq</code> (sólo mínimos)</td><td><code>PriorityQueue</code></td><td>No trae: implementarlo o barrido</td></tr>
+            <tr><td><b>Ordenar</b></td><td><code>sorted</code> (copia) · <code>.sort()</code></td><td><code>Arrays.sort</code> / <code>list.sort</code> (modifica)</td><td><code>sort((a, b) =&gt; a - b)</code> (modifica; sin comparador, como texto)</td></tr>
+            <tr><td><b>Enteros grandes</b></td><td>Sin límite</td><td><code>int</code> desborda: <code>long</code>, castear antes</td><td>Exactos hasta 2⁵³</td></tr>
+            <tr><td><b>Posición como clave</b></td><td>Tupla <code>(f, c)</code></td><td><code>f * cols + c</code> o cadena</td><td><code>`${f},${c}`</code></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Árbol de decisión y plantillas</summary>
+      <div class="acc-body">
+
+        <h3>De la señal del enunciado a la técnica</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Señal en el enunciado</th><th>Técnica</th><th>Coste típico</th></tr></thead>
+          <tbody>
+            <tr><td>«¿ya ha aparecido?», «duplicado», «único», «en común»</td><td>Conjunto</td><td>O(n)</td></tr>
+            <tr><td>«cuántas veces», «agrupa», «par que suma»</td><td>Diccionario (contar, indexar, agrupar)</td><td>O(n)</td></tr>
+            <tr><td>Array ordenado, «encuentra», «primera posición»</td><td>Búsqueda binaria</td><td>O(log n)</td></tr>
+            <tr><td>«mínimo valor tal que…» con propiedad monótona</td><td>Binaria sobre la respuesta</td><td>O(n log rango)</td></tr>
+            <tr><td>Array ordenado, pareja, simetría, «en el sitio»</td><td>Dos punteros</td><td>O(n) / O(1)</td></tr>
+            <tr><td>«subarray / subcadena contigua» con positivos</td><td>Ventana deslizante</td><td>O(n)</td></tr>
+            <tr><td>Muchas consultas de suma de rangos</td><td>Sumas de prefijos</td><td>O(n) + O(1)</td></tr>
+            <tr><td>Subarray con suma K y negativos</td><td>Prefijos + diccionario</td><td>O(n)</td></tr>
+            <tr><td>Subarray de suma máxima</td><td>Kadane</td><td>O(n) / O(1)</td></tr>
+            <tr><td>Paréntesis, deshacer, «siguiente mayor»</td><td>Pila (monótona)</td><td>O(n)</td></tr>
+            <tr><td>Lista enlazada: centro, ciclo, k-ésimo desde el final</td><td>Lento y rápido / punteros separados</td><td>O(n) / O(1)</td></tr>
+            <tr><td>Árbol: altura, suma, caminos</td><td>DFS recursivo (plantilla)</td><td>O(n)</td></tr>
+            <tr><td>Niveles, «más cercano», mínimo de pasos</td><td>BFS</td><td>O(V + E)</td></tr>
+            <tr><td>Cuadrícula, regiones, islas</td><td>Grafo implícito + recorrido</td><td>O(filas · cols)</td></tr>
+            <tr><td>«Lista todas las combinaciones / permutaciones»</td><td>Backtracking</td><td>O(2ⁿ) / O(n!)</td></tr>
+            <tr><td>«¿De cuántas formas?», «mínimo coste», subsecuencias</td><td>Programación dinámica</td><td>O(n · m)</td></tr>
+            <tr><td>«Los k mayores», «el k-ésimo», flujo</td><td>Montículo</td><td>O(n log k)</td></tr>
+            <tr><td>Intervalos, reuniones, actividades</td><td>Ordenar + voraz (o barrido)</td><td>O(n log n)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las tres preguntas que desbloquean</h3>
+        <ul class="clean">
+          <li><b>¿Qué estoy recalculando?</b> → precalcular (prefijos), recordar (hash, memo) o mantener (ventana).</li>
+          <li><b>¿Sería más fácil si estuviera ordenado?</b> → ordenar + dos punteros, binaria o voraz.</li>
+          <li><b>¿Qué necesito recordar mientras recorro?</b> → set, diccionario, pila, «mejor hasta ahora».</li>
+        </ul>
+
+        <h3>Los diez casos borde que hay que preguntar siempre</h3>
+        <ul class="clean">
+          <li>Entrada vacía · un solo elemento · dos elementos.</li>
+          <li>Todos iguales · ya ordenado · ordenado al revés.</li>
+          <li>Negativos y cero · duplicados.</li>
+          <li>Sin respuesta (¿qué se devuelve?) · valores enormes (desbordamiento).</li>
+        </ul>
+
+        <h3>El protocolo de 45 minutos</h3>
+        <p><b>5</b> entender y preguntar · <b>5</b> ejemplos a mano · <b>10</b> plan (fuerza bruta → mejora) · <b>15</b> código ·
+        <b>7</b> probar con ejemplos y bordes · <b>3</b> complejidad justificada. Piensa en voz alta; si no sale la óptima, escribe
+        la fuerza bruta y dilo: correcto y lento puntúa, en blanco no.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td>El «máximo» de <code>[-4, -9, -2]</code> sale 0</td><td>Acumulador «mejor» iniciado en 0. Arranca en el primer elemento.</td></tr>
+            <tr><td>El producto siempre sale 0</td><td>Acumulador de producto en 0. El neutro es 1.</td></tr>
+            <tr><td>FizzBuzz da «Fizz» para el 15</td><td>Condición general antes que la específica.</td></tr>
+            <tr><td>Índice fuera de rango en la última vuelta</td><td>Off-by-one: <code>range(n + 1)</code> o <code>i &lt;= len</code>. Recorre con <code>i &lt; n</code>.</td></tr>
+            <tr><td>«Tiene un bucle, es O(n)» y no lo es</td><td>Operación O(n) oculta dentro: <code>in lista</code>, <code>pop(0)</code>, rebanar, concatenar.</td></tr>
+            <tr><td>Concatenar texto tarda una eternidad</td><td>Cadenas inmutables: O(n²). Lista + join / StringBuilder.</td></tr>
+            <tr><td>Modifico una copia y cambia el original</td><td>Asignar no copia. <code>a[:]</code>, <code>clone()</code>, <code>slice()</code>.</td></tr>
+            <tr><td>Java: resultado negativo enorme</td><td>Desbordamiento de <code>int</code>. <code>long</code> y castear antes de multiplicar.</td></tr>
+            <tr><td>JS: <code>[10, 9, 100].sort()</code> da <code>[10, 100, 9]</code></td><td>Ordena como texto. <code>sort((a, b) =&gt; a - b)</code>.</td></tr>
+            <tr><td>Recursión que no termina / desborda la pila</td><td>Caso base que no atrapa todos los valores (<code>== 1</code> en vez de <code>&lt;= 1</code>) o el problema no se reduce.</td></tr>
+            <tr><td>Memoicé y sigue lento</td><td>La caché se crea en cada llamada, o la clave no incluye todos los argumentos.</td></tr>
+            <tr><td>Two Sum devuelve <code>[0, 0]</code></td><td>Guardar antes de consultar: el elemento se empareja consigo mismo.</td></tr>
+            <tr><td>Búsqueda binaria en bucle infinito</td><td>Mezcla de plantillas: <code>while izq &lt; der</code> con <code>der = medio - 1</code> o <code>izq = medio</code>.</td></tr>
+            <tr><td>Ventana: «tmmzuxt» da 6</td><td>Reiniciar la ventana o mover <code>izq</code> hacia atrás. <code>izq</code> sólo avanza.</td></tr>
+            <tr><td>Kadane devuelve 0 con todos negativos</td><td>Iniciado en 0. Arranca en <code>nums[0]</code>.</td></tr>
+            <tr><td>«(» se considera equilibrado</td><td>Falta comprobar al final que la pila esté vacía.</td></tr>
+            <tr><td>BFS lentísimo en grafos grandes</td><td><code>pop(0)</code>/<code>shift()</code> O(n). Usa deque o índice de cabeza.</td></tr>
+            <tr><td>Recorrido de grafo que no termina</td><td>Falta el conjunto de visitados (o se marca al sacar).</td></tr>
+            <tr><td>Validar BST acepta árboles inválidos</td><td>Sólo compara con los hijos. Arrastra el rango.</td></tr>
+            <tr><td>Backtracking devuelve todo vacío</td><td>Guardó la referencia, no una copia (<code>actual[:]</code>).</td></tr>
+            <tr><td>Toda la tabla de DP sale a 0 o a 1</td><td>Operación equivocada (suma frente a min) o caso base mal fijado.</td></tr>
+            <tr><td>Java: la DP de mínimos da negativos</td><td>«Infinito» como <code>Integer.MAX_VALUE</code> y luego +1. Usa un valor imposible pequeño.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Método y complejidad</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Te piden «el segundo número más grande». ¿Qué preguntas antes de escribir?</p>
+            <div class="q-ans">¿Qué devuelvo si hay menos de dos elementos? ¿Si todos son iguales, el segundo mayor es el mismo valor o no existe? ¿Puede haber negativos? Y ¿puedo modificar la entrada? Las respuestas cambian el código, así que se preguntan antes.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué escribir la fuerza bruta si sabes que es lenta?</p>
+            <div class="q-ans">Porque garantiza una solución correcta, sirve para comprobar la optimizada y, al escribirla, se ve qué trabajo se repite: eso señala la técnica que la mejora. En una entrevista, una fuerza bruta correcta y bien analizada puntúa; una óptima a medias, no.</div></div>
+          <div class="q"><p class="q-text">3. Un bucle recorre la lista una vez y dentro hace <code>if x in vistos</code> sobre otra lista. ¿Es O(n)?</p>
+            <div class="q-ans">No: <code>in</code> sobre una lista es O(n), así que el total es O(n²). Cambiando <code>vistos</code> a un conjunto, cada comprobación es O(1) de media y el total O(n). Es la optimización más barata del curso.</div></div>
+          <div class="q"><p class="q-text">4. El enunciado dice n ≤ 200.000. ¿Qué te está diciendo?</p>
+            <div class="q-ans">Que un O(n²) (4·10¹⁰ operaciones) no va a pasar y se espera O(n log n) o mejor: ordenar, hash, dos punteros, ventana, binaria. El límite de n es una pista sobre la complejidad esperada.</div></div>
+          <div class="q"><p class="q-text">5. ¿Cuál es la complejidad de <code>while i &gt; 1: i //= 2</code>?</p>
+            <div class="q-ans">O(log n): cada vuelta divide el problema a la mitad, así que da unas log₂ n vueltas. Es la misma razón por la que la búsqueda binaria es logarítmica.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cuál es la complejidad espacial de una recursión que no crea estructuras?</p>
+            <div class="q-ans">No es O(1): cada llamada pendiente ocupa un marco en la pila. Es O(profundidad máxima): O(n) para una recursión lineal, O(log n) si parte a la mitad, O(altura) en un árbol.</div></div>
+          <div class="q"><p class="q-text">7. Tres bucles separados sobre la misma lista. ¿Los juntas para que vaya más rápido?</p>
+            <div class="q-ans">No cambia la complejidad: 3n sigue siendo O(n). Sólo los juntaría si mejora la legibilidad. La claridad y la corrección pesan más que una constante.</div></div>
+          <div class="q"><p class="q-text">8. Llevas ocho minutos y sólo se te ocurre un doble bucle. ¿Qué haces?</p>
+            <div class="q-ans">Decirlo: «tengo una solución O(n²); la escribo y luego busco mejorarla». Al escribirla, preguntarme qué estoy recalculando, si ordenar ayudaría y qué necesito recordar mientras recorro. Pensar en voz alta deja que el entrevistador te dé pistas.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Hash, orden y patrones sobre secuencias</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Two Sum: ¿por qué hay que consultar el complemento antes de guardar el elemento?</p>
+            <div class="q-ans">Si guardas primero, un elemento puede emparejarse consigo mismo: con objetivo 6 y un 3 en la posición 0, encontraría el 3 recién guardado y devolvería [0, 0]. Consultando antes, sólo se empareja con elementos anteriores.</div></div>
+          <div class="q"><p class="q-text">2. Agrupa anagramas: <code>["eat","tea","tan","ate","nat","bat"]</code>. ¿Cuál es la clave?</p>
+            <div class="q-ans">Las letras ordenadas de cada palabra («aet», «ant», «abt»), o un conteo de 26 letras convertido en tupla. Todas las palabras con la misma clave van a la misma lista. Coste O(n · k log k) con la ordenación de cada palabra.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué la búsqueda binaria con <code>while izq &lt; der</code> falla buscando 5 en <code>[5]</code>?</p>
+            <div class="q-ans">Con un elemento, izq = der = 0 y el bucle no entra. La plantilla de valor exacto necesita <code>&lt;=</code> junto con <code>medio ± 1</code>. La de «primera posición válida» usa <code>&lt;</code> con un rango [0, n] y <code>der = medio</code>. No hay que mezclarlas.</div></div>
+          <div class="q"><p class="q-text">4. Capacidad mínima de un camión para llevar n paquetes en d días respetando el orden. ¿Técnica?</p>
+            <div class="q-ans">Búsqueda binaria sobre la respuesta. La capacidad está entre el paquete más pesado y la suma total, y la propiedad «con capacidad C cabe en d días» es monótona: si vale C, vale cualquier mayor. Se busca la primera C válida, con una comprobación voraz O(n) por candidata.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué un <code>while</code> dentro de un <code>for</code> en la ventana deslizante sigue siendo O(n)?</p>
+            <div class="q-ans">Porque el puntero izquierdo sólo avanza y nunca supera al derecho: entre los dos bucles cada índice entra una vez y sale como mucho una vez. El total de iteraciones del <code>while</code> en toda la ejecución es O(n). Es análisis amortizado.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué la ventana deslizante falla con negativos si el estado es una suma?</p>
+            <div class="q-ans">Porque encoger la ventana deja de reducir la suma con seguridad (quitar un negativo la aumenta), así que la decisión de crecer o encoger ya no es monótona. Con negativos: Kadane para el máximo, o prefijos + diccionario para contar sumas exactas.</div></div>
+          <div class="q"><p class="q-text">7. Muchas consultas de suma de rangos sobre un array que no cambia. ¿Qué haces?</p>
+            <div class="q-ans">Sumas de prefijos: O(n) una vez y cada consulta en O(1) con <code>pref[j + 1] - pref[i]</code>. El 0 inicial actúa de centinela para los rangos que empiezan en 0.</div></div>
+          <div class="q"><p class="q-text">8. Índices de dos números que sumen K en un array <b>desordenado</b>. ¿Ordenas y usas dos punteros?</p>
+            <div class="q-ans">No: ordenar destruye los índices originales (habría que ordenar pares valor-índice, O(n log n)). Un diccionario valor → índice lo resuelve en O(n). Dos punteros es la opción si el array ya viene ordenado o si piden O(1) de espacio.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Estructuras: pilas, listas, árboles y grafos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Contar aperturas y cierres de cada tipo, ¿basta para validar paréntesis?</p>
+            <div class="q-ans">No: <code>"([)]"</code> tiene las cuentas correctas y es inválido. Importa el orden: cada cierre debe emparejar con la apertura más reciente sin cerrar, que es exactamente lo que da una pila.</div></div>
+          <div class="q"><p class="q-text">2. Para cada día, cuántos días faltan hasta una temperatura mayor. Solución O(n).</p>
+            <div class="q-ans">Pila monótona de índices: al llegar un día más cálido, desapila todos los días más fríos que esperaban y les asigna la distancia. Cada índice entra y sale una vez: O(n).</div></div>
+          <div class="q"><p class="q-text">3. Detectar un ciclo en una lista enlazada con O(1) de espacio.</p>
+            <div class="q-ans">Floyd: un puntero avanza de uno en uno y otro de dos en dos. Si hay ciclo, el rápido alcanza al lento; si no, llega al final. La condición <code>rapido and rapido.siguiente</code> se comprueba en ese orden y se compara después de mover. Un conjunto de visitados funciona, pero gasta O(n).</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué el caso base en árboles es el nodo nulo y no la hoja?</p>
+            <div class="q-ans">Porque cubre también el árbol vacío y los nodos con un solo hijo sin casos especiales. Con la hoja como base, el código se llena de comprobaciones de hijos nulos. Las hojas se resuelven solas al llamar a sus dos hijos nulos.</div></div>
+          <div class="q"><p class="q-text">5. Raíz 5, hijo derecho 8, y el hijo izquierdo del 8 es 2. Cada nodo cumple con sus hijos. ¿Es un BST?</p>
+            <div class="q-ans">No: el 2 está en el subárbol derecho del 5, así que debería ser mayor que 5. La validación correcta arrastra un rango (mínimo, máximo) que se estrecha al bajar, no compara sólo con los hijos.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué BFS da el camino más corto y DFS no?</p>
+            <div class="q-ans">BFS explora por capas de distancia: visita todos los nodos a distancia 1 antes que los de distancia 2, así que la primera vez que llega a un nodo es por el camino con menos aristas. DFS sigue una rama hasta el fondo y puede llegar primero por un camino largo. Con pesos distintos, ninguno: Dijkstra.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué marcar como visitado al encolar y no al sacar?</p>
+            <div class="q-ans">Si se marca al sacar, un nodo puede entrar varias veces en la cola desde vecinos distintos antes de procesarse: trabajo repetido y, en grafos densos, explosión de memoria. Al encolar, cada nodo entra una sola vez.</div></div>
+          <div class="q"><p class="q-text">8. «Mínimo número de cambios de una letra para ir de una palabra a otra, pasando por palabras del diccionario». ¿Qué es?</p>
+            <div class="q-ans">Un grafo implícito: cada palabra es un nodo y dos palabras están unidas si difieren en una letra. Piden el camino más corto en número de pasos sin pesos: BFS desde la palabra inicial.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Recursión, backtracking, DP y voraces</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Un compañero «optimiza» la potencia con <code>potencia(b, e//2) * potencia(b, e//2)</code> y sigue lento. ¿Por qué?</p>
+            <div class="q-ans">Llama dos veces a la misma recursión, así que el árbol se ramifica y el total vuelve a ser O(e). Guardando el resultado en una variable y multiplicándolo por sí mismo hay una sola llamada por nivel: O(log e).</div></div>
+          <div class="q"><p class="q-text">2. ¿Cuándo sirve memoizar?</p>
+            <div class="q-ans">Cuando la recursión resuelve los mismos subproblemas varias veces (subproblemas solapados) y la función es determinista. Si al dibujar el árbol de llamadas no se repite ningún nodo, memoizar no ahorra nada.</div></div>
+          <div class="q"><p class="q-text">3. Tu backtracking devuelve 8 listas, todas vacías. ¿Qué pasa?</p>
+            <div class="q-ans">Se guardó la referencia a la lista de trabajo (<code>res.append(actual)</code>) en vez de una copia. Al deshacer, esa misma lista se vacía y todas las entradas apuntan a ella. Hay que guardar <code>actual[:]</code>.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué en permutaciones se desmarca <code>usado[i]</code> y en un DFS de grafos no se desmarcan los visitados?</p>
+            <div class="q-ans">En backtracking cada rama explora una solución distinta y el estado debe volver a como estaba para la siguiente. En un recorrido de grafo se quiere visitar cada nodo una vez en total; desmarcar haría que se revisitaran y el coste explotaría.</div></div>
+          <div class="q"><p class="q-text">5. Monedas 1, 3 y 4, objetivo 6. El voraz da 3 monedas. ¿Qué falla?</p>
+            <div class="q-ans">El voraz coge el 4 y luego 1 + 1; la óptima es 3 + 3. Coger la más grande no garantiza el óptimo con este sistema de monedas. La DP prueba todas las últimas monedas posibles: <code>dp[v] = min(dp[v - m] + 1)</code>.</div></div>
+          <div class="q"><p class="q-text">6. ¿De cuántas formas se suben n escalones con pasos de 1, 2 o 3? ¿Cómo encuentras la recurrencia?</p>
+            <div class="q-ans">Preguntando cuál fue el último paso: 1, 2 o 3. Entonces <code>f(n) = f(n-1) + f(n-2) + f(n-3)</code>, con <code>f(0) = 1</code> (una forma de no moverse) y valores negativos a 0. Como sólo depende de tres valores anteriores, el espacio es O(1).</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué un montículo de <b>mínimos</b> para los k elementos <b>mayores</b>?</p>
+            <div class="q-ans">Porque se mantienen los k mayores vistos y hay que poder expulsar rápido al más pequeño de ellos cuando llega uno mayor. La raíz del montículo de mínimos es justo ése, y además es el k-ésimo mayor. Coste O(n log k) y O(k) de memoria.</div></div>
+          <div class="q"><p class="q-text">8. Máximo de reuniones sin solapar: ¿por qué ordenar por hora de fin?</p>
+            <div class="q-ans">Porque elegir la que termina antes deja el máximo de tiempo libre para las siguientes, y un argumento de intercambio demuestra que nunca empeora la solución. Para contar salas mínimas, en cambio, se ordena por inicio y se cuentan las simultáneas (montículo o barrido).</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Entender → ejemplos → plan → código → revisar. Fuerza bruta en voz alta.</li>
+          <li><b>1</b> · <code>%</code> es oro; la condición más específica primero; <code>return cond</code>.</li>
+          <li><b>2</b> · Acumular, contar, mejor hasta ahora, contraejemplo. Mejor arranca en el primero.</li>
+          <li><b>3</b> · Seguidos suman, anidados multiplican; peor caso; trampas O(n) ocultas.</li>
+          <li><b>4</b> · Cadenas inmutables; join; normalizar; dos índices que se acercan.</li>
+          <li><b>5</b> · Tabla de costes; copiar no es asignar; lee/escribe en el sitio.</li>
+          <li><b>6</b> · Hasta √n; criba desde i·i; Euclides; desbordamiento.</li>
+          <li><b>7</b> · Funciones puras; descomponer en pasos con nombre.</li>
+          <li><b>8</b> · Caso base + paso; acto de fe; la pila cuesta memoria.</li>
+          <li><b>9</b> · Mirar, calcular, guardar; top-down y bottom-up.</li>
+          <li><b>10</b> · Set: «¿ya lo he visto?» en O(1). Preguntar y luego añadir.</li>
+          <li><b>11</b> · Diccionario: contar, indexar, agrupar; Two Sum.</li>
+          <li><b>12</b> · Sort O(n log n) con clave compuesta; estable; JS ordena texto.</li>
+          <li><b>13</b> · Dos plantillas de binaria; binaria sobre la respuesta.</li>
+          <li><b>14</b> · Dos punteros: descartar con orden; O(n) y O(1).</li>
+          <li><b>15</b> · «Contiguo» → ventana: crecer, encoger, actualizar; amortizado.</li>
+          <li><b>16</b> · Prefijos con centinela; {0: 1}; Kadane desde nums[0].</li>
+          <li><b>17</b> · Pila LIFO, cola FIFO con deque; pila monótona.</li>
+          <li><b>18</b> · Invertir con tres punteros; centinela; Floyd.</li>
+          <li><b>19</b> · Base = nulo; inorden de BST ordenado; BFS por niveles.</li>
+          <li><b>20</b> · Visitados al encolar; BFS = camino más corto; cuadrícula = grafo.</li>
+          <li><b>21</b> · Elegir, explorar, deshacer; copiar al guardar; podar.</li>
+          <li><b>22</b> · ¿Cuál fue la última decisión? Recurrencia, base, orden, espacio.</li>
+          <li><b>23</b> · Montículo de mínimos para top-k; voraz con contraejemplo o argumento de intercambio.</li>
+          <li><b>24</b> · Protocolo de 45 minutos, árbol de decisión, pensar en voz alta.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Dos problemas al día: uno nuevo y uno repasado. Por cada uno, una línea de playbook: «señal → técnica → trampa».</li>
+            <li>Antes de una entrevista, rehaz de memoria las plantillas de binaria, ventana, BFS, backtracking y una DP de monedas.</li>
+            <li>Practica en voz alta con cronómetro siguiendo el protocolo de 45 minutos: lo que se evalúa es el proceso.</li>
+            <li>Vuelve a los laboratorios del curso con la solución oculta: si te bloqueas, aplica las tres preguntas que desbloquean.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

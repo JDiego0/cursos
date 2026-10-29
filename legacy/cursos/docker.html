@@ -14599,7 +14599,679 @@ kubectl get all -l app.kubernetes.io/instance=nakaticket --no-headers | wc -l</c
     </details>
   </section>
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-22"
+    data-num="22"
+    data-title="Repaso exprés: Docker, Compose y Kubernetes de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Imagen|Dockerfile|Multi-stage|Volúmenes|Redes|Compose|Pod|Deployment|Service|Ingress|Probes|Helm">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del primer <code>docker run</code> a
+      NakaTicket en Kubernetes con Ingress, probes, autoescalado, Helm y GitOps. Cada concepto aparece con lo mínimo para
+      recordarlo —qué es, para qué sirve y cómo se escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a los contenedores tras semanas sin practicar, o
+      salta al bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  6 · PRODUCCIÓN        StatefulSet · Ingress · probes · HPA · CronJob · Helm · GitOps (17–21)
+                ▲
+  5 · KUBERNETES        clúster · Pod · Deployment · Service · ConfigMap · Secret     (13–16)
+                ▲
+  4 · COMPOSE           servicios · healthchecks · override · perfiles               (11–12)
+                ▲
+  3 · DATOS Y RED       volúmenes · redes con DNS · configuración y secretos         (8–10)
+                ▲
+  2 · CONSTRUIR         Dockerfile · caché · multi-stage · no root · registro        (4–7)
+                ▲
+  1 · FUNDAMENTOS       contenedor · docker run · ciclo de vida · capas              (0–3)</div>
+
+        <h3>NakaTicket, de Compose a Kubernetes</h3>
+        <div class="diagram">  Compose (local)                         Kubernetes (clúster)
+  ───────────────                         ────────────────────
+  web  (nginx sin privilegios, :8080)  →  Deployment + Service ClusterIP
+  api  (Node, :3000)                   →  Deployment (HPA) + Service + ConfigMap/Secret
+  worker (cola de Redis)               →  Deployment sin Service
+  redis                                →  Deployment + Service
+  db   (PostgreSQL + volumen pgdata)   →  StatefulSet + Service headless + PVC
+  migraciones                          →  Job
+  copia diaria                         →  CronJob
+  -p 8080:8080                         →  Ingress (nakaticket.local, / y /api)
+  docker-compose.yml                   →  chart de Helm + GitOps</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos</b></td><td>Un contenedor es un proceso aislado, efímero, de una imagen en capas.</td><td>Vive lo que vive su proceso principal.</td></tr>
+            <tr><td><b>Construir</b></td><td>Imágenes pequeñas, cacheables, sin root y versionadas.</td><td>Lo que menos cambia, arriba.</td></tr>
+            <tr><td><b>Datos y red</b></td><td>Datos en volúmenes, servicios por nombre, configuración fuera.</td><td>Una imagen, muchos entornos.</td></tr>
+            <tr><td><b>Compose</b></td><td>El sistema entero declarado y versionado.</td><td>depends_on no espera: healthcheck.</td></tr>
+            <tr><td><b>Kubernetes</b></td><td>Estado deseado y bucle de reconciliación.</td><td>Todo se une por etiquetas.</td></tr>
+            <tr><td><b>Producción</b></td><td>Persistencia, entrada única, salud y despliegues sin corte.</td><td>Liveness ≠ readiness.</td></tr>
+            <tr><td><b>Entrega</b></td><td>Empaquetar, escalar y desplegar sin credenciales fuera.</td><td>Tag por commit, nunca latest.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Levanta NakaTicket con <code>docker compose up -d</code> y, bloque a bloque, rompe algo a propósito (para la base de
+        datos, cambia un puerto, borra un pod) y anticipa qué verás antes de mirarlo. El diagnóstico es lo que más se olvida.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📦 Bloque 1 · Contenedores, docker run, ciclo de vida y capas (cap. 0–3)</summary>
+      <div class="acc-body">
+
+        <h3>Qué es un contenedor (0)</h3>
+        <ul class="clean">
+          <li>Un <b>proceso aislado</b> con <b>namespaces</b> y limitado con <b>cgroups</b>; comparte el núcleo del anfitrión. No es una máquina virtual: arranca en milisegundos.</li>
+          <li><b>Imagen</b> = plantilla de sólo lectura; <b>contenedor</b> = esa plantilla en ejecución; <b>registro</b> = el almacén.</li>
+          <li><code>docker</code> es un cliente: el trabajo lo hace el <b>demonio</b> (sin bloque <i>Server</i> en <code>docker version</code>, no hay motor). En Windows y macOS corre dentro de una VM Linux (Docker Desktop).</li>
+        </ul>
+
+        <h3>docker run (1)</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>docker run -d --name web -p 8080:80 \
+  -v "$(pwd)/web":/usr/share/nginx/html:ro \
+  nginx:1.27-alpine</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> <code>run</code> = pull + create + start. <b><code>-d</code></b> lo desengancha de la
+        terminal; <b><code>-p fuera:dentro</code></b> publica un puerto (el de dentro lo impone la aplicación); <b><code>--name</code></b>
+        desde el primer día; <b>tag explícito</b> (<code>:latest</code> es una promesa que nadie cumple) y variante
+        <code>-alpine</code>/<code>-slim</code>. El contenedor vive lo que vive su proceso principal (un <code>ubuntu</code> sin
+        comando termina al instante).</p>
+
+        <h3>Ciclo de vida y diagnóstico (2)</h3>
+        <ul class="clean">
+          <li>Estados <code>running</code> y <code>exited</code>; un contenedor parado sigue existiendo. Código de salida: <b>0</b> bien, <b>137</b> lo mataron (casi siempre memoria), <b>127</b> comando inexistente.</li>
+          <li><code>stop</code> envía SIGTERM y espera 10 s; <code>kill</code>, SIGKILL.</li>
+          <li>Los <b>logs son la salida estándar</b>, no un archivo. <code>exec</code> añade un proceso a uno vivo; <code>run</code> crea uno nuevo.</li>
+          <li><b>Efímero</b>: lo escrito dentro sobrevive a stop/start, no a <code>rm</code>. <code>--restart unless-stopped</code>.</li>
+          <li>Diagnóstico: <code>docker ps -a</code> → <code>docker logs --tail 50</code> → <code>docker inspect</code> → <code>docker exec</code>. Nunca arregles por dentro: corrige el Dockerfile (infraestructura inmutable).</li>
+        </ul>
+
+        <h3>Imágenes, capas y tags (3)</h3>
+        <ul class="clean">
+          <li>Una imagen es una <b>pila de capas</b> de sólo lectura; el contenedor añade una capa escribible. Las capas se comparten y se cachean.</li>
+          <li>Lo que una capa añade, otra no lo borra: sólo lo oculta. <b>Nunca un secreto en una capa.</b></li>
+          <li>Nombre: <code>registro/espacio/repositorio:tag</code>. El <b>tag</b> es un puntero móvil; el <b>digest</b> (<code>sha256:…</code>) identifica unos bytes para siempre.</li>
+          <li><code>docker build -t nakaticket/web:1.0 .</code>: el último argumento es el <b>contexto</b>; <code>COPY</code> sólo ve archivos de dentro.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🛠 Bloque 2 · Dockerfile, caché, multi-stage y registro (cap. 4–7)</summary>
+      <div class="acc-body">
+
+        <h3>Dockerfile de producción (4–6)</h3>
+        <div class="code-block" data-lang="Dockerfile · api/Dockerfile">
+<pre><code># ETAPA 1 · build
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./      # lo que menos cambia, arriba
+RUN npm ci                                  # reproducible
+COPY src ./src
+RUN npm prune --omit=dev                    # fuera las dependencias de desarrollo
+
+# ETAPA 2 · runtime: la única que se publica
+FROM node:22-alpine
+LABEL org.opencontainers.image.title="NakaTicket API" org.opencontainers.image.version="2.0"
+WORKDIR /app
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/src ./src
+COPY --from=build --chown=node:node /app/package.json ./package.json
+ENV NODE_ENV=production PORT=3000
+EXPOSE 3000                                 # documenta, NO publica
+USER node                                   # después de los COPY
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -q -O- http://localhost:3000/salud || exit 1
+CMD ["node", "src/server.js"]               # forma exec: PID 1 recibe SIGTERM</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b><code>RUN</code></b> se ejecuta al construir (queda en una capa);
+        <b><code>CMD</code></b> al arrancar (sustituible tras el nombre de la imagen); <b><code>ENTRYPOINT</code></b> recibe lo que
+        escribas como argumentos. La app debe escuchar en <b><code>0.0.0.0</code></b>, nunca en 127.0.0.1. Configuración por
+        variables de entorno. <b>Multi-stage</b>: sólo la última etapa se publica (ni compiladores ni secretos de la de build).
+        <b>Sin root</b>: puertos altos dentro (8080 en Nginx sin privilegios). Etiquetas OCI (<code>LABEL</code>) para trazabilidad.</p>
+
+        <h3>Caché y .dockerignore (5)</h3>
+        <ul class="clean">
+          <li>Antes de construir se envía el <b>contexto</b> entero: su tamaño se paga en cada build.</li>
+          <li><b><code>.dockerignore</code></b> obligatorio desde el primer <code>COPY . .</code>: <code>.git</code>, <code>node_modules</code>, <code>.env</code>.</li>
+          <li>La caché de <code>COPY</code> se invalida por contenido; la de <code>RUN</code>, por el texto del comando. Si una capa se invalida, todas las siguientes se rehacen.</li>
+          <li><code>apt-get update &amp;&amp; install &amp;&amp; limpieza</code> en el mismo <code>RUN</code>; borrar en una capa posterior no reduce el tamaño.</li>
+          <li><code>--no-cache</code> para comprobar un build limpio; <code>docker builder prune</code> para recuperar disco.</li>
+        </ul>
+
+        <h3>Registro (7)</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>echo "$TOKEN" | docker login ghcr.io -u usuario --password-stdin
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/naka/api:1.0.0 -t ghcr.io/naka/api:1.0 -t ghcr.io/naka/api:sha-3f9a1c2 --push .</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el registro es el único puente entre tu build y otra máquina (Kubernetes no
+        construye). Login con token de permisos mínimos y <code>--password-stdin</code>. Varios tags por imagen (SemVer: parche,
+        menor, mayor) y uno por commit. Las imágenes son por arquitectura: un Mac M3 produce arm64 y el servidor amd64 dice
+        <code>exec format error</code> o <code>no matching manifest</code>: <code>buildx --platform</code>. Escanea antes de publicar.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔌 Bloque 3 · Volúmenes, redes y configuración (cap. 8–10)</summary>
+      <div class="acc-body">
+
+        <h3>Volúmenes (8)</h3>
+        <ul class="clean">
+          <li>Tres tipos: <b>volumen nombrado</b> (datos de la aplicación), <b>bind mount</b> (archivos que editas tú) y <b>tmpfs</b> (temporal o sensible).</li>
+          <li>Un volumen nombrado vacío hereda el contenido de la carpeta de la imagen; un bind mount lo <b>tapa</b> (por eso <code>-v $(pwd):/app</code> hace desaparecer <code>node_modules</code>).</li>
+          <li><code>/docker-entrypoint-initdb.d/</code> y las variables <code>POSTGRES_*</code> sólo actúan en la <b>primera inicialización</b> (cambiar la contraseña después no hace nada).</li>
+          <li>Copias: <code>pg_dump</code> para bases de datos; un contenedor con <code>tar</code> para volúmenes de archivos. Borrar el contenedor no borra el volumen; <code>docker volume prune</code> sí borra los no usados.</li>
+        </ul>
+
+        <h3>Redes (9)</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>docker network create nakanet
+docker run -d --name db  --network nakanet -v pgdata:/var/lib/postgresql/data postgres:17-alpine
+docker run -d --name api --network nakanet -p 3000:3000 \
+  -e DATABASE_URL=postgres://naka:secreto@db:5432/nakaticket nakaticket/api:1.0</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> la red por defecto no tiene DNS: crea una <b>red propia</b> y el nombre del
+        contenedor (<code>db</code>) es un host válido. Entre contenedores se usa el <b>puerto interno</b>; <code>-p</code> sólo para
+        llegar desde fuera (la base de datos no se publica). Dentro de un contenedor, <b><code>localhost</code> es ese
+        contenedor</b>; el anfitrión es <code>host.docker.internal</code>. Nunca IPs en la configuración. Segmentar = redes distintas.</p>
+
+        <h3>Configuración y secretos (10)</h3>
+        <ul class="clean">
+          <li><b>Una imagen, muchos entornos</b>: lo que cambia entre entornos no va dentro de la imagen.</li>
+          <li>Configuración (se puede ver) frente a secreto (habría que rotarlo si se viera).</li>
+          <li>Precedencia: <code>ENV</code> del Dockerfile &lt; <code>--env-file</code> &lt; <code>-e</code>. Cambiar el <code>.env</code> exige recrear el contenedor.</li>
+          <li>Secretos nunca en la imagen, el repositorio, la línea de comandos ni los logs. Patrón <b><code>*_FILE</code></b>: el secreto como archivo en <code>/run/secrets/</code>.</li>
+          <li><code>.env</code> nunca se sube; <code>.env.example</code> siempre. Ante una fuga: <b>rotar primero</b>, limpiar después.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Bloque 4 · Docker Compose (cap. 11–12)</summary>
+      <div class="acc-body">
+
+        <h3>Compose (11–12)</h3>
+        <div class="code-block" data-lang="YAML · docker-compose.yml">
+<pre><code>name: nakaticket
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]   # $$: no lo sustituye Compose
+      interval: 5s
+      start_period: 10s
+  api:
+    build: ./api
+    env_file: .env
+    ports: ["3000:3000"]
+    depends_on:
+      db: { condition: service_healthy }                     # espera de verdad
+    deploy:
+      resources: { limits: { memory: 256M } }
+  worker:
+    build: ./worker
+    depends_on: [redis]
+  redis:
+    image: redis:7-alpine
+  adminer:
+    image: adminer
+    profiles: [herramientas]                                 # sólo si se pide
+volumes:
+  pgdata:</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> Compose es el <code>docker run</code> de siempre en YAML: crea una red del
+        proyecto y el nombre del servicio es el host. <code>up -d</code> recrea sólo lo que cambió (para código nuevo,
+        <code>--build</code>). <code>depends_on</code> sin condición sólo ordena; <b><code>service_healthy</code></b> espera, pero la
+        app debe reintentar igualmente. El <code>.env</code> sustituye <code>${…}</code> y además puede entregar variables (dos
+        cosas distintas). <b><code>down</code> conserva los volúmenes; <code>down -v</code> los destruye.</b>
+        <code>docker-compose.override.yml</code> se fusiona solo (con <code>-f</code> deja de cargarse). Límite superado = 137.
+        <code>docker compose config</code> antes de <code>up</code>.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>☸ Bloque 5 · Kubernetes: clúster, Pods, Deployments, Services y configuración (cap. 13–16)</summary>
+      <div class="acc-body">
+
+        <h3>Por qué Kubernetes (13)</h3>
+        <ul class="clean">
+          <li>Resuelve lo que Compose no: varias máquinas, escalado con balanceo, actualizaciones sin corte y auto-reparación.</li>
+          <li><b>Estado deseado + bucle de reconciliación</b>: declaras y el sistema trabaja sin parar para alcanzarlo (por eso no hay <code>depends_on</code>).</li>
+          <li>Plano de control: <b>API server</b> (la puerta), <b>etcd</b> (el estado), <b>scheduler</b> (dónde) y <b>controller manager</b> (los bucles). En cada nodo: <b>kubelet</b>, <b>kube-proxy</b> y runtime.</li>
+          <li><b>kind</b>: un clúster real con contenedores como nodos. <code>kubectl &lt;verbo&gt; &lt;tipo&gt; [nombre]</code>; comprueba <code>kubectl config current-context</code> antes de nada destructivo.</li>
+        </ul>
+
+        <h3>Pods y Deployments (14)</h3>
+        <div class="code-block" data-lang="YAML · k8s/api.yaml">
+<pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata: { name: api }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: api } }          # inmutable
+  template:
+    metadata: { labels: { app: api } }             # debe coincidir con el selector
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/naka/api:sha-3f9a1c2
+          ports: [{ name: http, containerPort: 3000 }]
+          envFrom: [{ configMapRef: { name: api-config } }]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }  # dónde cabe
+            limits:   { memory: 256Mi }             # el techo</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el <b>Pod</b> es la unidad mínima (contenedores que comparten red y ciclo de
+        vida) y no se cura: se sustituye. Cadena <b>Deployment → ReplicaSet → Pods</b>. Todo manifiesto: <code>apiVersion</code>,
+        <code>kind</code>, <code>metadata</code>, <code>spec</code> (deseado) y <code>status</code> (real). Los objetos se unen por
+        <b>etiquetas y selectores</b>. <code>apply</code> es declarativo: el archivo manda (lo hecho con <code>edit</code> o
+        <code>scale</code> se pierde). Diagnóstico: <code>describe</code> (eventos) → <code>logs --previous</code> → <code>get events</code>.</p>
+
+        <h3>Services (15)</h3>
+        <ul class="clean">
+          <li>Un <b>Service</b> es una IP y un nombre estables delante de pods que cambian; los encuentra por etiquetas y la lista son los <b>Endpoints</b> (sólo pods <b>Ready</b>).</li>
+          <li>Tipos: <b>ClusterIP</b> (interno), <b>NodePort</b>, <b>LoadBalancer</b> y <b>headless</b>.</li>
+          <li><code>port</code> (por donde te llaman) y <code>targetPort</code> (donde escucha la app; mejor por nombre).</li>
+          <li><b>CoreDNS</b>: nombre corto en el mismo namespace; <code>servicio.namespace</code> desde fuera. Balanceo por conexión, no por petición.</li>
+          <li>Ante «no responde»: <code>kubectl get endpoints</code>. Para probar: <code>kubectl port-forward</code>.</li>
+        </ul>
+
+        <h3>ConfigMaps y Secrets (16)</h3>
+        <ul class="clean">
+          <li>ConfigMap para lo visible; <b>Secret</b> para lo sensible. <b>base64 no es cifrado.</b></li>
+          <li>Se consumen como variables (<code>envFrom</code>, <code>valueFrom</code>) o archivos montados (mejor para secretos).</li>
+          <li>Las variables <b>no se actualizan</b> al cambiar el objeto; los archivos sí (con retardo). <code>kubectl rollout restart</code> recrea los pods sin corte.</li>
+          <li>En <code>data</code> todo son cadenas (números entre comillas). <code>stringData</code> evita codificar. Montar un ConfigMap en una carpeta tapa su contenido (<code>subPath</code>).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🏭 Bloque 6 · Almacenamiento, Ingress y salud (cap. 17–19)</summary>
+      <div class="acc-body">
+
+        <h3>Almacenamiento y StatefulSet (17)</h3>
+        <ul class="clean">
+          <li>Escribes un <b>PVC</b>; el clúster fabrica el <b>PV</b> según la <b>StorageClass</b> (aprovisionamiento dinámico).</li>
+          <li><b>ReadWriteOnce</b> = un solo nodo: varias réplicas con un PVC compartido se quedan en Pending.</li>
+          <li><b>StatefulSet</b>: nombres estables (<code>db-0</code>), arranque ordenado, un PVC por réplica y DNS por pod, con un <b>Service headless</b> (<code>clusterIP: None</code>). Al borrarlo, los PVC se conservan.</li>
+          <li><code>fsGroup</code> hace escribible el volumen para el usuario del contenedor. Migraciones en un <b>Job</b> idempotente. Una BD de producción pide un operador o vivir fuera del clúster.</li>
+        </ul>
+
+        <h3>Ingress (18)</h3>
+        <div class="code-block" data-lang="YAML · k8s/ingress.yaml">
+<pre><code>apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: { name: nakaticket }
+spec:
+  ingressClassName: nginx                      # quién lo atiende
+  rules:
+    - host: nakaticket.local
+      http:
+        paths:
+          - { path: /api, pathType: Prefix, backend: { service: { name: api, port: { name: http } } } }
+          - { path: /,    pathType: Prefix, backend: { service: { name: web, port: { name: http } } } }</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un Ingress son sólo <b>reglas</b>; enruta el <b>Ingress Controller</b>, que se
+        instala aparte (sin él, no pasa nada y no hay error). Muchas aplicaciones detrás de una IP, por dominio y ruta. Gana la
+        <b>ruta más larga</b>, no el orden. Lo demás va en anotaciones (no portables). TLS con un Secret
+        <code>kubernetes.io/tls</code> (cert-manager en producción). <b>404</b> ninguna regla, <b>503</b> sin endpoints, <b>502</b>
+        el backend respondió mal.</p>
+
+        <h3>Probes, recursos y despliegues sin corte (19)</h3>
+        <div class="code-block" data-lang="YAML · fragmento del contenedor">
+<pre><code>startupProbe:   { httpGet: { path: /salud, port: http }, failureThreshold: 30, periodSeconds: 3 }
+livenessProbe:  { httpGet: { path: /salud, port: http } }   # ¿reiniciar? sin dependencias externas
+readinessProbe: { httpGet: { path: /listo, port: http } }   # ¿recibe tráfico? puede mirar la BD
+lifecycle:
+  preStop: { exec: { command: ["sleep", "5"] } }             # salir de Endpoints antes del SIGTERM
+# estrategia: rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>liveness reinicia</b>, <b>readiness saca del balanceo</b>, <b>startup</b>
+        protege el arranque. Una liveness que mira la BD convierte una caída de la BD en una tormenta de reinicios.
+        <code>maxUnavailable: 0</code> + <code>maxSurge: 1</code> + readiness + <code>preStop</code> = despliegue sin 502. La CPU se
+        estrangula; la memoria mata (<b>OOMKilled, 137</b>). QoS: declara siempre requests (BestEffort muere primero).
+        <code>kubectl rollout undo</code>. Una imagen inexistente no tumba nada: el rolling update no avanza.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · Autoescalado, tareas programadas, Helm y CI/CD (cap. 20–21)</summary>
+      <div class="acc-body">
+
+        <h3>HPA y CronJob (20)</h3>
+        <div class="code-block" data-lang="YAML">
+<pre><code>apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api }
+  minReplicas: 2
+  maxReplicas: 10                                    # protege el clúster y la BD
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } }</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el HPA necesita <b>Metrics Server</b> y <b>requests</b> (el porcentaje es sobre la
+        request; sin ella, <code>&lt;unknown&gt;</code>). Sube en segundos y baja tras minutos (estabilización). Quita
+        <code>replicas</code> del Deployment o el <code>apply</code> peleará con el HPA. <b>CronJob</b> en la zona del clúster salvo
+        <code>timeZone</code>; <code>concurrencyPolicy: Forbid</code>, <code>suspend: true</code>. Una copia nunca restaurada no es una copia.</p>
+
+        <h3>Helm, CI/CD y GitOps (21)</h3>
+        <ul class="clean">
+          <li><b>Helm</b>: chart (paquete), values (configuración por entorno), release (instalación con nombre), historial y <code>helm rollback</code> de la aplicación entera.</li>
+          <li><code>helm template</code> antes de instalar; <code>{{- … | nindent N }}</code> para no romper la indentación. La anotación <code>checksum/config</code> recrea los pods al cambiar la configuración.</li>
+          <li>CI con GitHub Actions: <code>GITHUB_TOKEN</code> (sin credenciales guardadas), matriz y caché de capas. Imágenes con el <b>hash del commit</b>; despliega ese tag, nunca <code>latest</code>.</li>
+          <li><b>GitOps</b> (pull) frente a push: el clúster tira de Git y nadie de fuera necesita credenciales del clúster.</li>
+          <li>Limpieza: <code>helm uninstall</code>, borrar PVC a mano, <code>kind delete cluster</code>; cuidado con <code>docker system prune -a</code> si usas Docker para otros proyectos.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-23"
+    data-num="23"
+    data-title="Diferencias clave y preparación de entrevista técnica de Docker y Kubernetes"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Contenedor vs VM|CMD vs ENTRYPOINT|Volumen vs bind mount|Deployment vs StatefulSet|Liveness vs readiness|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> de contenedores y orquestación: las parejas de
+      conceptos que parecen iguales, los patrones que aplicaste en NakaTicket, los errores que todo el mundo se encuentra y
+      las preguntas típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después despliega
+      la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Docker</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Contenedor / máquina virtual</b></td><td>Proceso aislado que comparte núcleo / sistema operativo completo sobre un hipervisor.</td><td>Contenedor para aplicaciones; VM para aislar núcleos.</td></tr>
+            <tr><td><b>Imagen / contenedor</b></td><td>Plantilla de sólo lectura / instancia en ejecución con capa escribible.</td><td>—</td></tr>
+            <tr><td><b>Tag / digest</b></td><td>Puntero móvil / bytes concretos para siempre.</td><td>Digest donde no puede cambiar nada.</td></tr>
+            <tr><td><b><code>run</code> / <code>exec</code></b></td><td>Crea un contenedor nuevo / añade un proceso a uno vivo.</td><td>exec para inspeccionar.</td></tr>
+            <tr><td><b><code>stop</code> / <code>kill</code></b></td><td>SIGTERM y espera / SIGKILL inmediato.</td><td>stop siempre que se pueda.</td></tr>
+            <tr><td><b><code>RUN</code> / <code>CMD</code></b></td><td>Al construir, queda en una capa / al arrancar, sólo metadato.</td><td>—</td></tr>
+            <tr><td><b><code>CMD</code> / <code>ENTRYPOINT</code></b></td><td>Se sustituye al ejecutar / recibe lo escrito como argumentos.</td><td>ENTRYPOINT para imágenes-herramienta.</td></tr>
+            <tr><td><b>Forma exec / forma shell</b></td><td><code>["node","…"]</code>, PID 1 recibe señales / <code>node …</code> bajo un shell que no las reenvía.</td><td>Exec siempre.</td></tr>
+            <tr><td><b><code>EXPOSE</code> / <code>-p</code></b></td><td>Documenta / publica.</td><td>—</td></tr>
+            <tr><td><b><code>COPY</code> / <code>ADD</code></b></td><td>Copia / además descomprime y descarga.</td><td>COPY salvo necesidad.</td></tr>
+            <tr><td><b><code>ARG</code> / <code>ENV</code></b></td><td>Sólo al construir (queda en el historial) / en ejecución.</td><td>Ninguno para secretos.</td></tr>
+            <tr><td><b><code>npm ci</code> / <code>npm install</code></b></td><td>Exactamente el lock / resuelve versiones.</td><td>ci en imágenes.</td></tr>
+            <tr><td><b>Single-stage / multi-stage</b></td><td>Todo en la imagen final / sólo el resultado.</td><td>Multi-stage por defecto.</td></tr>
+            <tr><td><b>Volumen nombrado / bind mount / tmpfs</b></td><td>Gestionado por Docker / carpeta del anfitrión / memoria.</td><td>Datos / código en desarrollo / temporal o sensible.</td></tr>
+            <tr><td><b>Red por defecto / red propia</b></td><td>Sin DNS / con DNS por nombre de contenedor.</td><td>Red propia siempre.</td></tr>
+            <tr><td><b>Puerto interno / publicado</b></td><td>Entre contenedores / desde el anfitrión.</td><td>No publiques la BD.</td></tr>
+            <tr><td><b>Configuración / secreto</b></td><td>Se puede ver / habría que rotarlo si se viera.</td><td>Secretos como archivo (<code>*_FILE</code>).</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Compose y Kubernetes</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Compose / Kubernetes</b></td><td>Una máquina, desarrollo / varias máquinas, auto-reparación, escalado y despliegues sin corte.</td><td>Compose en local; K8s en producción a escala.</td></tr>
+            <tr><td><b><code>depends_on</code> / <code>service_healthy</code></b></td><td>Ordena el arranque / espera a que esté sano.</td><td>Healthcheck + condición, y reintentos en la app.</td></tr>
+            <tr><td><b><code>down</code> / <code>down -v</code></b></td><td>Conserva volúmenes / los destruye.</td><td>-v sólo a propósito.</td></tr>
+            <tr><td><b>Pod / contenedor</b></td><td>Unidad mínima de K8s / proceso dentro del pod.</td><td>Un contenedor por pod casi siempre.</td></tr>
+            <tr><td><b>ReplicaSet / Deployment</b></td><td>Mantiene N pods / gestiona versiones y rolling updates.</td><td>Deployment.</td></tr>
+            <tr><td><b>Deployment / StatefulSet</b></td><td>Pods intercambiables / identidad, orden y disco propio por réplica.</td><td>StatefulSet para bases de datos.</td></tr>
+            <tr><td><b>Job / CronJob</b></td><td>Hasta terminar bien / Jobs según un horario.</td><td>Migraciones / copias.</td></tr>
+            <tr><td><b>ClusterIP / NodePort / LoadBalancer / headless</b></td><td>Interno / puerto en cada nodo / balanceador externo / IPs de los pods sin balanceo.</td><td>ClusterIP + Ingress.</td></tr>
+            <tr><td><b><code>port</code> / <code>targetPort</code></b></td><td>Por donde te llaman / donde escucha la app.</td><td>—</td></tr>
+            <tr><td><b>Service / Ingress</b></td><td>Capa 4 hacia unos pods / reglas HTTP por host y ruta.</td><td>Ingress para la entrada pública.</td></tr>
+            <tr><td><b>Ingress / Ingress Controller</b></td><td>Reglas / quien las aplica.</td><td>—</td></tr>
+            <tr><td><b>ConfigMap / Secret</b></td><td>Configuración visible / sensible (base64, no cifrado).</td><td>—</td></tr>
+            <tr><td><b>Variable / archivo montado</b></td><td>No se actualiza / se actualiza con retardo.</td><td>Archivos para secretos.</td></tr>
+            <tr><td><b>PV / PVC / StorageClass</b></td><td>Disco / petición / cómo se fabrica.</td><td>Escribe el PVC.</td></tr>
+            <tr><td><b>Liveness / readiness / startup</b></td><td>Reinicia / saca del balanceo / protege el arranque.</td><td>Liveness sin dependencias externas.</td></tr>
+            <tr><td><b>Requests / limits</b></td><td>Dónde cabe el pod / techo impuesto.</td><td>Requests siempre.</td></tr>
+            <tr><td><b>Límite de CPU / de memoria</b></td><td>Estrangula / mata (OOMKilled).</td><td>—</td></tr>
+            <tr><td><b>HPA / escalado vertical / de nodos</b></td><td>Más pods / pods más grandes / más máquinas.</td><td>—</td></tr>
+            <tr><td><b><code>kubectl apply</code> / <code>edit</code> / <code>scale</code></b></td><td>Declarativo, el archivo manda / cambios a mano que se pierden.</td><td>apply.</td></tr>
+            <tr><td><b>Push / GitOps (pull)</b></td><td>El CI despliega con credenciales del clúster / el clúster tira de Git.</td><td>GitOps.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en NakaTicket</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Infraestructura inmutable</b></td><td>Contenedores arreglados a mano que nadie reproduce.</td><td>Reconstruir en vez de exec (2)</td></tr>
+            <tr><td><b>Capas ordenadas por frecuencia de cambio</b></td><td>Builds lentos.</td><td>Dependencias arriba, código abajo (4–5)</td></tr>
+            <tr><td><b>Multi-stage + no root + healthcheck</b></td><td>Imágenes grandes e inseguras.</td><td>API y web (6)</td></tr>
+            <tr><td><b>Tag por commit</b></td><td>No saber qué hay en producción.</td><td><code>:sha-…</code> (7, 21)</td></tr>
+            <tr><td><b>Una imagen, muchos entornos</b></td><td>Imágenes por entorno.</td><td>Configuración por variables (10)</td></tr>
+            <tr><td><b>Secretos como archivo</b></td><td>Secretos en variables y en inspect.</td><td><code>POSTGRES_PASSWORD_FILE</code> (10)</td></tr>
+            <tr><td><b>Segmentación por redes</b></td><td>Todo el mundo llega a la BD.</td><td>Red de frontal y de datos (9)</td></tr>
+            <tr><td><b>Desacoplar con cola</b></td><td>La compra depende del envío.</td><td>API → Redis → worker (11)</td></tr>
+            <tr><td><b>Healthcheck + espera + reintento</b></td><td>Arranques que fallan a veces.</td><td><code>service_healthy</code> (12)</td></tr>
+            <tr><td><b>Override y perfiles</b></td><td>Un compose por persona.</td><td><code>docker-compose.override.yml</code> (12)</td></tr>
+            <tr><td><b>Reconciliación declarativa</b></td><td>Scripts imperativos frágiles.</td><td><code>kubectl apply</code> (13–14)</td></tr>
+            <tr><td><b>Job de migración idempotente</b></td><td>Migraciones lanzadas por cada réplica.</td><td>Job (17)</td></tr>
+            <tr><td><b>Despliegue sin corte</b></td><td>502 en cada despliegue.</td><td>maxUnavailable 0 + readiness + preStop (19)</td></tr>
+            <tr><td><b>Configuración que recrea pods</b></td><td>Cambios de ConfigMap ignorados.</td><td><code>checksum/config</code> (21)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>Tags explícitos</b> en imágenes base y propias; nunca <code>latest</code> en producción.</li>
+          <li><b><code>.dockerignore</code> y <code>.gitignore</code></b> antes del primer secreto.</li>
+          <li><b>Imágenes pequeñas, sin root y con healthcheck.</b></li>
+          <li><b>Datos en volúmenes</b> nombrados y copias probadas.</li>
+          <li><b>Nada de IPs</b>: nombres de servicio.</li>
+          <li><b>Secretos fuera</b> de imágenes, repositorio, comandos y logs; ante una fuga, rotar.</li>
+          <li><b>Requests en todo</b>, dos probes distintas y despliegues progresivos.</li>
+          <li><b>Comprueba el contexto</b> de kubectl antes de destruir nada.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>Cannot connect to the Docker daemon</code></td><td>El motor no está arrancado (Docker Desktop cerrado o servicio parado).</td></tr>
+            <tr><td><code>port is already allocated</code></td><td>Otro proceso o contenedor usa ese puerto de fuera. Cambia el de fuera.</td></tr>
+            <tr><td>El contenedor se cierra nada más arrancar</td><td>Su proceso principal terminó. Mira <code>docker logs</code> y el código de salida.</td></tr>
+            <tr><td><code>Exited (137)</code></td><td>Lo mataron, casi siempre por memoria (o un stop que no atendió SIGTERM).</td></tr>
+            <tr><td><code>docker stop</code> tarda 10 s</td><td>Forma shell en <code>CMD</code>: el proceso no recibe SIGTERM. Forma exec.</td></tr>
+            <tr><td><code>COPY failed: file not found in build context</code></td><td>Ruta fuera del contexto o excluida en <code>.dockerignore</code>.</td></tr>
+            <tr><td>El build reinstala dependencias en cada cambio</td><td><code>COPY . .</code> antes de instalar. Copia primero el lock.</td></tr>
+            <tr><td><code>Empty reply</code> con el puerto publicado</td><td>La app escucha en 127.0.0.1. Que escuche en 0.0.0.0.</td></tr>
+            <tr><td><code>EACCES: permission denied</code> tras <code>USER</code></td><td>Archivos de root. <code>--chown</code> en el COPY.</td></tr>
+            <tr><td><code>exec format error</code></td><td>Imagen de otra arquitectura. <code>buildx --platform</code>.</td></tr>
+            <tr><td>Los scripts de init de la BD no se ejecutan</td><td>El volumen ya estaba inicializado.</td></tr>
+            <tr><td><code>Cannot find module</code> con bind mount</td><td>El montaje tapó <code>node_modules</code> de la imagen.</td></tr>
+            <tr><td><code>ENOTFOUND db</code></td><td>Red por defecto (sin DNS) o redes distintas.</td></tr>
+            <tr><td><code>ECONNREFUSED 127.0.0.1:5432</code></td><td><code>localhost</code> dentro del contenedor. Usa el nombre del servicio.</td></tr>
+            <tr><td>La API falla al primer arranque y luego funciona</td><td>La BD aún no estaba lista. Healthcheck + <code>service_healthy</code> + reintentos.</td></tr>
+            <tr><td><code>ImagePullBackOff</code></td><td>Nombre/tag erróneo, registro privado sin credenciales o imagen no cargada en kind.</td></tr>
+            <tr><td><code>CrashLoopBackOff</code></td><td>El contenedor muere al arrancar: <code>kubectl logs --previous</code> y <code>describe</code>.</td></tr>
+            <tr><td><code>Pending</code> indefinido</td><td>Requests que no caben, PVC sin aprovisionar o RWO compartido.</td></tr>
+            <tr><td>Endpoints <code>&lt;none&gt;</code></td><td>El selector del Service no coincide con las etiquetas, o los pods no están Ready.</td></tr>
+            <tr><td>Cambio el ConfigMap y no pasa nada</td><td>Variables no se recargan. <code>rollout restart</code> o checksum.</td></tr>
+            <tr><td>Ingress aplicado y no pasa nada</td><td>Falta el controlador o <code>ingressClassName</code>.</td></tr>
+            <tr><td>Reinicios en bucle cuando cae la BD</td><td>La liveness depende de la BD. Muévelo a la readiness.</td></tr>
+            <tr><td>502 durante los despliegues</td><td>Falta readiness, <code>preStop</code> o <code>maxUnavailable: 0</code>.</td></tr>
+            <tr><td>HPA con <code>&lt;unknown&gt;</code></td><td>Sin Metrics Server o sin requests de CPU.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Contenedores e imágenes</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿En qué se diferencia un contenedor de una máquina virtual?</p>
+            <div class="q-ans">Un contenedor es un proceso del anfitrión aislado con namespaces y limitado con cgroups: comparte el núcleo, arranca en milisegundos y ocupa poco. Una VM virtualiza el hardware y ejecuta su propio sistema operativo completo: más aislamiento, más peso. Por eso en Windows y macOS los contenedores Linux corren dentro de una VM.</div></div>
+          <div class="q"><p class="q-text">2. Un contenedor de Ubuntu «se cierra solo» al arrancar. ¿Por qué?</p>
+            <div class="q-ans">Un contenedor vive lo que vive su proceso principal. La imagen de Ubuntu ejecuta un shell que, sin terminal interactiva, termina al instante. <code>docker ps -a</code> lo muestra como Exited (0); con <code>-it</code> o un comando de larga duración se queda vivo.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué el orden de las instrucciones del Dockerfile importa?</p>
+            <div class="q-ans">Cada instrucción es una capa cacheada; si una se invalida, se rehacen todas las siguientes. Copiando primero el archivo de dependencias e instalando, y después el código, un cambio de código no reinstala las dependencias: builds de segundos en vez de minutos.</div></div>
+          <div class="q"><p class="q-text">4. Copias una clave privada en una capa y la borras en la siguiente. ¿Está limpia la imagen?</p>
+            <div class="q-ans">No: la capa que la añadió sigue dentro de la imagen y cualquiera puede extraerla. Borrar en una capa posterior sólo la oculta. Los secretos de build van en una etapa que no se publica o con mecanismos de secretos de BuildKit, y si ya se publicó, se rota.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué aporta el multi-stage además de reducir el tamaño?</p>
+            <div class="q-ans">Seguridad y reproducibilidad: la imagen final no lleva compiladores, herramientas de desarrollo, código fuente ni nada de lo usado para construir (incluidos tokens), así que hay menos superficie de ataque y menos vulnerabilidades que escanear.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué no ejecutar como root dentro del contenedor?</p>
+            <div class="q-ans">Porque si un atacante compromete la aplicación, obtiene root dentro del contenedor, lo que facilita escapar o dañar volúmenes montados. Un usuario sin privilegios (<code>USER</code>) lo limita. Consecuencia: puertos altos dentro (8080 en vez de 80) y archivos con el propietario correcto.</div></div>
+          <div class="q"><p class="q-text">7. <code>CMD npm start</code> y <code>docker stop</code> tarda 10 s con código 137. ¿Qué pasa?</p>
+            <div class="q-ans">En forma shell el PID 1 es un shell que no reenvía SIGTERM a la aplicación; a los 10 s Docker manda SIGKILL. Con la forma exec <code>["node","src/server.js"]</code> la app es el PID 1, recibe la señal y cierra limpio.</div></div>
+          <div class="q"><p class="q-text">8. ¿Por qué no referenciar <code>:latest</code> en producción?</p>
+            <div class="q-ans">Porque se mueve: cualquier reinicio o nodo nuevo puede traer otra versión sin que nadie la haya desplegado, no se sabe qué hay corriendo y volver atrás es imposible. Se despliega una versión inmutable (tag por commit o digest).</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Datos, redes, configuración y Compose</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Dónde guardas los datos de PostgreSQL en Docker y por qué?</p>
+            <div class="q-ans">En un volumen nombrado montado en el directorio de datos: sobrevive al borrado del contenedor, lo gestiona Docker (rendimiento correcto también en Windows/macOS) y se respalda con <code>pg_dump</code>. La capa escribible del contenedor se pierde al hacer <code>rm</code>.</div></div>
+          <div class="q"><p class="q-text">2. Cambias <code>POSTGRES_PASSWORD</code> y la nueva contraseña no funciona. ¿Por qué?</p>
+            <div class="q-ans">Esas variables sólo se usan en la primera inicialización, cuando el volumen está vacío. Con datos existentes, la contraseña real es la que se guardó entonces: hay que cambiarla con SQL (o empezar con un volumen nuevo, perdiendo los datos).</div></div>
+          <div class="q"><p class="q-text">3. Tu API conecta a <code>localhost:5432</code> y falla, aunque la BD corre en un contenedor de la misma máquina. ¿Por qué?</p>
+            <div class="q-ans">Dentro de un contenedor, localhost es el propio contenedor de la API. Las dos deben estar en una red propia y la API debe usar el nombre del servicio (<code>db:5432</code>). No hace falta publicar el puerto de la BD.</div></div>
+          <div class="q"><p class="q-text">4. ¿Cómo consigues que la web hable con la API pero nunca llegue a la base de datos?</p>
+            <div class="q-ans">Con dos redes: una de frontal (web y API) y otra de datos (API y BD). La API está en ambas; la web sólo en la primera, así que la BD no es alcanzable desde ella aunque estén en la misma máquina.</div></div>
+          <div class="q"><p class="q-text">5. Tu equipo construye <code>miapp:dev</code>, <code>:pre</code> y <code>:pro</code> con la configuración dentro. ¿Problema?</p>
+            <div class="q-ans">Lo que se prueba en preproducción no es lo que se despliega en producción, hay que reconstruir por cada cambio de configuración y los secretos acaban dentro de imágenes. La regla es una imagen y muchos entornos, con la configuración inyectada al ejecutar.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué <code>depends_on</code> no basta?</p>
+            <div class="q-ans">Sólo ordena el arranque: la BD puede estar arrancada pero no lista para conexiones. Hace falta un healthcheck y <code>condition: service_healthy</code>. Y aun así la aplicación debe reintentar, porque las dependencias también se caen después.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué el worker se escala a tres réplicas sin tocar nada y la API no?</p>
+            <div class="q-ans">El worker no publica puertos: varias réplicas consumen de la misma cola sin chocar. La API publica un puerto del anfitrión que sólo puede ocupar una réplica; para escalarla haría falta un balanceador delante.</div></div>
+          <div class="q"><p class="q-text">8. Un compañero hace <code>docker compose down -v</code> cada tarde. ¿Qué le dices?</p>
+            <div class="q-ans">Que <code>-v</code> destruye los volúmenes, incluida la base de datos de desarrollo, y no hay deshacer. <code>down</code> a secas para y borra contenedores y red pero conserva los datos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Kubernetes</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es el bucle de reconciliación?</p>
+            <div class="q-ans">Declaras el estado deseado (tres réplicas de esta imagen) y los controladores comparan continuamente lo deseado con lo real y actúan para igualarlos. Por eso un pod borrado reaparece y un nodo caído se compensa sin intervención.</div></div>
+          <div class="q"><p class="q-text">2. Borras un pod y aparece otro con otro nombre. ¿Fallo?</p>
+            <div class="q-ans">Comportamiento esperado: el ReplicaSet del Deployment detecta que faltan réplicas y crea otra. Para eliminarlo hay que cambiar el objeto que lo declara (escalar o borrar el Deployment).</div></div>
+          <div class="q"><p class="q-text">3. Un Service resuelve por DNS pero da «connection refused». ¿Qué miras?</p>
+            <div class="q-ans"><code>kubectl get endpoints</code>: si está vacío, el selector no coincide con las etiquetas de los pods o no están Ready. Si hay endpoints, que el <code>targetPort</code> coincida con el puerto en que escucha la app.</div></div>
+          <div class="q"><p class="q-text">4. ¿Deployment o StatefulSet para PostgreSQL?</p>
+            <div class="q-ans">StatefulSet: identidad estable (<code>db-0</code>), arranque ordenado, un PVC por réplica y DNS por pod con un Service headless. Con un Deployment y un PVC ReadWriteOnce, la segunda réplica se queda en Pending. En producción, mejor un operador o la BD fuera del clúster.</div></div>
+          <div class="q"><p class="q-text">5. Diferencia entre liveness y readiness, y el error clásico.</p>
+            <div class="q-ans">Liveness decide si reiniciar el contenedor; readiness, si recibe tráfico. El error clásico es que la liveness compruebe la base de datos: si la BD cae, todos los pods se reinician en bucle sin arreglar nada. La liveness mira sólo el propio proceso; la readiness puede mirar dependencias.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cómo se despliega sin perder peticiones?</p>
+            <div class="q-ans">Rolling update con <code>maxUnavailable: 0</code> y <code>maxSurge: 1</code>, readiness probe para que el pod nuevo sólo reciba tráfico cuando esté listo, y un <code>preStop</code> con unos segundos de espera para que el pod viejo salga de los Endpoints antes de recibir SIGTERM. Más cierre limpio en la app.</div></div>
+          <div class="q"><p class="q-text">7. Un pod es OOMKilled; subes el límite de 256 a 512 Mi y vuelve a pasar. ¿Qué haces?</p>
+            <div class="q-ans">Medir el consumo real a lo largo del tiempo: si crece sin parar es una fuga y subir el límite sólo la aplaza. Si el consumo es estable, ajustar requests y limits a lo medido. La memoria no se estrangula: al superarla, el núcleo mata el proceso.</div></div>
+          <div class="q"><p class="q-text">8. ¿Es seguro guardar un Secret en Git porque está en base64?</p>
+            <div class="q-ans">No: base64 es una codificación, no cifrado; cualquiera lo decodifica en un segundo. Los Secrets se protegen con permisos del clúster (RBAC) y cifrado en reposo, y en Git se guardan cifrados (con herramientas para ello) o se gestionan con un gestor de secretos externo.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Producción y entrega</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Ingress o un Service LoadBalancer por cada aplicación?</p>
+            <div class="q-ans">Ingress: una sola entrada (una IP y un balanceador) que enruta por dominio y ruta a muchos Services ClusterIP, termina TLS en un sitio y evita pagar un balanceador por Service. Requiere un Ingress Controller instalado.</div></div>
+          <div class="q"><p class="q-text">2. Aplicas un Ingress correcto y no ocurre nada. ¿Qué falta?</p>
+            <div class="q-ans">El Ingress Controller (o que <code>ingressClassName</code> apunte a uno instalado). Un Ingress son sólo reglas; sin controlador nadie las aplica y no hay error visible.</div></div>
+          <div class="q"><p class="q-text">3. ¿Qué necesita un HPA para funcionar?</p>
+            <div class="q-ans">El Metrics Server para obtener métricas, requests de CPU declaradas (el objetivo es un porcentaje de la request) y que el Deployment no fije <code>replicas</code> en el manifiesto, o cada apply deshará lo que decida el HPA. Y un <code>maxReplicas</code> que proteja las dependencias.</div></div>
+          <div class="q"><p class="q-text">4. Tras un pico, la CPU cae al 3 % y el HPA mantiene 8 réplicas cinco minutos. ¿Roto?</p>
+            <div class="q-ans">No: el HPA sube rápido y baja despacio a propósito (ventana de estabilización) para no oscilar si el tráfico vuelve. Es la histéresis configurada.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué lanzar las migraciones en un Job y no al arrancar la API?</p>
+            <div class="q-ans">Porque cada réplica las ejecutaría a la vez (carreras y bloqueos), retrasarían el arranque y harían fallar las probes. Un Job se ejecuta una vez hasta terminar bien; las migraciones deben ser idempotentes porque puede reintentarse.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué aporta Helm sobre <code>kubectl apply -f</code>?</p>
+            <div class="q-ans">Plantillas con valores por entorno (un chart, muchos entornos), versión e historial de cada release, <code>helm rollback</code> de toda la aplicación y desinstalación limpia. Con la anotación de checksum, además, los cambios de configuración recrean los pods.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué GitOps es más seguro que desplegar desde el CI?</p>
+            <div class="q-ans">Porque el clúster tira de Git con sus propios permisos y nadie de fuera (ni el sistema de CI) necesita credenciales del clúster. Además, Git es la fuente de verdad: lo desplegado coincide con lo versionado y volver atrás es revertir un commit.</div></div>
+          <div class="q"><p class="q-text">8. La copia diaria lleva un mes «con éxito» y al necesitarla los archivos están vacíos. ¿Qué falló?</p>
+            <div class="q-ans">Nadie probó a restaurarla: el Job terminaba con código 0 aunque el volcado fallara (o escribía en un sitio efímero). Una copia sólo vale si se restaura periódicamente, se comprueba su tamaño y contenido, y vive fuera del clúster que protege.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Contenedor = proceso aislado; imagen, contenedor, registro; el cliente habla con el demonio.</li>
+          <li><b>1</b> · <code>run</code> = pull + create + start; <code>-d</code>, <code>-p</code>, <code>--name</code>, tag explícito.</li>
+          <li><b>2</b> · Estados, código de salida, logs = stdout, exec, efímero; no arreglar por dentro.</li>
+          <li><b>3</b> · Capas compartidas; secretos nunca en una capa; tag frente a digest.</li>
+          <li><b>4</b> · RUN/CMD/ENTRYPOINT; forma exec; 0.0.0.0; EXPOSE no publica.</li>
+          <li><b>5</b> · Contexto y .dockerignore; caché por orden.</li>
+          <li><b>6</b> · Multi-stage, USER, HEALTHCHECK, LABEL.</li>
+          <li><b>7</b> · Registro, token con --password-stdin, SemVer, multiarquitectura.</li>
+          <li><b>8</b> · Volumen nombrado, bind mount, tmpfs; init sólo la primera vez; pg_dump.</li>
+          <li><b>9</b> · Red propia con DNS; localhost es el contenedor; no publicar la BD.</li>
+          <li><b>10</b> · Una imagen, muchos entornos; secretos como archivo; rotar ante fugas.</li>
+          <li><b>11</b> · Compose: red del proyecto, nombre = host, down conserva volúmenes.</li>
+          <li><b>12</b> · Healthcheck + service_healthy, override, perfiles, límites.</li>
+          <li><b>13</b> · Estado deseado y reconciliación; plano de control; kind; kubectl.</li>
+          <li><b>14</b> · Pod, ReplicaSet, Deployment; etiquetas y selectores; requests y limits.</li>
+          <li><b>15</b> · Service con Endpoints; port/targetPort; CoreDNS; port-forward.</li>
+          <li><b>16</b> · ConfigMap y Secret (base64 ≠ cifrado); rollout restart.</li>
+          <li><b>17</b> · PVC, StorageClass, StatefulSet, headless, Job de migración.</li>
+          <li><b>18</b> · Ingress + controlador; ruta más larga; 404/503/502.</li>
+          <li><b>19</b> · Liveness, readiness, startup; rolling sin corte; OOMKilled.</li>
+          <li><b>20</b> · HPA con requests; estabilización; CronJob con zona horaria.</li>
+          <li><b>21</b> · Helm, tag por commit, GitOps y limpieza.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Dockeriza cualquier proyecto propio con multi-stage, usuario no root y healthcheck: es el ejercicio más rentable.</li>
+            <li>Antes de una entrevista, escribe de memoria un Dockerfile de producción y un Deployment con probes, requests y Service.</li>
+            <li>Practica el diagnóstico en voz alta: ps → logs → inspect → exec en Docker; get → describe → logs --previous → endpoints en Kubernetes.</li>
+            <li>Levanta un kind de vez en cuando y despliega NakaTicket con el chart: lo que no se practica se olvida antes en orquestación.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de comandos</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

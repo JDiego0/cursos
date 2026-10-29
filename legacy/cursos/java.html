@@ -19228,6 +19228,893 @@ curl -X POST http://localhost:8080/api/asistente/preguntar \
 
 
 
+  <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: Java y Spring Boot de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|JVM|POO|Colecciones|Streams|JDBC|Spring Boot|JPA|Seguridad|Arquitectura">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del <code>javac</code> a mano
+      hasta el asistente con Spring AI. Cada concepto aparece con lo mínimo para recordarlo —qué es, para qué sirve y
+      cómo se escribe—, en el mismo orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a Java tras semanas sin practicar, o salta
+      al bloque que necesites. Si algo no te suena ni después de leerlo, el número de capítulo entre paréntesis te dice
+      adónde volver. El capítulo siguiente cierra el curso con las diferencias que más se confunden y un simulacro de
+      entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <p>LibroTech empezó como un <code>main</code> que imprimía un libro y terminó como una API segura, probada,
+        empaquetada en Docker y con un asistente de IA. Cada capa se apoya en la anterior:</p>
+        <div class="diagram">  6 · ARQUITECTURA AVANZADA   hexagonal · microservicios · Spring AI        (23–24)
+                ▲
+  5 · SPRING BOOT             IoC · REST · JPA · DTOs · Thymeleaf ·          (14–22)
+                              Security/JWT · tests · Docker · CI/CD
+                ▲
+  4 · INGENIERÍA              Maven · JDBC + DAO · MVC · JUnit/Mockito      (10–13)
+                ▲
+  3 · JAVA ROBUSTO            colecciones · excepciones · streams            (7–9)
+                ▲
+  2 · POO                     clases · herencia · interfaces · records       (4–6)
+                ▲
+  1 · EL LENGUAJE             JVM · tipos · control de flujo · métodos       (0–3)</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>El lenguaje</b></td><td>Java compila a bytecode que ejecuta la JVM; tipado fuerte y estático.</td><td>Dinero con <code>BigDecimal</code>; textos con <code>.equals()</code>.</td></tr>
+            <tr><td><b>POO</b></td><td>Objetos que protegen su estado y colaboran por contratos (interfaces).</td><td>Atributos <code>private</code> y validación en el constructor.</td></tr>
+            <tr><td><b>Java robusto</b></td><td>Estructuras adecuadas, errores explícitos y código declarativo.</td><td>Elige la colección por cómo vas a <em>consultar</em>.</td></tr>
+            <tr><td><b>Ingeniería</b></td><td>Construcción reproducible, datos persistentes, capas separadas y tests.</td><td><code>PreparedStatement</code> siempre; dependencias por constructor.</td></tr>
+            <tr><td><b>Spring Boot</b></td><td>El contenedor crea y conecta los objetos; tú escribes el negocio.</td><td>Entidades dentro, DTOs fuera; LAZY y cuenta tus consultas.</td></tr>
+            <tr><td><b>Arquitectura</b></td><td>Aislar el dominio de la tecnología y repartir sólo cuando duele.</td><td>Empieza con un monolito modular.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>El hilo que lo une todo</h3>
+        <p>Si te piden explicar el curso en un minuto, cuenta esta progresión: <strong>separar responsabilidades</strong>
+        (métodos → clases → capas → hexágono) y <strong>depender de abstracciones</strong> (interfaz <code>Prestable</code>
+        → <code>LibroDAO</code> → <code>JpaRepository</code> → puertos). Spring no inventa nada nuevo: automatiza la
+        inyección por constructor que hiciste a mano en el Capítulo 12.</p>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Antes de abrir cada bloque, intenta decir en voz alta qué recuerdas de él. Después léelo y compara. Recuperar
+        de memoria —aunque falles— fija mucho más que releer.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>☕ Bloque 1 · El lenguaje (cap. 0–3)</summary>
+      <div class="acc-body">
+
+        <h3>Del código a la ejecución (0)</h3>
+        <ul class="clean">
+          <li><b>JDK ⊃ JRE ⊃ JVM.</b> El JDK trae el compilador <code>javac</code>; la JVM ejecuta el <b>bytecode</b> (<code>.class</code>). Instala siempre el JDK.</li>
+          <li><b>WORA</b>: el mismo bytecode corre en cualquier sistema con JVM.</li>
+          <li><b>LTS</b> (8, 11, 17, 21) = soporte largo; es lo que usa la industria. OpenJDK es el proyecto; Temurin, Corretto o Zulu, distribuciones.</li>
+          <li>El archivo se llama como su clase <code>public</code>. <code>JAVA_HOME</code> configurada desde el día uno.</li>
+        </ul>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>javac LibroTech.java      # genera LibroTech.class (bytecode)
+java LibroTech            # la JVM lo ejecuta: sin extensión</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> compila y ejecuta sin IDE. <b>Recuerda:</b> <code>UnsupportedClassVersionError</code>
+        significa que compilaste con un JDK más nuevo que el que ejecuta.</p>
+
+        <h3>Tipos y memoria (1)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Concepto</th><th>Lo esencial</th></tr></thead>
+          <tbody>
+            <tr><td><b>8 primitivos</b></td><td><code>byte short int long float double char boolean</code>. Por defecto <code>int</code> y <code>double</code>; sufijos <code>L</code> y <code>f</code>.</td></tr>
+            <tr><td><b>Wrappers</b></td><td><code>Integer</code>, <code>Double</code>… versiones objeto; pueden ser <code>null</code> y son las que admiten las colecciones.</td></tr>
+            <tr><td><b>Casting</b></td><td>A mayor, implícito; a menor, explícito <code>(int) 9.7</code> y puede perder datos.</td></tr>
+            <tr><td><b>Stack / Heap</b></td><td>Stack: locales y primitivos. Heap: objetos, limpiados por el <b>GC</b>. Una variable de objeto guarda una <b>referencia</b>.</td></tr>
+            <tr><td><b><code>var</code></b></td><td>Inferencia en variables locales: el tipo existe y es fijo, sólo no lo escribes.</td></tr>
+            <tr><td><b>Overflow</b></td><td><code>int</code> desborda en silencio pasado ~2.100 millones.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="Java">
+<pre><code>int a = 7, b = 2;
+double r = a / b;                       // 3.0: división ENTERA antes de asignar
+double ok = (double) a / b;             // 3.5
+BigDecimal precio = new BigDecimal("0.10");   // dinero: BigDecimal desde String
+final double IVA = 0.19;                // final = no reasignable</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> entre enteros, la división descarta decimales; <code>double</code> no
+        representa exacto <code>0.1</code>, por eso el dinero va en <code>BigDecimal</code>.</p>
+
+        <h3>Control de flujo (2)</h3>
+        <ul class="clean">
+          <li>Las condiciones son <code>boolean</code>; <code>&amp;&amp;</code> y <code>||</code> cortocircuitan (útil: <code>libro != null &amp;&amp; libro.getStock() &gt; 0</code>).</li>
+          <li><b><code>for</code></b> si sabes las vueltas, <b><code>while</code></b> mientras algo se cumpla, <b><code>do-while</code></b> si debe ejecutarse al menos una vez; <b>for-each</b> si no necesitas el índice.</li>
+          <li><b>Arrays</b>: tamaño fijo, índice desde 0, <code>.length</code> (sin paréntesis). Matriz = array de arrays.</li>
+        </ul>
+        <div class="code-block" data-lang="Java">
+<pre><code>String texto = switch (opcion) {        // switch moderno: devuelve un valor
+    case 1 -&gt; "Listar";
+    case 2, 3 -&gt; "Editar";
+    default -&gt; {
+        log("opción rara");
+        yield "Desconocida";             // yield: valor de un caso con bloque
+    }
+};</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> la flecha elimina el <em>fall-through</em> y obliga a ser exhaustivo. Usa
+        siempre esta forma; la de <code>case X: … break;</code> sólo para leer código antiguo.</p>
+
+        <h3>Métodos y String (3)</h3>
+        <ul class="clean">
+          <li><b><code>static</code></b> = pertenece a la clase, no a un objeto. Desde <code>main</code> (static) sólo llamas a otros static sin crear objetos.</li>
+          <li><b>Sobrecarga</b>: mismo nombre, distintos parámetros. El tipo de retorno no cuenta.</li>
+          <li><b>Paso por valor siempre</b>: con objetos se copia la referencia, así que el método puede modificar el objeto pero no reasignar la variable del llamador.</li>
+          <li><b><code>String</code> es inmutable</b>: cada concatenación crea otro objeto. En bucles, <code>StringBuilder</code>.</li>
+          <li><b><code>==</code></b> compara referencias; <b><code>.equals()</code></b>, contenido. Textos siempre con <code>equals</code>.</li>
+          <li><b>Scanner</b>: tras <code>nextInt()</code> queda el salto de línea; el siguiente <code>nextLine()</code> devuelve vacío. Consúmelo o lee todo con <code>nextLine()</code> y convierte.</li>
+          <li><b>Guard clauses</b>: <code>return</code> temprano en vez de anidar <code>if</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧬 Bloque 2 · Programación orientada a objetos (cap. 4–6)</summary>
+      <div class="acc-body">
+
+        <h3>Clases, objetos y encapsulamiento (4)</h3>
+        <p><b>Clase</b> = plantilla; <b>objeto</b> = instancia creada con <code>new</code> que vive en el Heap.
+        <b>Encapsular</b> = atributos <code>private</code> y cambios sólo a través de métodos que validan: un objeto nunca
+        puede quedar en un estado inválido.</p>
+        <div class="code-block" data-lang="Java · com/librotech/model/Libro.java">
+<pre><code>package com.librotech.model;
+
+public class Libro {
+    private final String isbn;               // final: no cambia tras construir
+    private BigDecimal precio;
+    private int stock;
+    private static int creados = 0;          // static: uno para toda la clase
+
+    public Libro(String isbn, BigDecimal precio, int stock) {
+        if (stock &lt; 0) throw new IllegalArgumentException("Stock negativo: " + stock);
+        this.isbn = isbn;                    // this: el atributo, no el parámetro
+        this.precio = precio;
+        this.stock = stock;
+        creados++;
+    }
+
+    public void vender(int unidades) {       // método de negocio, no setStock()
+        if (unidades &gt; stock) throw new IllegalStateException("Sin stock");
+        stock -= unidades;
+    }
+
+    @Override
+    public String toString() { return isbn + " (" + stock + " uds.)"; }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el constructor no tiene tipo de retorno (si pones <code>void</code> deja de
+        serlo); valida ahí. Paquetes con dominio invertido (<code>com.librotech.model</code>) que coinciden con carpetas.
+        <code>BigDecimal</code> se compara con <code>compareTo</code>, no con <code>equals</code> (<code>2.0</code> ≠ <code>2.00</code> para equals).</p>
+
+        <h3>Herencia, polimorfismo e interfaces (5)</h3>
+        <ul class="clean">
+          <li><b><code>extends</code></b>: un solo padre. <code>super(...)</code> llama al constructor del padre y va primero. <code>protected</code> = visible para las hijas.</li>
+          <li><b>Polimorfismo</b>: el tipo <em>declarado</em> decide qué métodos puedes llamar; el objeto <em>real</em> decide qué código se ejecuta.</li>
+          <li><b>Clase abstracta</b>: no se instancia, puede tener estado y obliga a implementar sus métodos <code>abstract</code>.</li>
+          <li><b>Interfaz</b>: contrato; una clase implementa varias. Los métodos <code>default</code> permiten ampliarla sin romper a quien ya la implementa.</li>
+          <li><b>Regla</b>: «<em>es un</em>» → abstracta (<code>Material</code>); «<em>puede hacer</em>» → interfaz (<code>Prestable</code>). Prefiere interfaces y composición; máximo dos niveles de herencia.</li>
+        </ul>
+        <div class="code-block" data-lang="Java">
+<pre><code>Material m = new Revista("Semana", precio);   // declarado Material, real Revista
+m.precioConIva();                              // ejecuta la versión de Revista
+
+if (m instanceof Libro libro) {                // comprobación + casting seguro
+    System.out.println(libro.getAutor());
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> el pattern matching de <code>instanceof</code> evita el casting manual y la
+        <code>ClassCastException</code>. Pon siempre <code>@Override</code>: si te equivocas de firma, no compila.</p>
+
+        <h3>Java moderno: records, enums, sealed (6)</h3>
+        <div class="code-block" data-lang="Java">
+<pre><code>public record LibroResumen(String titulo, BigDecimal precio) {
+    public LibroResumen {                                    // constructor compacto
+        if (titulo == null || titulo.isBlank()) throw new IllegalArgumentException();
+        titulo = titulo.strip();
+    }
+}
+
+public enum Categoria {
+    NOVELA("Novela"), ENSAYO("Ensayo");
+    private final String etiqueta;
+    Categoria(String e) { this.etiqueta = e; }
+}
+
+public sealed interface EventoLibreria permits Venta, Devolucion { }
+
+String describir(EventoLibreria e) {
+    return switch (e) {                                       // exhaustivo: sin default
+        case Venta v when v.unidades() &gt; 10 -&gt; "Venta grande"; // guarda when antes
+        case Venta v -&gt; "Venta";
+        case Devolucion d -&gt; "Devolución";
+    };
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un <code>record</code> genera constructor, accesores <em>sin</em>
+        <code>get</code> (<code>r.titulo()</code>), <code>equals</code>, <code>hashCode</code> y <code>toString</code>; es
+        inmutable y no hereda. Enums: guarda <code>name()</code>, nunca <code>ordinal()</code>. <code>sealed</code> +
+        <code>permits</code> cierra la jerarquía y el compilador te avisa si un <code>switch</code> olvida un caso.</p>
+        <div class="note warn"><b class="t">El contrato equals/hashCode</b>
+        <p>Si dos objetos son <code>equals</code>, deben tener el mismo <code>hashCode</code>. Si lo rompes, un
+        <code>HashSet</code> admite «duplicados» y un <code>HashMap</code> no encuentra tus claves. Con records, viene hecho.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📦 Bloque 3 · Colecciones, excepciones y streams (cap. 7–9)</summary>
+      <div class="acc-body">
+
+        <h3>Colecciones y genéricos (7)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Interfaz</th><th>Qué garantiza</th><th>Implementación por defecto</th><th>Alternativas</th></tr></thead>
+          <tbody>
+            <tr><td><b>List</b></td><td>Orden de inserción, admite duplicados, acceso por índice</td><td><code>ArrayList</code> (índice O(1))</td><td><code>LinkedList</code>: insertar/borrar en extremos</td></tr>
+            <tr><td><b>Set</b></td><td>Sin duplicados (según <code>equals/hashCode</code>)</td><td><code>HashSet</code> (O(1))</td><td><code>LinkedHashSet</code> (orden de inserción), <code>TreeSet</code> (ordenado)</td></tr>
+            <tr><td><b>Map</b></td><td>Clave única → valor</td><td><code>HashMap</code> (buscar por clave O(1))</td><td><code>LinkedHashMap</code>, <code>TreeMap</code> (claves ordenadas), <code>EnumMap</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="Java">
+<pre><code>List&lt;Libro&gt; libros = new ArrayList&lt;&gt;();        // declara por la interfaz
+Map&lt;String, Libro&gt; porIsbn = new HashMap&lt;&gt;();
+libros.removeIf(l -&gt; l.getStock() == 0);           // borrar mientras recorres
+libros.sort(Comparator.comparing(Libro::getPrecio)
+                      .thenComparing(Libro::getTitulo));
+porIsbn.getOrDefault("X", null);
+List&lt;String&gt; fijos = List.of("a", "b");            // inmutable
+libros.getFirst(); libros.reversed();              // Sequenced Collections (21)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> genéricos = el tipo se comprueba al compilar y no hay castings. No existen
+        colecciones de primitivos (<code>List&lt;Integer&gt;</code>, no <code>List&lt;int&gt;</code>). Modificar una lista
+        dentro de un for-each lanza <code>ConcurrentModificationException</code>. Nunca devuelvas tu lista interna: devuelve
+        <code>List.copyOf</code> o <code>Collections.unmodifiableList</code>.</p>
+
+        <h3>Excepciones y archivos (8)</h3>
+        <ul class="clean">
+          <li><b>Jerarquía</b>: <code>Throwable</code> → <code>Error</code> (no se captura) y <code>Exception</code> → <code>RuntimeException</code>.</li>
+          <li><b>Checked</b> (heredan de <code>Exception</code>): problema externo previsible; el compilador obliga a capturar o declarar. <b>Unchecked</b> (<code>RuntimeException</code>): error de programación.</li>
+          <li><b><code>throw</code></b> lanza; <b><code>throws</code></b> declara en la firma. Los <code>catch</code> de lo específico a lo general; multi-catch con <code>|</code>. <code>finally</code> se ejecuta siempre.</li>
+          <li>Excepciones propias con una raíz (<code>LibroTechException</code>) y <b>siempre con la causa</b>.</li>
+          <li>Stack trace: busca la <b>primera línea de tu código</b>.</li>
+        </ul>
+        <div class="code-block" data-lang="Java">
+<pre><code>try (BufferedWriter w = Files.newBufferedWriter(Path.of("catalogo.csv"))) {
+    w.write(linea);                                 // se cierra solo (AutoCloseable)
+} catch (IOException e) {
+    throw new CatalogoIOException("No se pudo guardar el catálogo", e); // conserva la causa
+}
+List&lt;String&gt; lineas = Files.readAllLines(Path.of("catalogo.csv"));</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> <em>try-with-resources</em> cierra el recurso aunque haya excepción, sin
+        <code>finally</code>. Usa NIO.2 (<code>Path</code>, <code>Files</code>). <b>Nunca</b> un <code>catch</code> vacío ni
+        excepciones para el flujo normal.</p>
+
+        <h3>Lambdas, streams y Optional (9)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Interfaz funcional</th><th>Firma</th><th>Para qué</th></tr></thead>
+          <tbody>
+            <tr><td><code>Predicate&lt;T&gt;</code></td><td><code>T → boolean</code></td><td>Filtrar</td></tr>
+            <tr><td><code>Function&lt;T,R&gt;</code></td><td><code>T → R</code></td><td>Transformar</td></tr>
+            <tr><td><code>Consumer&lt;T&gt;</code></td><td><code>T → void</code></td><td>Consumir (imprimir, guardar)</td></tr>
+            <tr><td><code>Supplier&lt;T&gt;</code></td><td><code>() → T</code></td><td>Producir (valores por defecto)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="Java">
+<pre><code>Map&lt;Categoria, Long&gt; porCategoria = libros.stream()   // origen
+    .filter(l -&gt; l.getStock() &gt; 0)                          // intermedia (perezosa)
+    .collect(Collectors.groupingBy(Libro::getCategoria,      // terminal: dispara todo
+                                   Collectors.counting()));
+
+int unidades = libros.stream().mapToInt(Libro::getStock).sum();
+
+Optional&lt;Libro&gt; o = buscarPorIsbn("123");
+Libro l = o.orElseThrow(() -&gt; new LibroNoEncontradoException("123"));</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> sin operación terminal no pasa nada; un stream se consume una vez.
+        <code>mapToInt</code> desbloquea <code>sum()</code> y <code>average()</code>. Colectores clave: <code>groupingBy</code>,
+        <code>partitioningBy</code>, <code>counting</code>, <code>joining</code>, <code>toMap</code>. <code>flatMap</code>
+        aplana listas anidadas. <code>Optional</code> sólo como retorno; prefiere <code>orElseThrow</code> a <code>get()</code>.
+        Las lambdas sólo usan variables <em>effectively final</em>.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🏭 Bloque 4 · Ingeniería: Maven, JDBC, MVC y tests (cap. 10–13)</summary>
+      <div class="acc-body">
+
+        <h3>Maven (10)</h3>
+        <ul class="clean">
+          <li>Gestiona <b>dependencias</b> (de Maven Central a <code>~/.m2</code>, con sus transitivas), impone <b>estructura</b> y automatiza la <b>construcción</b>.</li>
+          <li>Estructura: <code>src/main/java</code>, <code>src/main/resources</code>, <code>src/test/java</code>, <code>target/</code> (nunca a Git).</li>
+          <li><b>GAV</b> = <code>groupId:artifactId:version</code> identifica cualquier artefacto. <code>-SNAPSHOT</code> = en desarrollo.</li>
+          <li><b>Scope</b>: <code>compile</code> (defecto), <code>test</code> (no entra en el JAR), <code>runtime</code>, <code>provided</code>.</li>
+          <li>Ciclo: <code>validate → compile → test → package → install → deploy</code>; cada fase ejecuta las anteriores. <code>clean</code> va aparte.</li>
+          <li><b>Plugins</b> hacen el trabajo (<code>shade</code> crea un JAR ejecutable con dependencias). <b>Wrapper</b> <code>mvnw</code>: construir sin Maven instalado.</li>
+        </ul>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>./mvnw clean package        # compila, pasa los tests y genera target/*.jar
+./mvnw test                 # sólo hasta los tests
+./mvnw dependency:tree      # quién trae cada versión (conflictos)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>no main manifest attribute</code> = el JAR no declara clase principal;
+        <code>ClassNotFoundException</code> con <code>java -jar</code> = faltan las dependencias dentro del JAR.</p>
+
+        <h3>JDBC y DAO (11)</h3>
+        <div class="code-block" data-lang="Java · com/librotech/dao/LibroDaoJdbc.java">
+<pre><code>String sql = "SELECT isbn, titulo, precio FROM libros WHERE isbn = ?";
+try (Connection c = dataSource.getConnection();
+     PreparedStatement ps = c.prepareStatement(sql)) {
+    ps.setString(1, isbn);                       // los índices empiezan en 1
+    try (ResultSet rs = ps.executeQuery()) {
+        return rs.next()
+            ? Optional.of(new Libro(rs.getString("isbn"), rs.getBigDecimal("precio")))
+            : Optional.empty();
+    }
+} catch (SQLException e) {
+    throw new CatalogoIOException("Error buscando " + isbn, e);
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>Connection → PreparedStatement → ResultSet</code>, todo en
+        try-with-resources (una conexión sin cerrar agota el pool). <b>Nunca concatenes</b> datos del usuario: los
+        <code>?</code> se envían como datos, no como SQL, y eso bloquea la <b>inyección SQL</b>.</p>
+        <ul class="clean">
+          <li><b>DAO</b>: interfaz <code>LibroDAO</code> con el contrato; <code>LibroDaoJdbc</code> la implementa. Todo el SQL vive ahí.</li>
+          <li><b>Transacción</b>: <code>setAutoCommit(false)</code> → operaciones → <code>commit()</code>, o <code>rollback()</code> si algo falla. Todo o nada.</li>
+          <li><b>Pool</b> (HikariCP): reutiliza conexiones porque abrirlas es caro. <b>H2</b>: base en memoria para aprender y probar.</li>
+        </ul>
+
+        <h3>MVC y capas (12)</h3>
+        <div class="diagram">  view ──▶ controller ──▶ service ──▶ dao ──▶ model
+   (E/S)     (coordina)    (reglas)    (SQL)   (datos)
+  Nunca al revés. El modelo no sabe que existe una vista.</div>
+        <ul class="clean">
+          <li><b>Bajo acoplamiento, alta cohesión.</b> Cada capa depende de <b>interfaces</b>, recibidas <b>por constructor</b> en campos <code>final</code>.</li>
+          <li><b>Composition root</b>: el único sitio (el <code>main</code>) donde se eligen las implementaciones concretas.</li>
+          <li><b>DTO</b>: objeto que define qué viaja entre capas sin filtrar detalles internos.</li>
+          <li>Cero <code>System.out</code> fuera de la vista; cero SQL fuera del DAO.</li>
+        </ul>
+
+        <h3>Tests con JUnit 5 y Mockito (13)</h3>
+        <div class="code-block" data-lang="Java · CatalogoServiceTest.java">
+<pre><code>@ExtendWith(MockitoExtension.class)
+class CatalogoServiceTest {
+    @Mock LibroDAO dao;                          // dependencia falsa
+    @InjectMocks CatalogoService servicio;       // la clase bajo prueba
+
+    @Test
+    @DisplayName("no vende si no hay stock")
+    void noVendeSinStock() {
+        when(dao.buscar("123")).thenReturn(Optional.of(libroSinStock()));   // Arrange
+        assertThrows(StockInsuficienteException.class, () -&gt; servicio.vender("123", 1)); // Act + Assert
+        verify(dao, never()).actualizar(any());
+    }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>Arrange–Act–Assert</b>. Anotaciones: <code>@Test</code>,
+        <code>@BeforeEach</code>, <code>@DisplayName</code>, <code>@Nested</code>, <code>@ParameterizedTest</code>.
+        <code>assertAll</code> agrupa aserciones. Mockea lo lento y externo, no los objetos de valor. Pirámide: muchos
+        unitarios, algunos de integración, pocos E2E. La cobertura encuentra huecos; no es un objetivo.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌱 Bloque 5 · Spring Boot: API, JPA, DTOs y vistas (cap. 14–19)</summary>
+      <div class="acc-body">
+
+        <h3>IoC, beans y autoconfiguración (14)</h3>
+        <ul class="clean">
+          <li><b>IoC</b>: el contenedor crea y conecta los objetos (<b>beans</b>). Es el composition root del Capítulo 12, automatizado.</li>
+          <li>Estereotipos (todos son <code>@Component</code>): <code>@Service</code>, <code>@Repository</code>, <code>@RestController</code>, <code>@Configuration</code> (con métodos <code>@Bean</code>).</li>
+          <li>Inyección <b>por constructor</b> con campos <code>final</code>; nunca <code>@Autowired</code> en campos. Dos beans del mismo tipo: <code>@Primary</code> o <code>@Qualifier</code>.</li>
+          <li><b>Scope</b> por defecto <b>singleton</b> → los beans no guardan estado mutable (se mezclaría entre usuarios). <code>prototype</code> = uno por inyección.</li>
+          <li><code>@SpringBootApplication</code> = configuración + autoconfiguración + escaneo <b>desde su paquete hacia abajo</b>. Starters y servidor embebido.</li>
+          <li>Configuración en <code>application.properties</code>, leída con <code>@Value("${clave}")</code>.</li>
+        </ul>
+
+        <h3>REST y JPA (15)</h3>
+        <div class="code-block" data-lang="Java · LibroController.java">
+<pre><code>@RestController
+@RequestMapping("/api/libros")
+public class LibroController {
+    private final LibroService servicio;
+    public LibroController(LibroService servicio) { this.servicio = servicio; }
+
+    @GetMapping("/{id}")                                     // GET /api/libros/7
+    public LibroResponse uno(@PathVariable Long id) { return servicio.buscar(id); }
+
+    @GetMapping                                              // GET /api/libros?autor=X
+    public List&lt;LibroResponse&gt; filtrar(@RequestParam(required = false) String autor) { … }
+
+    @PostMapping
+    public ResponseEntity&lt;LibroResponse&gt; crear(@Valid @RequestBody LibroRequest req) {
+        LibroResponse creado = servicio.crear(req);
+        return ResponseEntity.created(URI.create("/api/libros/" + creado.id())).body(creado);
+    }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> REST = recursos en URLs con sustantivos en plural, acción en el verbo
+        (GET, POST, PUT, PATCH, DELETE), sin estado. Códigos: <b>200</b>, <b>201</b> + <code>Location</code>, <b>204</b>,
+        <b>400</b>, <b>404</b>, <b>409</b>, <b>500</b>. Jackson convierte a JSON solo.</p>
+        <div class="code-block" data-lang="Java">
+<pre><code>@Entity @Table(name = "libros")
+public class Libro {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
+    @Column(nullable = false) private String titulo;
+    @Enumerated(EnumType.STRING) private Categoria categoria;
+    protected Libro() { }                         // JPA exige constructor vacío
+}
+
+public interface LibroRepository extends JpaRepository&lt;Libro, Long&gt; {
+    List&lt;Libro&gt; findByTituloContainingIgnoreCase(String t);       // query method
+    @Query("SELECT l FROM Libro l WHERE l.precio &lt; :max")          // JPQL: entidades
+    List&lt;Libro&gt; baratos(BigDecimal max);
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> JPA es la especificación, Hibernate la implementación. Una entidad no puede
+        ser record (necesita constructor vacío y mutabilidad). <code>@Transactional(readOnly = true)</code> en la clase del
+        servicio y <code>@Transactional</code> en los métodos que escriben. <code>ddl-auto=update</code> sólo en desarrollo.</p>
+
+        <h3>Relaciones, N+1 y Flyway (16)</h3>
+        <ul class="clean">
+          <li><code>@ManyToOne</code> guarda la clave foránea; <code>@OneToMany(mappedBy=…)</code> es el lado inverso. <b><code>FetchType.LAZY</code> en todas</b>.</li>
+          <li><b>N+1</b>: 1 consulta para la lista + N para la relación de cada elemento. Se detecta contando SQL en el log; se arregla con <code>@EntityGraph</code>, <code>JOIN FETCH</code> o proyección a DTO.</li>
+          <li><b>Flyway</b>: scripts <code>V1__crear_esquema.sql</code> en <code>db/migration</code>, aplicados una vez y en orden; <code>ddl-auto=validate</code>. Nunca edites una migración aplicada: crea otra.</li>
+          <li><b>Soft delete</b> con <code>@SQLDelete</code> + <code>@SQLRestriction</code>. <code>CascadeType.ALL</code> también propaga el borrado. ManyToMany con <code>Set</code>.</li>
+        </ul>
+
+        <h3>DTOs, validación y errores (17)</h3>
+        <div class="code-block" data-lang="Java">
+<pre><code>public record LibroRequest(@NotBlank String titulo,
+                           @NotNull @Positive BigDecimal precio) { }
+
+@RestControllerAdvice
+public class ManejadorGlobalErrores {
+    @ExceptionHandler(LibroNoEncontradoException.class)
+    ResponseEntity&lt;ErrorResponse&gt; noEncontrado(LibroNoEncontradoException e) {
+        return ResponseEntity.status(404).body(new ErrorResponse(404, e.getMessage()));
+    }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> DTO de entrada y de salida separados; <b>MapStruct</b> genera el mapeo al
+        compilar (<code>unmappedTargetPolicy = ERROR</code>). <code>@Valid</code> activa Bean Validation. El advice traduce
+        cada excepción a su código HTTP; nunca devuelvas stack traces. Formato validado en el DTO; reglas de negocio en el servicio.</p>
+
+        <h3>Paginación y Swagger (18)</h3>
+        <ul class="clean">
+          <li><code>Pageable</code> se construye solo desde <code>?page=0&amp;size=20&amp;sort=titulo,asc</code>; las páginas empiezan en <b>0</b>.</li>
+          <li><b>Page</b> hace 2 consultas (datos + COUNT) y conoce el total; <b>Slice</b> hace 1 y sólo sabe si hay más.</li>
+          <li>Filtros combinables: JPQL con <code>:p IS NULL OR …</code>, <code>Specification</code> o Query by Example. Filtros vacíos → <code>null</code>.</li>
+          <li>Limita el <code>size</code> máximo, ordena siempre y devuelve un envoltorio propio, no <code>Page</code>.</li>
+          <li><b>springdoc-openapi</b> genera OpenAPI + Swagger UI desde el código (<code>@Operation</code>, <code>@ApiResponses</code>).</li>
+        </ul>
+
+        <h3>Vistas con Thymeleaf (19)</h3>
+        <ul class="clean">
+          <li><code>@Controller</code> devuelve el <b>nombre de una plantilla</b>; <code>@RestController</code>, JSON. Ambos usan el mismo servicio.</li>
+          <li>Directivas: <code>th:text</code> (escapa), <code>th:each</code>, <code>th:if</code>, <code>th:href="@{…}"</code>, <code>th:object</code> + <code>th:field="*{…}"</code>.</li>
+          <li><b>PRG</b>: tras un POST correcto, <code>return "redirect:/libros"</code> → F5 no duplica. El mensaje viaja con <code>addFlashAttribute</code> (sobrevive una redirección).</li>
+          <li><code>BindingResult</code> va <b>justo después</b> del objeto <code>@Valid</code>. Fragmentos (<code>th:fragment</code> / <code>th:replace</code>) para cabecera y pie.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔐 Bloque 6 · Seguridad, tests de Spring y despliegue (cap. 20–22)</summary>
+      <div class="acc-body">
+
+        <h3>Spring Security y JWT (20)</h3>
+        <ul class="clean">
+          <li><b>Autenticación</b> = quién eres (falla → <b>401</b>). <b>Autorización</b> = qué puedes hacer (falla → <b>403</b>).</li>
+          <li>Spring Security es una <b>cadena de filtros</b> que actúa antes del controlador.</li>
+          <li><b>JWT</b> = <code>header.payload.firma</code> en Base64URL. El payload <b>no está cifrado</b>; la firma garantiza que nadie lo alteró. Servidor sin estado.</li>
+          <li>Contraseñas con <b>BCrypt</b>: hash con sal y lento a propósito. Nunca MD5/SHA.</li>
+          <li><code>hasRole("ADMIN")</code> busca la authority <code>ROLE_ADMIN</code>. Protege rutas <b>y</b> métodos (<code>@PreAuthorize</code>).</li>
+          <li><b>CSRF</b>: desactivable en APIs con token en cabecera; obligatorio con cookies y formularios.</li>
+        </ul>
+        <div class="code-block" data-lang="Java · config/SecurityConfig.java">
+<pre><code>@Bean
+SecurityFilterChain api(HttpSecurity http, JwtAuthFilter jwt) throws Exception {
+    return http
+        .csrf(c -&gt; c.disable())
+        .sessionManagement(s -&gt; s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(a -&gt; a
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+            .anyRequest().authenticated())
+        .addFilterBefore(jwt, UsernamePasswordAuthenticationFilter.class)
+        .build();
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> API sin sesión, login público, borrar sólo para ADMIN y el resto autenticado; el
+        filtro JWT valida el token antes que el de usuario/contraseña. Clave secreta en variable de entorno, expiraciones
+        cortas, HTTPS. Ocultar un botón <b>no</b> es seguridad.</p>
+
+        <h3>La pirámide de tests en Spring (21)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Anotación</th><th>Qué arranca</th><th>Para probar</th></tr></thead>
+          <tbody>
+            <tr><td>(ninguna) + Mockito</td><td>Nada de Spring</td><td>Lógica del servicio y dominio</td></tr>
+            <tr><td><code>@DataJpaTest</code></td><td>JPA + H2, rollback por test</td><td>Repositorios y consultas</td></tr>
+            <tr><td><code>@WebMvcTest</code></td><td>Sólo la capa web + <code>MockMvc</code></td><td>Controladores, códigos HTTP, JSON, seguridad</td></tr>
+            <tr><td><code>@SpringBootTest</code></td><td>La aplicación completa</td><td>Integración de extremo a extremo (con moderación)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="Java">
+<pre><code>@WebMvcTest(LibroController.class)
+class LibroControllerTest {
+    @Autowired MockMvc mvc;
+    @MockitoBean LibroService servicio;        // antes @MockBean
+
+    @Test @WithMockUser(roles = "USER")
+    void usuarioNoPuedeBorrar() throws Exception {
+        mvc.perform(delete("/api/libros/1").with(csrf()))
+           .andExpect(status().isForbidden());
+    }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> usa la anotación más ligera que sirva. <code>jsonPath("$.titulo")</code>
+        verifica el JSON y <code>andDo(print())</code> depura. <b>Testcontainers</b> levanta el PostgreSQL real en Docker
+        para lo que H2 no reproduce. Separa suite rápida y completa con <code>@Tag</code> y perfiles de Maven.</p>
+
+        <h3>Perfiles, Actuator, Docker y CI/CD (22)</h3>
+        <ul class="clean">
+          <li><b>Perfiles</b> (<code>application-dev/prod.properties</code>): un solo JAR para todos los entornos; los valores sensibles por variables de entorno.</li>
+          <li><b>Actuator</b>: <code>health</code>, <code>info</code>, <code>metrics</code>; <b>liveness</b> (¿vive?) y <b>readiness</b> (¿puede atender?). Nunca expongas <code>*</code>.</li>
+          <li><b>Dockerfile multi-stage</b>: compila con JDK + Maven, ejecuta sólo con JRE. Copia el <code>pom.xml</code> antes que el código para cachear dependencias. Usuario no root y <code>-XX:MaxRAMPercentage</code>.</li>
+          <li><b>Compose</b>: los servicios se llaman por su <b>nombre</b> (<code>jdbc:postgresql://db:5432</code>, no <code>localhost</code>); <code>depends_on: condition: service_healthy</code>; volúmenes para persistir.</li>
+          <li><b>GitHub Actions</b>: jobs encadenados con <code>needs:</code>, artefactos para desplegar exactamente lo probado, imágenes etiquetadas con el SHA. Nunca <code>-DskipTests</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🏛 Bloque 7 · Arquitectura avanzada e IA (cap. 23–24)</summary>
+      <div class="acc-body">
+
+        <h3>Arquitectura hexagonal (23)</h3>
+        <div class="diagram">        adaptador REST ─▶ [ puerto entrada ]
+                                 │
+                       ┌─────────▼─────────┐
+                       │  DOMINIO + casos  │   sin Spring, sin JPA
+                       │      de uso       │
+                       └─────────┬─────────┘
+                                 │
+                         [ puerto salida ] ◀─ adaptador JPA / HTTP</div>
+        <ul class="clean">
+          <li>El <b>dominio no depende de nada</b>; la tecnología entra por <b>puertos</b> (interfaces) y <b>adaptadores</b> (implementaciones).</li>
+          <li>Paquetes <code>domain / application / infrastructure</code>. <code>@Entity</code> y Spring sólo en <code>infrastructure</code>.</li>
+          <li><b>Objeto de valor</b> (<code>Isbn</code>): imposible construir uno inválido.</li>
+          <li>Beneficio: probar el negocio sin Spring, sin BD y sin mocks, en milisegundos. Coste: más clases y mapeos; no lo uses en un CRUD.</li>
+          <li>Las fronteras se vigilan con un test de <b>ArchUnit</b>.</li>
+        </ul>
+
+        <h3>Microservicios (23)</h3>
+        <ul class="clean">
+          <li>Empieza con un <b>monolito modular</b>: los microservicios resuelven problemas de organización y escalado, no de código.</li>
+          <li><b>BFF</b>: un servicio para una interfaz concreta, que consume la API. <b>RestClient</b>: el cliente HTTP moderno de Spring.</li>
+          <li><b>Eureka</b>: registro de servicios, llamadas por nombre lógico (<code>lb://libros</code>) con balanceo. <b>API Gateway</b>: la única puerta de entrada.</li>
+          <li>Una base de datos por servicio; no hay transacciones entre servicios. La red falla: timeouts, reintentos, circuit breaker (Resilience4j) y trazabilidad.</li>
+        </ul>
+
+        <h3>Spring AI (24)</h3>
+        <div class="code-block" data-lang="Java">
+<pre><code>ChatClient chat = builder.defaultTools(tools).build();   // tools: un @Component con métodos @Tool
+
+RecomendacionLibro rec = chat.prompt()
+        .system("Eres el asistente de LibroTech. Si no tienes el dato, dilo.")
+        .user("Recomienda un libro de realismo mágico")
+        .call()
+        .entity(RecomendacionLibro.class);      // structured output: objeto tipado</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>ChatClient</code> abstrae el proveedor (OpenAI, Ollama…); cambiarlo es
+        tocar el <code>pom.xml</code> y una propiedad. <b>Structured output</b> = respuesta como objeto Java.
+        <b>Tools</b> = el modelo pide llamar a <em>tus</em> métodos, con tus reglas; nunca operaciones destructivas.
+        <b>RAG</b> = embeddings + vector store + recuperación por similitud para responder sobre tus documentos sin reentrenar.
+        Sin memoria propia (la aporta un advisor reenviando historial, con coste en tokens). Temperatura baja para hechos.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista técnica de Java"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|== vs equals|Abstracta vs interfaz|Checked vs unchecked|401 vs 403|N+1|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> del curso: las parejas de conceptos que
+      parecen iguales, los patrones que usaste en LibroTech, los errores que todo desarrollador Java ha visto alguna vez
+      y las preguntas típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, lee la pregunta, <em>responde tú primero</em> en voz
+      alta o por escrito, y sólo entonces despliega la respuesta. El último acordeón es la versión de cinco minutos para
+      leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>El lenguaje y la POO</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>JDK / JRE / JVM</b></td><td>JVM ejecuta bytecode; JRE = JVM + librerías; JDK = JRE + compilador y herramientas.</td><td>Para desarrollar, siempre el JDK.</td></tr>
+            <tr><td><b><code>==</code> / <code>equals()</code></b></td><td>Misma referencia / mismo contenido.</td><td><code>==</code> para primitivos y enums; <code>equals</code> para objetos (y textos).</td></tr>
+            <tr><td><b>Primitivo / wrapper</b></td><td><code>int</code> vive en el stack y no es null; <code>Integer</code> es objeto y puede serlo.</td><td>Primitivo por defecto; wrapper en colecciones o cuando «sin valor» tiene sentido.</td></tr>
+            <tr><td><b><code>String</code> / <code>StringBuilder</code></b></td><td>Inmutable / mutable.</td><td>Builder al concatenar en bucles.</td></tr>
+            <tr><td><b><code>double</code> / <code>BigDecimal</code></b></td><td>Binario aproximado / decimal exacto.</td><td>Dinero, siempre <code>BigDecimal</code> desde <code>String</code>.</td></tr>
+            <tr><td><b><code>static</code> / instancia</b></td><td>Uno para la clase / uno por objeto.</td><td>static para utilidades y constantes; instancia para el estado.</td></tr>
+            <tr><td><b>Sobrecarga / sobrescritura</b></td><td>Mismo nombre, distintos parámetros (compilación) / redefinir el método del padre (ejecución).</td><td>Overload para variantes; override para polimorfismo, con <code>@Override</code>.</td></tr>
+            <tr><td><b>Abstracta / interfaz</b></td><td>Puede tener estado y constructor; una sola / contrato sin estado; varias.</td><td>«Es un» → abstracta; «puede hacer» → interfaz.</td></tr>
+            <tr><td><b>Record / clase</b></td><td>Datos inmutables con todo generado / objeto con estado y reglas.</td><td>Record para DTOs y valores; clase para entidades con ciclo de vida.</td></tr>
+            <tr><td><b><code>final</code> / inmutable</b></td><td>No se reasigna la variable / el objeto no cambia.</td><td>Una lista <code>final</code> sigue aceptando <code>add</code>.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Colecciones, errores y streams</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>ArrayList / LinkedList</b></td><td>Índice O(1) / insertar en extremos O(1), índice O(n).</td><td>ArrayList casi siempre.</td></tr>
+            <tr><td><b>HashMap / TreeMap / LinkedHashMap</b></td><td>Sin orden, O(1) / claves ordenadas, O(log n) / orden de inserción.</td><td>Hash por defecto; Tree si necesitas orden.</td></tr>
+            <tr><td><b>Comparable / Comparator</b></td><td>Orden natural dentro de la clase / orden externo, encadenable.</td><td>Comparable para un orden obvio; Comparator para el resto.</td></tr>
+            <tr><td><b>Checked / unchecked</b></td><td>El compilador obliga a tratarla / no.</td><td>Checked: fallo externo recuperable. Unchecked: bug.</td></tr>
+            <tr><td><b><code>throw</code> / <code>throws</code></b></td><td>Lanza una excepción / declara que el método puede lanzarla.</td><td>—</td></tr>
+            <tr><td><b><code>finally</code> / try-with-resources</b></td><td>Bloque que siempre corre / cierre automático de <code>AutoCloseable</code>.</td><td>Para recursos, siempre try-with-resources.</td></tr>
+            <tr><td><b><code>map</code> / <code>flatMap</code></b></td><td>1 → 1 / 1 → muchos aplanado.</td><td>flatMap para listas dentro de listas.</td></tr>
+            <tr><td><b><code>groupingBy</code> / <code>partitioningBy</code></b></td><td>Grupos por cualquier clave / exactamente dos grupos (true/false).</td><td>Partition cuando la clave es un predicado.</td></tr>
+            <tr><td><b>Intermedia / terminal</b></td><td>Perezosa, devuelve stream / ejecuta la tubería.</td><td>Sin terminal no ocurre nada.</td></tr>
+            <tr><td><b><code>orElse</code> / <code>orElseGet</code> / <code>orElseThrow</code></b></td><td>Valor siempre evaluado / calculado sólo si hace falta / excepción.</td><td>orElseGet si el valor por defecto es caro.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Persistencia, Spring y seguridad</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Statement / PreparedStatement</b></td><td>SQL concatenado / parámetros separados del SQL.</td><td>Siempre PreparedStatement.</td></tr>
+            <tr><td><b>JPA / Hibernate / Spring Data</b></td><td>Especificación / implementación / repositorios generados encima.</td><td>Programa contra JPA y Spring Data.</td></tr>
+            <tr><td><b>LAZY / EAGER</b></td><td>Carga al acceder / carga siempre.</td><td>LAZY en todo y trae lo necesario explícitamente.</td></tr>
+            <tr><td><b><code>ddl-auto</code> / Flyway</b></td><td>Hibernate deduce el esquema / migraciones versionadas.</td><td>Flyway + <code>validate</code> fuera de tu máquina.</td></tr>
+            <tr><td><b>Entidad / DTO</b></td><td>Modelo persistente interno / contrato público de la API.</td><td>Nunca entidades en la API.</td></tr>
+            <tr><td><b><code>@NotNull</code> / <code>@NotEmpty</code> / <code>@NotBlank</code></b></td><td>No null / no null ni vacío / no null, vacío ni sólo espacios.</td><td>NotBlank para textos; NotEmpty para colecciones.</td></tr>
+            <tr><td><b><code>@Controller</code> / <code>@RestController</code></b></td><td>Devuelve vista / devuelve JSON.</td><td>Thymeleaf / API.</td></tr>
+            <tr><td><b><code>@PathVariable</code> / <code>@RequestParam</code> / <code>@RequestBody</code></b></td><td>Trozo de la ruta / query string / cuerpo JSON.</td><td>Identificar / filtrar / enviar datos.</td></tr>
+            <tr><td><b>PUT / PATCH / POST</b></td><td>Reemplazo completo, idempotente / parcial / crear, no idempotente.</td><td>—</td></tr>
+            <tr><td><b>Page / Slice</b></td><td>Con total (2 consultas) / sólo «hay más» (1).</td><td>Paginador numerado / scroll infinito.</td></tr>
+            <tr><td><b>401 / 403</b></td><td>No autenticado / autenticado sin permiso.</td><td>—</td></tr>
+            <tr><td><b>Sesión / JWT</b></td><td>Estado en el servidor / token firmado que viaja con cada petición.</td><td>Web clásica / API sin estado.</td></tr>
+            <tr><td><b><code>@Mock</code> / <code>@MockitoBean</code></b></td><td>Mock de Mockito puro / mock registrado en el contexto de Spring.</td><td>Test unitario / <code>@WebMvcTest</code>.</td></tr>
+            <tr><td><b>Liveness / readiness</b></td><td>¿Hay que reiniciarlo? / ¿Le mando tráfico?</td><td>Kubernetes usa ambas.</td></tr>
+            <tr><td><b>Monolito / microservicios</b></td><td>Un despliegue / servicios independientes por red.</td><td>Monolito modular primero.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en LibroTech</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Encapsulamiento</b></td><td>Objetos en estados inválidos.</td><td><code>Libro.vender()</code> en vez de <code>setStock()</code> (4)</td></tr>
+            <tr><td><b>Programar contra interfaces</b></td><td>Cambiar una implementación obliga a tocar todo.</td><td><code>Prestable</code>, <code>LibroDAO</code>, <code>List</code> (5, 7, 11)</td></tr>
+            <tr><td><b>DAO / Repository</b></td><td>SQL disperso por el código.</td><td><code>LibroDaoJdbc</code> → <code>JpaRepository</code> (11, 15)</td></tr>
+            <tr><td><b>MVC / capas</b></td><td>Lógica, datos y E/S mezclados.</td><td>view → controller → service → dao (12)</td></tr>
+            <tr><td><b>Inyección de dependencias</b></td><td>Clases que crean lo que usan y no se pueden probar.</td><td>Composition root manual (12) → Spring (14)</td></tr>
+            <tr><td><b>DTO</b></td><td>Filtrar detalles internos y acoplar la API a la BD.</td><td><code>LibroRequest</code> / <code>LibroResponse</code> (17)</td></tr>
+            <tr><td><b>Manejo global de errores</b></td><td><code>try/catch</code> repetido en cada endpoint.</td><td><code>@RestControllerAdvice</code> (17)</td></tr>
+            <tr><td><b>Post-Redirect-Get</b></td><td>F5 duplica el envío de un formulario.</td><td>Formularios Thymeleaf (19)</td></tr>
+            <tr><td><b>Cadena de filtros</b></td><td>Seguridad mezclada con el negocio.</td><td><code>JwtAuthFilter</code> (20)</td></tr>
+            <tr><td><b>Puertos y adaptadores</b></td><td>Dominio acoplado a la tecnología.</td><td>Hexágono (23)</td></tr>
+            <tr><td><b>Objeto de valor</b></td><td>Datos sueltos sin reglas (<code>String isbn</code>).</td><td><code>Isbn</code> (23)</td></tr>
+            <tr><td><b>BFF / API Gateway</b></td><td>Clientes acoplados a muchos servicios.</td><td><code>librotech-ui</code>, gateway (23)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten en el curso</h3>
+        <ul class="clean">
+          <li><b>Valida pronto</b>: en el constructor, en el DTO, en el servicio. Un error cerca de su origen es fácil de arreglar.</li>
+          <li><b>Inmutable por defecto</b>: <code>final</code>, records, <code>List.of</code>. Lo que no cambia no se rompe.</li>
+          <li><b>Depende de abstracciones</b> y recibe las dependencias por constructor.</li>
+          <li><b>Nunca silencies un error</b>: ni <code>catch</code> vacío ni excepciones sin causa.</li>
+          <li><b>Mide antes de optimizar</b>: cuenta las consultas SQL, no adivines (N+1, <code>parallelStream</code>).</li>
+          <li><b>Cero secretos en el repositorio</b>: claves JWT, contraseñas de BD y API keys por variables de entorno.</li>
+          <li><b>Tests que describen comportamiento</b> y, ante un bug, primero el test que lo reproduce.</li>
+          <li><b>La arquitectura más simple que funcione</b>: hexagonal y microservicios sólo cuando el problema lo pide.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <p>Los mensajes que más vas a ver, con la causa más probable. Reconocerlos a la primera es lo que distingue a
+        alguien que ha programado Java de alguien que lo ha leído.</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>NullPointerException</code></td><td>Usas un objeto que es <code>null</code>. Lee la línea del stack trace; valida en el constructor, usa <code>Optional</code> y el cortocircuito <code>x != null &amp;&amp; …</code>.</td></tr>
+            <tr><td><code>non-static method cannot be referenced from a static context</code></td><td>Llamas a un método de instancia desde <code>main</code>. Crea el objeto o marca el método <code>static</code>.</td></tr>
+            <tr><td><code>ArrayIndexOutOfBoundsException</code></td><td>Índice ≥ <code>length</code>. Recorre con <code>i &lt; array.length</code> o con for-each.</td></tr>
+            <tr><td><code>ConcurrentModificationException</code></td><td>Modificas una colección mientras la recorres. Usa <code>removeIf</code> o un <code>Iterator</code>.</td></tr>
+            <tr><td>Un <code>HashSet</code> admite duplicados</td><td>La clase no sobrescribe <code>equals</code> y <code>hashCode</code>. Usa un record.</td></tr>
+            <tr><td><code>unreported exception X; must be caught or declared</code></td><td>Excepción checked sin tratar: <code>try/catch</code> o <code>throws</code>.</td></tr>
+            <tr><td><code>UnsupportedOperationException</code> al añadir</td><td>La lista es inmutable (<code>List.of</code>, <code>toList()</code>). Copia a <code>new ArrayList&lt;&gt;(…)</code>.</td></tr>
+            <tr><td><code>NoSuchBeanDefinitionException</code></td><td>Spring no encuentra el bean: falta el estereotipo o la clase está fuera del paquete de <code>@SpringBootApplication</code>.</td></tr>
+            <tr><td><code>LazyInitializationException</code></td><td>Accedes a una relación LAZY con la sesión cerrada. Trae los datos con <code>@EntityGraph</code>/<code>JOIN FETCH</code> o proyecta a DTO dentro de la transacción.</td></tr>
+            <tr><td>API lentísima con datos reales</td><td>N+1. Activa <code>show-sql</code>, cuenta consultas y usa <code>@EntityGraph</code>.</td></tr>
+            <tr><td><code>Migration checksum mismatch</code></td><td>Editaste una migración ya aplicada. Revierte el cambio y crea <code>V(n+1)__…</code>.</td></tr>
+            <tr><td><code>415 Unsupported Media Type</code></td><td>El POST no envía <code>Content-Type: application/json</code>.</td></tr>
+            <tr><td>Errores de validación salen como 500</td><td>Falta <code>@Valid</code> o no hay <code>@ExceptionHandler(MethodArgumentNotValidException.class)</code>.</td></tr>
+            <tr><td><code>403</code> en todos los POST</td><td>CSRF activo. En la API stateless, desactívalo; en los tests, <code>.with(csrf())</code>.</td></tr>
+            <tr><td>La app en Docker no conecta a la BD</td><td>Usa <code>localhost</code>: dentro de un contenedor es él mismo. Usa el nombre del servicio de Compose.</td></tr>
+            <tr><td><code>OOMKilled</code></td><td>La JVM pide más memoria que el contenedor. <code>-XX:MaxRAMPercentage=75</code>.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Lenguaje y POO</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué se dice que Java es «write once, run anywhere»?</p>
+            <div class="q-ans"><code>javac</code> no genera código máquina sino <b>bytecode</b>, que es igual en todos los sistemas. Cada sistema tiene su propia JVM, que es la que traduce ese bytecode a instrucciones nativas. El programa se compila una vez y corre donde haya una JVM compatible.</div></div>
+          <div class="q"><p class="q-text">2. ¿Java pasa los parámetros por valor o por referencia?</p>
+            <div class="q-ans">Siempre <b>por valor</b>. Con objetos, el valor copiado es la <em>referencia</em>: el método puede modificar el objeto al que apunta (<code>libro.vender(1)</code> se ve fuera), pero si reasigna el parámetro (<code>libro = new Libro(…)</code>) el llamador no se entera.</div></div>
+          <div class="q"><p class="q-text">3. <code>"Rayuela" == new String("Rayuela")</code> devuelve false. ¿Por qué, y qué deberías usar?</p>
+            <div class="q-ans"><code>==</code> compara si son el mismo objeto en memoria, y <code>new</code> crea uno distinto. Para comparar contenido se usa <code>equals()</code>. Que a veces <code>==</code> «funcione» con literales se debe al <em>pool</em> de cadenas, y precisamente por eso es un error peligroso.</div></div>
+          <div class="q"><p class="q-text">4. Explica los cuatro pilares de la POO con un ejemplo de LibroTech.</p>
+            <div class="q-ans"><b>Encapsulamiento</b>: <code>Libro</code> tiene atributos privados y sólo cambia su stock con <code>vender()</code>, que valida. <b>Abstracción</b>: <code>Material</code> define lo común sin decir cómo. <b>Herencia</b>: <code>Libro</code> y <code>Revista</code> extienden <code>Material</code>. <b>Polimorfismo</b>: un <code>List&lt;Material&gt;</code> llama a <code>precioConIva()</code> y cada objeto ejecuta su versión.</div></div>
+          <div class="q"><p class="q-text">5. ¿Clase abstracta o interfaz? Justifica con un caso.</p>
+            <div class="q-ans">Abstracta cuando hay una relación «es un» y estado o código común que compartir (<code>Material</code> con título y precio). Interfaz cuando es una capacidad que pueden tener clases sin relación (<code>Prestable</code>), y además se pueden implementar varias. En la duda, interfaz: acopla menos.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué te da un <code>record</code> y cuándo NO lo usarías?</p>
+            <div class="q-ans">Constructor canónico, accesores, <code>equals</code>, <code>hashCode</code> y <code>toString</code>, todo inmutable. No lo usaría para objetos con estado que cambia (un <code>Libro</code> con stock) ni para entidades JPA, que necesitan constructor vacío y ser mutables.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué es el contrato <code>equals</code>/<code>hashCode</code> y qué pasa si lo rompes?</p>
+            <div class="q-ans">Si <code>a.equals(b)</code>, entonces <code>a.hashCode() == b.hashCode()</code>. Las colecciones hash buscan primero por <code>hashCode</code> y después confirman con <code>equals</code>; si no coinciden, un <code>HashSet</code> guarda duplicados y un <code>HashMap</code> «pierde» claves que sí están dentro.</div></div>
+          <div class="q"><p class="q-text">8. ¿Qué aportan <code>sealed</code> y el pattern matching en <code>switch</code>?</p>
+            <div class="q-ans"><code>sealed</code> fija exactamente qué tipos pueden implementar una interfaz. Con eso, el compilador sabe que un <code>switch</code> sobre ella es exhaustivo sin <code>default</code>, y si mañana añades un tipo nuevo te marca cada <code>switch</code> que no lo trata. Convierte un olvido en error de compilación.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Colecciones, excepciones y streams</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Tienes un millón de libros y buscas por ISBN miles de veces. ¿Qué estructura usas?</p>
+            <div class="q-ans">Un <code>HashMap&lt;String, Libro&gt;</code> con el ISBN como clave: búsqueda O(1). Recorrer un <code>ArrayList</code> es O(n) en cada búsqueda. La estructura se elige por cómo vas a consultar, no por cómo guardas.</div></div>
+          <div class="q"><p class="q-text">2. ¿Cómo eliminas elementos de una lista mientras la recorres?</p>
+            <div class="q-ans">Con <code>lista.removeIf(predicado)</code> o con un <code>Iterator</code> y su <code>remove()</code>. Hacerlo con <code>list.remove()</code> dentro de un for-each lanza <code>ConcurrentModificationException</code>.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué no puedes declarar <code>List&lt;int&gt;</code>?</p>
+            <div class="q-ans">Los genéricos sólo trabajan con objetos. Se usa el wrapper <code>List&lt;Integer&gt;</code> y Java convierte automáticamente (autoboxing). Ojo: un <code>Integer</code> puede ser <code>null</code> y desempaquetarlo lanza <code>NullPointerException</code>.</div></div>
+          <div class="q"><p class="q-text">4. Checked frente a unchecked: ¿cómo decides cuál crear?</p>
+            <div class="q-ans">Checked si el fallo es externo, previsible y el llamador puede hacer algo (archivo que no existe → pedir otra ruta). Unchecked si es un error de programación o una regla de negocio violada que no se recupera localmente (<code>IllegalArgumentException</code>, <code>StockInsuficienteException</code>). En Spring, las de negocio suelen ser unchecked y las traduce el advice global.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué hay que pasar la causa al envolver una excepción?</p>
+            <div class="q-ans">Porque si haces <code>throw new CatalogoIOException("…")</code> sin la causa, pierdes el stack trace original y no sabrás qué falló realmente (permiso, disco, ruta). Con <code>new …(mensaje, e)</code> el log muestra «Caused by» con todo el detalle.</div></div>
+          <div class="q"><p class="q-text">6. Escribes <code>lista.stream().filter(x -&gt; x &gt; 10);</code> y no pasa nada. ¿Por qué?</p>
+            <div class="q-ans">Las operaciones intermedias son perezosas: sólo describen la tubería. Hasta que no hay una operación terminal (<code>toList</code>, <code>count</code>, <code>collect</code>, <code>forEach</code>) no se procesa ningún elemento.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué ventaja tiene devolver <code>Optional&lt;Libro&gt;</code>?</p>
+            <div class="q-ans">La firma declara que puede no haber resultado y obliga al llamador a decidir qué hacer (<code>orElseThrow</code>, <code>orElse</code>, <code>map</code>). Con <code>null</code>, el olvido aparece como <code>NullPointerException</code> lejos del origen. No se usa en atributos ni parámetros.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cuándo NO usarías streams?</p>
+            <div class="q-ans">Cuando un bucle es más claro (lógica con varios estados, <code>break</code> temprano, efectos secundarios), cuando necesitas depurar paso a paso, o cuando la cadena se vuelve ilegible. Y <code>parallelStream()</code> sólo si has medido que compensa.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Persistencia y arquitectura</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Cómo evita <code>PreparedStatement</code> la inyección SQL?</p>
+            <div class="q-ans">La consulta se envía y se compila con huecos <code>?</code>; los valores viajan después, como datos. Aunque el usuario escriba <code>' OR '1'='1</code>, la base lo trata como texto literal, nunca como parte del SQL. Además, al reutilizarse, es más rápido.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué es una transacción y cómo se hace en JDBC y en Spring?</p>
+            <div class="q-ans">Un grupo de operaciones que se aplican todas o ninguna (vender = restar stock + registrar venta). En JDBC: <code>setAutoCommit(false)</code>, operaciones, <code>commit()</code> o <code>rollback()</code>. En Spring: <code>@Transactional</code> en el método del servicio; hace rollback ante excepciones unchecked.</div></div>
+          <div class="q"><p class="q-text">3. Explica el problema N+1 y tres formas de resolverlo.</p>
+            <div class="q-ans">Listar N libros lanza 1 consulta para la lista y otra por cada libro para cargar su editorial. Se detecta contando SQL en el log. Soluciones: <code>@EntityGraph</code> en el repositorio, <code>JOIN FETCH</code> en JPQL, o proyectar directamente a un DTO con sólo los campos necesarios (la más eficiente para listados).</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué LAZY en todas las relaciones si provoca <code>LazyInitializationException</code>?</p>
+            <div class="q-ans">Porque EAGER carga siempre la relación aunque no la uses, y en cascada puede traer media base de datos. Con LAZY decides en cada caso qué traer. La excepción indica que accedes fuera de la transacción: se arregla trayendo los datos explícitamente o mapeando a DTO dentro del servicio.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué usar Flyway en lugar de <code>ddl-auto=update</code>?</p>
+            <div class="q-ans"><code>update</code> deduce cambios sin control: no borra columnas, no migra datos y no deja historial. Flyway aplica scripts versionados, revisables en Git, idénticos en todos los entornos y en orden. Con Flyway, <code>ddl-auto=validate</code> sólo comprueba que entidades y esquema coinciden.</div></div>
+          <div class="q"><p class="q-text">6. Da tres razones para no devolver entidades JPA en la API.</p>
+            <div class="q-ans">Exponen campos internos (contraseñas, auditoría); cualquier cambio en la tabla rompe a los clientes; y la serialización puede disparar cargas LAZY, N+1 o recursión infinita en relaciones bidireccionales. El DTO es un contrato estable y explícito.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué gana un proyecto con arquitectura hexagonal y cuándo no merece la pena?</p>
+            <div class="q-ans">El dominio no conoce Spring ni JPA, así que se prueba en milisegundos sin mocks y se puede cambiar la tecnología (BD, framework, API) sin tocar las reglas. Cuesta más clases y mapeos: en un CRUD sin reglas de negocio no compensa.</div></div>
+          <div class="q"><p class="q-text">8. Un equipo de tres personas quiere empezar con microservicios. ¿Qué le recomiendas?</p>
+            <div class="q-ans">Un monolito modular con fronteras claras. Los microservicios añaden red, despliegues, una BD por servicio, consistencia eventual, trazabilidad distribuida y operación compleja. Resuelven problemas de organización y escalado independiente que un equipo pequeño todavía no tiene; con módulos bien separados, extraer un servicio después es viable.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Spring Boot, seguridad y despliegue</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es la inversión de control y la inyección de dependencias?</p>
+            <div class="q-ans">IoC: no eres tú quien crea y conecta los objetos, sino el contenedor. DI es la forma de hacerlo: cada clase declara lo que necesita (en el constructor) y Spring se lo entrega. Resultado: clases desacopladas que se prueban pasando dobles por el constructor.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué inyección por constructor y no <code>@Autowired</code> en el campo?</p>
+            <div class="q-ans">Permite campos <code>final</code> (inmutables), el objeto nunca existe a medio construir, las dependencias son visibles en la firma (muchas = clase con demasiadas responsabilidades) y en un test se instancia con <code>new</code> sin Spring.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué un bean no debe tener estado mutable?</p>
+            <div class="q-ans">Por defecto es <em>singleton</em>: una única instancia atiende todas las peticiones a la vez. Un campo que cambia se compartiría entre usuarios y produciría datos mezclados y condiciones de carrera. El estado va en la base de datos o en variables locales.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué debe devolver un POST que crea un recurso?</p>
+            <div class="q-ans"><b>201 Created</b>, la cabecera <code>Location</code> con la URL del nuevo recurso y, normalmente, su representación en el cuerpo. Con <code>ResponseEntity.created(uri).body(dto)</code>.</div></div>
+          <div class="q"><p class="q-text">5. ¿Cómo funciona la autenticación con JWT en LibroTech?</p>
+            <div class="q-ans">El login valida usuario y contraseña (BCrypt) y devuelve un token firmado con la clave del servidor. El cliente lo envía en <code>Authorization: Bearer …</code>; un filtro lo valida en cada petición, comprueba firma y expiración, y carga el usuario y sus roles en el contexto de seguridad. El servidor no guarda sesión.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué BCrypt y no SHA-256 para contraseñas?</p>
+            <div class="q-ans">SHA-256 está diseñado para ser rápido, lo que facilita probar miles de millones de contraseñas por segundo. BCrypt es lento a propósito (factor de coste ajustable) y añade una sal aleatoria por usuario, así que dos contraseñas iguales dan hashes distintos y las tablas precalculadas no sirven.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué no usar <code>@SpringBootTest</code> para todos los tests?</p>
+            <div class="q-ans">Arranca la aplicación entera: es lento y, cuando falla, no sabes qué capa falló. Usa la anotación más ligera: unitarios con Mockito para la lógica, <code>@DataJpaTest</code> para repositorios, <code>@WebMvcTest</code> para controladores y <code>@SpringBootTest</code> para unos pocos flujos completos.</div></div>
+          <div class="q"><p class="q-text">8. ¿Qué ventaja tiene un Dockerfile multi-stage para una app Spring Boot?</p>
+            <div class="q-ans">La primera etapa compila con JDK y Maven; la final sólo copia el JAR sobre una imagen con JRE. La imagen pesa varias veces menos, arranca y se despliega más rápido y tiene menos superficie de ataque, porque no lleva compilador ni código fuente.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · <code>javac</code> → bytecode → JVM. JDK para desarrollar; LTS en producción.</li>
+          <li><b>1</b> · 8 primitivos; objetos por referencia en el heap; dinero en <code>BigDecimal</code>.</li>
+          <li><b>2</b> · <code>switch</code> con flecha; arrays de tamaño fijo desde 0.</li>
+          <li><b>3</b> · <code>static</code> es de la clase; paso por valor; <code>equals</code> para textos; <code>StringBuilder</code> en bucles.</li>
+          <li><b>4</b> · Atributos privados, validación en el constructor, métodos de negocio.</li>
+          <li><b>5</b> · Polimorfismo: el objeto real decide. «Es un» → abstracta; «puede hacer» → interfaz.</li>
+          <li><b>6</b> · Records para datos, enums por <code>name()</code>, <code>sealed</code> + <code>switch</code> exhaustivo.</li>
+          <li><b>7</b> · List / Set / Map; elige por cómo consultas; <code>equals</code>/<code>hashCode</code> coherentes.</li>
+          <li><b>8</b> · Checked = externo; unchecked = bug. Try-with-resources y causa siempre.</li>
+          <li><b>9</b> · Stream = origen → intermedias perezosas → terminal. <code>Optional</code> como retorno.</li>
+          <li><b>10</b> · Maven: GAV, scopes, ciclo de vida, <code>mvnw</code>.</li>
+          <li><b>11</b> · <code>PreparedStatement</code>, DAO tras interfaz, transacciones, pool.</li>
+          <li><b>12</b> · Capas en una dirección, dependencias por constructor, composition root único.</li>
+          <li><b>13</b> · AAA, un comportamiento por test, mock de lo externo.</li>
+          <li><b>14</b> · Spring = IoC; beans singleton sin estado; escaneo desde el paquete raíz.</li>
+          <li><b>15</b> · REST con verbos y códigos correctos; <code>JpaRepository</code> y query methods.</li>
+          <li><b>16</b> · LAZY siempre, vigila el N+1, Flyway sin editar migraciones aplicadas.</li>
+          <li><b>17</b> · DTOs + MapStruct + <code>@Valid</code> + <code>@RestControllerAdvice</code>.</li>
+          <li><b>18</b> · Paginar siempre; Page (total) vs Slice; Swagger desde el código.</li>
+          <li><b>19</b> · Thymeleaf, PRG y flash attributes; <code>th:text</code> escapa.</li>
+          <li><b>20</b> · 401 vs 403; JWT firmado, no cifrado; BCrypt; proteger rutas y métodos.</li>
+          <li><b>21</b> · La anotación de test más ligera; Testcontainers para el motor real.</li>
+          <li><b>22</b> · Perfiles + variables de entorno; Actuator; Docker multi-stage; CI con <code>needs</code>.</li>
+          <li><b>23</b> · Dominio sin dependencias; monolito modular antes que microservicios.</li>
+          <li><b>24</b> · Spring AI: structured output, tools seguras, RAG para datos propios.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Una vez por semana, añade una funcionalidad pequeña a LibroTech (un filtro, un endpoint, un test).</li>
+            <li>Antes de una entrevista, rehaz de memoria un CRUD con Spring Boot: entidad, repositorio, DTO, servicio, controlador y advice.</li>
+            <li>Practica explicar en voz alta las tablas de diferencias: en una entrevista cuenta tanto el razonamiento como el dato.</li>
+            <li>Siguientes pasos naturales que el curso no cubre: concurrencia (<code>CompletableFuture</code>, virtual threads) y mensajería.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

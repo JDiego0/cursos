@@ -16512,6 +16512,746 @@ aws ecr describe-images --repository-name nakastream-api \
       </div>
     </details>
   </section>
+  <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: AWS y NakaStream de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|IAM|S3|CloudFront|VPC|EC2|RDS|DynamoDB|Lambda|SQS|ECS|CloudWatch|CDK">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: de la cuenta y el usuario root a
+      NakaStream entera desplegada con CDK y GitHub Actions. Cada servicio aparece con lo mínimo para recordarlo —qué
+      problema resuelve, sus piezas, cuánto cuesta y en qué se equivoca todo el mundo—, en el orden del curso.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a AWS tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>NakaStream en un diagrama</h3>
+        <div class="diagram">  Usuario ──▶ Route 53 (nakastream.com) ──▶ CloudFront + ACM (HTTPS) ──▶ S3 (web y vídeos, privado + OAC)
+     │                                         │
+     │ login (Cognito, JWT)                    └─▶ WAF
+     ▼
+  API Gateway (HTTP API, autorizador JWT, throttling)
+     │                    │
+     ▼                    ▼
+  Lambda              ALB ──▶ ECS Fargate (API en contenedor, imagen en ECR)
+     │                    │        │
+     ▼                    ▼        ▼
+  DynamoDB (historial)   RDS PostgreSQL (catálogo) ◀── ElastiCache Redis (portada)
+
+  Subida de vídeo: S3 ──▶ SNS ──▶ SQS (una cola por consumidor) ──▶ Lambda ──▶ Step Functions
+  Todo dentro de una VPC con subredes públicas / privadas en 2 AZ, security groups encadenados
+  Operación: CloudWatch · X-Ray · CloudTrail · Secrets Manager · KMS · GuardDuty
+  Entrega: CDK → CloudFormation · GitHub Actions con OIDC</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos y cuenta</b></td><td>Regiones, IAM y dinero antes que cualquier servicio.</td><td>Roles para servicios; nunca claves de root.</td></tr>
+            <tr><td><b>Almacenamiento y entrega</b></td><td>S3 privado servido por CloudFront con HTTPS y dominio propio.</td><td>Bucket cerrado + OAC.</td></tr>
+            <tr><td><b>Red y cómputo</b></td><td>VPC en dos AZ, cortafuegos por referencia y máquinas desechables tras un ALB.</td><td>Datos en subred privada.</td></tr>
+            <tr><td><b>Datos</b></td><td>SQL gestionado, NoSQL por patrones de acceso y caché en memoria.</td><td>Multi-AZ ≠ réplica ≠ copia de seguridad.</td></tr>
+            <tr><td><b>Serverless</b></td><td>Funciones por evento, una puerta para la API y usuarios con JWT.</td><td>Idempotencia.</td></tr>
+            <tr><td><b>Integración y contenedores</b></td><td>Desacoplar con colas, orquestar flujos y ejecutar contenedores sin servidores.</td><td>DLQ en todas las colas; desplegar por digest.</td></tr>
+            <tr><td><b>Operar y entregar</b></td><td>Observar, proteger en capas, todo como código y saber borrarlo.</td><td>La media miente; OIDC sin credenciales.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Los tres caros del curso</h3>
+        <p>Si vuelves a montar algo para practicar, éstos son los que facturan aunque no haya tráfico: <b>NAT Gateway</b>
+        (~32 USD/mes), <b>Application Load Balancer</b> (~16 USD/mes) y <b>RDS</b>. Bórralos al terminar cada sesión, y con
+        ellos las IP elásticas sin asociar.</p>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Antes de abrir cada bloque, dibuja de memoria su parte del diagrama (qué servicio, en qué subred, quién habla con
+        quién y con qué permiso). Es exactamente lo que piden las entrevistas de arquitectura.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>☁ Bloque 1 · Cuenta, regiones, IAM y costes (cap. 0–3)</summary>
+      <div class="acc-body">
+
+        <h3>La cuenta y las formas de hablar con AWS (0)</h3>
+        <ul class="clean">
+          <li><b>Consola, CLI e IaC</b> son tres clientes de la misma API: todos ven lo mismo.</li>
+          <li>La <b>cuenta</b> contiene recursos, identidades y factura. El <b>root</b> se guarda con MFA y sin access keys; el día a día, con un usuario IAM o Identity Center.</li>
+          <li>Casi todo vive en una <b>región</b>: si «desaparece» un recurso, mira la región.</li>
+          <li><b>ARN</b> = identificador único: <code>arn:aws:s3:::nakastream-videos/*</code> (servicio, región, cuenta, recurso).</li>
+        </ul>
+        <div class="code-block" data-lang="AWS CLI">
+<pre><code>aws configure --profile nakastream              # access key, secret, región, formato
+aws sts get-caller-identity --profile nakastream  # ¿quién soy y en qué cuenta?</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> usa perfiles con nombre (el <code>default</code> provoca accidentes) y
+        comprueba la identidad antes de trabajar. <code>Unable to locate credentials</code> con el perfil configurado = olvidaste
+        <code>--profile</code> o <code>AWS_PROFILE</code>. <code>.aws/</code>, <code>*.pem</code> y <code>.env</code> al <code>.gitignore</code>.</p>
+
+        <h3>Regiones, zonas y responsabilidad compartida (1)</h3>
+        <ul class="clean">
+          <li><b>Región</b>: conjunto independiente de centros de datos, con su catálogo y precio. Elige por latencia y ley (datos personales en la UE).</li>
+          <li><b>Zona de disponibilidad (AZ)</b>: centros con luz y red propias dentro de la región. <b>Dos AZ</b> = la forma más barata de sobrevivir a un fallo.</li>
+          <li><b>Edge locations</b>: no ejecutan tu app, cachean contenido (CloudFront).</li>
+          <li><b>Responsabilidad compartida</b>: AWS protege <em>la</em> nube; tú, lo que pones <em>en</em> ella. Cuanto más gestionado el servicio (IaaS → PaaS → SaaS), menos te toca.</li>
+          <li>Se paga por tiempo encendido, datos guardados, peticiones y <b>transferencia de salida</b> (la que más sorprende).</li>
+          <li><b>Etiquetas</b> (<code>Proyecto=NakaStream</code>) al crear: es la única forma de saber qué cuesta qué y qué se puede borrar.</li>
+        </ul>
+
+        <h3>IAM (2)</h3>
+        <div class="code-block" data-lang="JSON · política de identidad">
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:GetObject"],
+    "Resource": "arn:aws:s3:::nakastream-videos/*",
+    "Condition": { "Bool": { "aws:SecureTransport": "true" } }
+  }]
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> permite leer objetos (no listar el bucket: eso es <code>s3:ListBucket</code> sobre el
+        ARN del bucket, sin <code>/*</code>) sólo por HTTPS. <b>Qué recordar:</b> IAM evalúa principal, acción, recurso y
+        condiciones. Orden: <b>Deny explícito &gt; Allow explícito &gt; Deny implícito</b>.</p>
+        <ul class="clean">
+          <li><b>Usuario</b> = identidad permanente; <b>grupo</b> = permisos compartidos sin credenciales; <b>rol</b> = se asume y da credenciales <b>temporales</b>. Los servicios usan roles, siempre.</li>
+          <li>Políticas de <b>identidad</b> (qué puede hacer alguien), de <b>recurso</b> (quién puede tocar esto, con <code>Principal</code>) y de <b>confianza</b> (quién puede asumir el rol).</li>
+          <li><b>Mínimo privilegio</b> iterativo: simulador de políticas y Access Advisor. Deny explícitos como barandillas.</li>
+          <li>Equipos reales: <b>IAM Identity Center</b> (credenciales temporales, una sola baja).</li>
+        </ul>
+
+        <h3>Costes (3)</h3>
+        <ul class="clean">
+          <li>Capa gratuita en tres sabores: 12 meses, siempre gratis y pruebas puntuales.</li>
+          <li><b>Cost Explorer</b> mira atrás; <b>Budgets</b> avisa hacia delante (ACTUAL y <b>FORECASTED</b>); <b>Pricing Calculator</b> antes de crear.</li>
+          <li><b>Un Budget avisa, no apaga.</b> Las etiquetas sólo desglosan la factura tras activarlas como <em>cost allocation tags</em> (24 h, no retroactivas).</li>
+          <li>Lo que más ahorra es apagar lo que no se usa (entornos de desarrollo por la noche). Después: Savings Plans, Spot, Graviton.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📦 Bloque 2 · S3, CloudFront, Route 53 y ACM (cap. 4–6)</summary>
+      <div class="acc-body">
+
+        <h3>S3 (4)</h3>
+        <ul class="clean">
+          <li><b>Almacén de objetos</b>: bucket + clave + objeto. Las «carpetas» son prefijos del nombre; un objeto se reemplaza entero.</li>
+          <li>Nombre del bucket <b>único en el mundo</b> e inmutable. Durabilidad de 11 nueves: protege del hardware, no de ti.</li>
+          <li><b>Clases</b>: Standard, Standard-IA, Intelligent-Tiering (si no sabes el patrón), Glacier (barato de guardar, caro y lento de recuperar).</li>
+          <li><b>Permisos</b> en tres capas: Block Public Access, bucket policy e IAM. ACL desaconsejadas.</li>
+          <li><b>Versionado</b> contra errores humanos, con regla de ciclo de vida que caduque versiones antiguas. Borrar en un bucket versionado deja un <em>delete marker</em>.</li>
+          <li>Cifrado en reposo por defecto; en tránsito se exige con <code>aws:SecureTransport</code>. Limpia subidas multipart incompletas.</li>
+        </ul>
+        <div class="code-block" data-lang="AWS CLI">
+<pre><code>aws s3 mb s3://nakastream-videos-123456789012 --region us-east-1
+aws s3api put-bucket-versioning --bucket nakastream-videos-123456789012 \
+  --versioning-configuration Status=Enabled
+aws s3 sync ./web s3://nakastream-web-123456789012 --delete</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> crea el bucket, activa el versionado y sube sólo lo que cambió (<code>--delete</code>
+        borra en destino lo que ya no existe en origen).</p>
+
+        <h3>CloudFront (5)</h3>
+        <ul class="clean">
+          <li><b>CDN</b>: resuelve un problema de <b>distancia</b>, no de potencia; copias del contenido en edge locations.</li>
+          <li><b>Distribución</b> = orígenes (de dónde saca) + comportamientos (qué ruta va a qué origen y cómo se cachea, por orden).</li>
+          <li><b>Origin Access Control (OAC)</b>: CloudFront firma sus peticiones y lee un <b>bucket privado</b>. La bucket policy lleva la condición <code>AWS:SourceArn</code> con el ARN de <em>tu</em> distribución; sin ella, cualquier distribución podría leerlo.</li>
+          <li>Caché: <b>TTL largo + hash en el nombre</b> para CSS/JS/imágenes; TTL corto para el HTML. Invalidar es lento y se paga a partir de cierto volumen.</li>
+          <li>Cuanto más metas en la clave de caché (cabeceras, cookies, query), menos aciertos. <code>x-cache: Hit/Miss</code> para diagnosticar.</li>
+          <li>El modo «static website» de S3 no da HTTPS ni bucket privado: con CloudFront no hace falta.</li>
+        </ul>
+
+        <h3>Route 53 y ACM (6)</h3>
+        <ul class="clean">
+          <li>DNS: cadena de servidores con caché según el <b>TTL</b>. Baja el TTL antes de una migración.</li>
+          <li>Registros: <b>A/AAAA</b> (IP), <b>CNAME</b> (otro nombre, no válido en la raíz), <b>alias</b> de Route 53 (hacia un recurso de AWS, válido en la raíz y gratis), MX, TXT.</li>
+          <li><b>Zona alojada</b> pública (0,50 USD/mes) o privada (dentro de una VPC).</li>
+          <li><b>ACM</b>: certificados gratis con renovación automática si validas por <b>DNS</b> (no borres el CNAME <code>_…acm-validations</code>).</li>
+          <li>Certificado para CloudFront <b>en us-east-1</b>; para un ALB, en su región. <code>*.dominio.com</code> no cubre la raíz: pide ambos.</li>
+          <li>Políticas de enrutamiento: simple, <b>weighted</b>, <b>latency</b>, <b>failover</b>, <b>geolocation</b>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌐 Bloque 3 · VPC, cortafuegos, EC2 y autoescalado (cap. 7–10)</summary>
+      <div class="acc-body">
+
+        <h3>VPC (7)</h3>
+        <div class="diagram">  VPC 10.20.0.0/16 (us-east-1)
+  ┌────────── AZ a ───────────┐  ┌────────── AZ b ───────────┐
+  │ pública 10.20.0.0/24      │  │ pública 10.20.1.0/24      │ ─▶ ruta 0.0.0.0/0 → Internet Gateway
+  │   ALB · NAT Gateway       │  │   ALB                     │
+  │ privada 10.20.10.0/24     │  │ privada 10.20.11.0/24     │ ─▶ ruta 0.0.0.0/0 → NAT
+  │   app · RDS · Redis       │  │   app · RDS (standby)     │    + endpoint Gateway de S3/DynamoDB
+  └───────────────────────────┘  └───────────────────────────┘</div>
+        <ul class="clean">
+          <li><b>VPC</b> = red privada aislada. S3, CloudFront, Route 53 y DynamoDB viven <b>fuera</b>.</li>
+          <li><b>CIDR</b>: menor número = red más grande (/16 = 65.536, /24 = 256). AWS reserva 5 direcciones por subred. Evita <code>10.0.0.0/16</code> (choques al conectar redes).</li>
+          <li>Una <b>subred vive en una AZ</b>. Es <b>pública sólo si su tabla de rutas apunta a un Internet Gateway</b>; el nombre no importa.</li>
+          <li><b>NAT Gateway</b>: salir sin dejar entrar, ~32 USD/mes encendida. Antes, mira si un <b>VPC Endpoint Gateway</b> (S3, DynamoDB, gratis) resuelve el caso.</li>
+          <li>Una Elastic IP sin asociar se factura.</li>
+        </ul>
+
+        <h3>Security groups y NACLs (8)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th></th><th>Security group</th><th>NACL</th></tr></thead>
+          <tbody>
+            <tr><td><b>Nivel</b></td><td>Recurso (interfaz de red)</td><td>Subred</td></tr>
+            <tr><td><b>Reglas</b></td><td>Sólo permitir</td><td>Permitir y denegar, evaluadas por número</td></tr>
+            <tr><td><b>Estado</b></td><td><b>Con estado</b>: la respuesta vuelve sola</td><td><b>Sin estado</b>: abre también los puertos efímeros de vuelta</td></tr>
+            <tr><td><b>Por defecto</b></td><td>Entrada cerrada, salida abierta</td><td>La por defecto lo permite todo</td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="AWS CLI">
+<pre><code>aws ec2 authorize-security-group-ingress --group-id sg-db \
+  --ip-permissions 'IpProtocol=tcp,FromPort=5432,ToPort=5432,UserIdGroupPairs=[{GroupId=sg-app,Description="app a postgres"}]'</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> la base de datos acepta 5432 sólo desde lo que lleve el grupo <code>sg-app</code>.
+        <b>Referenciar grupos</b> en vez de IPs hace que la regla siga siendo correcta cuando el autoescalado crea y destruye
+        máquinas. Cadena <code>alb → app → db</code>. Nunca <code>0.0.0.0/0</code> en 22, 3389, 5432 o 3306. Diagnóstico:
+        Flow Logs y Reachability Analyzer.</p>
+
+        <h3>EC2 (9)</h3>
+        <ul class="clean">
+          <li><b>Instancia</b> = máquina virtual por segundos; parches y todo lo de dentro, tuyos.</li>
+          <li><b>AMI</b> = plantilla del disco, regional; se consulta a SSM Parameter Store, no se copia el ID.</li>
+          <li>Tipo = familia + generación + tamaño (<code>t4g.micro</code>; la <b>g</b> es Graviton, ~20 % más barato). La familia <b>t</b> usa <b>créditos de CPU</b>: si se agotan, va lentísima sin error.</li>
+          <li><b>EBS</b> vive en una AZ, se paga aunque la instancia esté parada; snapshots para respaldar; gp3 y cifrado desde el inicio.</li>
+          <li><b>User data</b> configura en el primer arranque (base del autoescalado). <b>IMDSv2</b> obligatorio (<code>HttpTokens=required</code>) contra SSRF.</li>
+          <li><b>Session Manager</b> en vez de SSH: sin puerto 22, sin claves, con IAM y auditoría. El rol de la instancia da las credenciales; nunca access keys en el user data.</li>
+          <li>Compra: On-Demand, Savings Plans/reservas, <b>Spot</b> (hasta −90 %, interrumpible: lotes tolerantes).</li>
+        </ul>
+
+        <h3>ALB y Auto Scaling (10)</h3>
+        <ul class="clean">
+          <li><b>ALB</b>: reparte HTTP entre destinos sanos de un <b>target group</b>; necesita dos subredes en AZ distintas. Listener + reglas por ruta o host.</li>
+          <li><b>Health check</b> en un <code>/salud</code> ligero que no toque la base de datos (si la BD va lenta, todos «enferman» a la vez).</li>
+          <li><b>ASG</b>: launch template + mín/deseado/máx; reemplaza instancias y escala. <code>HealthCheckType=ELB</code> detecta apps colgadas.</li>
+          <li>Políticas: <b>target tracking</b> (CPU al 50 %) por defecto; <b>scheduled</b> para picos previstos (estreno del viernes).</li>
+          <li>Grace period y warmup evitan el bucle de crear y destruir. Mínimo 2 instancias en 2 AZ. Drenaje de conexiones al retirar.</li>
+          <li>Escalar horizontal exige <b>app sin estado</b>: sesiones en Redis o DynamoDB, no sesiones pegajosas.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🗄 Bloque 4 · RDS, DynamoDB y ElastiCache (cap. 11–13)</summary>
+      <div class="acc-body">
+
+        <h3>RDS PostgreSQL (11)</h3>
+        <ul class="clean">
+          <li>RDS te quita instalación, parches, copias y replicación; te deja esquema, consultas y usuarios.</li>
+          <li><b>Multi-AZ</b> = disponibilidad: copia <b>síncrona</b> en standby que no atiende consultas y toma el relevo. <b>Réplica de lectura</b> = rendimiento: copia <b>asíncrona</b> que sí atiende lecturas. Ninguna protege de un <code>DELETE</code> erróneo: se replica.</li>
+          <li><b>Copias automáticas</b> con <b>PITR</b> a cualquier segundo de la ventana; snapshots manuales hasta que los borres. <b>Restaurar crea una instancia nueva</b>: hay que repuntar la app.</li>
+          <li>Subnet group en subredes privadas, <code>PubliclyAccessible=false</code>; para llegar desde tu portátil, túnel por Session Manager.</li>
+          <li>Cifrado y <code>deletion-protection</code> <b>al crear</b> (cifrar después = snapshot + restaurar). Configuración del motor con <b>parameter groups</b>.</li>
+          <li>Contraseña en Secrets Manager. Archivos en S3, en la BD sólo la ruta. Aurora Serverless v2 para cargas irregulares.</li>
+        </ul>
+
+        <h3>DynamoDB (12)</h3>
+        <div class="code-block" data-lang="AWS CLI">
+<pre><code>aws dynamodb query --table-name nakastream-visualizaciones \
+  --key-condition-expression "usuarioId = :u AND begins_with(momento, :mes)" \
+  --expression-attribute-values '{":u":{"S":"u-42"},":mes":{"S":"2026-09"}}' \
+  --return-consumed-capacity TOTAL</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> lee sólo las visualizaciones de un usuario en un mes gracias a la clave de partición
+        (<code>usuarioId</code>) y la de ordenación compuesta (<code>momento</code>). <b>Query</b> lee lo necesario;
+        <b>Scan</b> lee toda la tabla y lo pagas (un filtro no ahorra nada).</p>
+        <ul class="clean">
+          <li>NoSQL gestionado, sin servidores, milisegundos, pago por petición. <b>Se diseña desde las consultas</b>, no desde las entidades; la clave primaria no se cambia.</li>
+          <li>La <b>clave de partición</b> reparte físicamente: si concentra el tráfico (<code>pais</code>), hay <em>hot partitions</em>.</li>
+          <li><b>GSI</b>: consultar por otra clave, se añade después, con su propia capacidad. <b>LSI</b>: misma partición, otra ordenación, sólo al crear.</li>
+          <li><b>On-demand</b> para empezar; provisionada cuando conozcas el patrón. <b>TTL</b> borra gratis; <b>Streams</b> publica cada cambio.</li>
+          <li>Lecturas eventualmente consistentes por defecto. Fuera de la VPC: se protege con <b>IAM</b>. <code>--condition-expression</code> para escrituras seguras.</li>
+        </ul>
+
+        <h3>ElastiCache Redis (13)</h3>
+        <div class="code-block" data-lang="Node.js · portada.js">
+<pre><code>const clave = 'portada:v1';
+let portada = await redis.get(clave);                  // 1. intenta la caché
+if (!portada) {
+  portada = JSON.stringify(await consultarCatalogo()); // 2. fallo: ve a la fuente
+  await redis.set(clave, portada, { EX: 300 + Math.floor(Math.random() * 60) }); // 3. guarda con TTL + jitter
+}
+// al publicar una película: await redis.del(clave);   // invalidar = borrar</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> el patrón <b>cache-aside</b>. El <b>TTL</b> responde a «¿cuánto puede estar
+        desactualizado?»; el <b>jitter</b> evita la <b>estampida</b> (muchas claves expirando a la vez contra la BD). Al escribir,
+        se <b>borra</b> la clave. Todo lo cacheado debe poder reconstruirse; la app debe funcionar (más lenta) con la caché caída.
+        Redis vive <b>dentro de la VPC</b> (security group, TLS). Ratio de aciertos &gt; 80 %. Nunca <code>KEYS *</code>; <code>SCAN</code>.
+        Otro uso: <b>sesiones compartidas</b> entre instancias.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚡ Bloque 5 · Lambda, API Gateway y Cognito (cap. 14–16)</summary>
+      <div class="acc-body">
+
+        <h3>Lambda (14)</h3>
+        <div class="code-block" data-lang="Node.js · index.mjs">
+<pre><code>import { S3Client } from '@aws-sdk/client-s3';
+const s3 = new S3Client({});                         // fuera: una vez por entorno
+
+export const handler = async (event, context) =&gt; {
+  for (const r of event.Records) {
+    const clave = decodeURIComponent(r.s3.object.key.replace(/\+/g, ' '));
+    await generarCaratula(clave);                    // idempotente: puede llegar dos veces
+  }
+};</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> serverless = no eliges, no mantienes ni pagas servidores parados. El
+        <code>event</code> cambia según quién invoca. Lo de fuera del handler se reutiliza entre invocaciones del mismo entorno
+        (clientes, conexiones). <b>Arranque en frío</b> = <code>Init Duration</code> en la primera invocación de cada entorno.
+        La <b>memoria también asigna CPU</b>. Máximo 15 minutos.</p>
+        <ul class="clean">
+          <li>Permisos en dos direcciones: <b>rol de ejecución</b> (qué puede hacer la función) y <b>política de recursos</b> (quién puede invocarla, p. ej. S3).</li>
+          <li>Invocación <b>síncrona</b> (API), <b>asíncrona</b> (S3, SNS: reintenta) y <b>por lotes</b> (SQS). Por eso, <b>idempotencia</b>.</li>
+          <li><b>Concurrencia reservada</b> protege lo que hay detrás (RDS) y frena el gasto.</li>
+          <li>Entrada y salida en buckets distintos (o prefijos filtrados) para evitar el bucle recursivo. <code>arm64</code>, timeout realista, logs en JSON.</li>
+        </ul>
+
+        <h3>API Gateway (15)</h3>
+        <ul class="clean">
+          <li>Todo lo que no es lógica: enrutar, limitar, autenticar, transformar, versionar, observar.</li>
+          <li><b>HTTP API</b> (barata, rápida, JWT nativo; por defecto) frente a <b>REST API</b> (caché, claves de API, WAF, VTL).</li>
+          <li><b>Ruta</b> (método + camino) → <b>integración</b> (quién responde) → <b>etapa</b> (dónde se publica).</li>
+          <li>Integración <b>proxy</b>: la Lambda devuelve <code>{ statusCode, headers, body }</code> con <code>body</code> como <b>cadena</b>; si no, 502.</li>
+          <li><b>CORS</b> es una norma del navegador: se declara en la puerta (orígenes explícitos; sin <code>*</code> con credenciales).</li>
+          <li><b>Throttling</b> responde 429 antes de invocar: freno de abuso y de factura. Rutas concretas (lo no declarado da 404 gratis).</li>
+          <li>Dominio propio = certificado + mapeo a etapa + alias en Route 53. Log de acceso en JSON.</li>
+        </ul>
+
+        <h3>Cognito (16)</h3>
+        <ul class="clean">
+          <li><b>Autenticación</b> (quién eres) la resuelve Cognito; la <b>autorización</b> (qué puedes) sigue siendo tuya.</li>
+          <li><b>User Pool</b> = directorio que emite JWT. <b>Identity Pool</b> = cambia tokens por credenciales IAM (rara vez hace falta).</li>
+          <li>Tokens: <b>ID</b> (para la interfaz), <b>access</b> (para la API, ~1 h) y <b>refresh</b> (renovar; el único revocable).</li>
+          <li>Un JWT se valida <b>localmente</b> con las claves públicas (JWKS): sin llamar a Cognito. No está cifrado: nada secreto dentro.</li>
+          <li>El <b>autorizador JWT</b> valida en la puerta. En la función, filtra siempre por <code>claims.sub</code> (nunca por un id que llegue en la URL).</li>
+          <li><b>Grupos</b> viajan en el token (base del control por rol). <code>sub</code> como clave, no el correo. <code>PreventUserExistenceErrors</code> activado. SES para correos en producción.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔀 Bloque 6 · Mensajería, orquestación y contenedores (cap. 17–20)</summary>
+      <div class="acc-body">
+
+        <h3>SQS, SNS y EventBridge (17)</h3>
+        <div class="diagram">  S3 (vídeo subido) ──▶ SNS nakastream-video-subido ──┬─▶ SQS transcodificar ──▶ Lambda ─┐
+                                                       ├─▶ SQS caratula      ──▶ Lambda  ├─▶ DLQ si falla
+                                                       └─▶ SQS notificar     ──▶ Lambda ─┘   N veces
+  EventBridge: bus con reglas por contenido + tareas programadas (cron)</div>
+        <ul class="clean">
+          <li><b>SQS</b> amortigua trabajo (uno a uno, el consumidor tira); <b>SNS</b> reparte hechos (uno a muchos, empuja); <b>EventBridge</b> enruta con reglas y programa.</li>
+          <li><b>Fan-out</b>: SNS delante y <b>una cola por consumidor</b>; añadir uno no toca al publicador.</li>
+          <li>SQS entrega <b>al menos una vez</b>: duplicados normales → idempotencia. <b>FIFO</b> sólo si el orden importa.</li>
+          <li><b>Visibility timeout</b> ≈ 6 × tiempo de proceso; si es menor, el mensaje reaparece y se procesa varias veces.</li>
+          <li><b>DLQ</b> en todas las colas, con alarma en «mensajes &gt; 0». Antes de reenviar, arregla la causa.</li>
+          <li>Sondeo largo, entrega en crudo, mensajes pequeños (lo pesado en S3) y eventos en pasado y versionados.</li>
+        </ul>
+
+        <h3>Step Functions (18)</h3>
+        <ul class="clean">
+          <li><b>Coreografía</b> (eventos, cada uno reacciona) frente a <b>orquestación</b> (un director conoce el flujo). Coreografía entre dominios, orquestación dentro de un proceso.</li>
+          <li>Máquina de estados en <b>ASL</b>: Task, Choice (siempre con <code>Default</code>), Map, Parallel, Wait, Pass, Succeed, Fail.</li>
+          <li><b>Retry</b> y <b>Catch</b> declarativos por <b>nombre de error</b>; la espera no se factura.</li>
+          <li><b><code>ResultPath</code></b> conserva la entrada y añade el resultado; omitirlo la sustituye (error número uno: «videoId is undefined»).</li>
+          <li><b>Saga</b>: sin transacciones distribuidas, compensaciones en orden inverso e idempotentes.</li>
+          <li><b>Standard</b> (hasta 1 año, exactamente una vez, historial visual) frente a <b>Express</b> (volumen alto, corta duración). Nombre de ejecución = deduplicación.</li>
+        </ul>
+
+        <h3>Contenedores e imágenes en ECR (19)</h3>
+        <ul class="clean">
+          <li>Contenedor = proceso aislado que comparte el núcleo del anfitrión. <b>Imagen</b> = plantilla inmutable en capas; <b>contenedor</b> = su ejecución.</li>
+          <li>Orden del Dockerfile: lo que cambia poco arriba (dependencias), lo que cambia mucho abajo (código). <b>Multi-stage</b> deja fuera compiladores y fuentes.</li>
+          <li><b>ECR</b>: permisos IAM, escaneo de vulnerabilidades, ciclo de vida, token temporal (<code>aws ecr get-login-password</code>).</li>
+          <li><b>Etiqueta para hablar, digest para desplegar.</b> Repositorio con etiquetas inmutables; nada de <code>:latest</code>.</li>
+          <li>Sin root, <code>.dockerignore</code>, secretos fuera de la imagen (una capa no se borra). <code>exec format error</code> = arquitectura distinta (arm64/amd64).</li>
+        </ul>
+
+        <h3>ECS Fargate (20)</h3>
+        <ul class="clean">
+          <li><b>Definición de tarea</b> (receta versionada, inmutable) → <b>tarea</b> (ejecución) → <b>servicio</b> (mantiene N sanas y las registra en el ALB).</li>
+          <li>Fargate: sin máquinas. ECS sobre EC2 sale mejor con carga constante y grande; EKS aporta portabilidad a cambio de complejidad.</li>
+          <li><b>Rol de ejecución</b> (descargar imagen de ECR, escribir logs, leer secretos para inyectarlos) frente a <b>rol de tarea</b> (lo que hace tu código).</li>
+          <li>Despliegue continuo con <code>minimumHealthyPercent</code>/<code>maximumPercent</code> y <b>circuit breaker con rollback</b>.</li>
+          <li>Tres comprobaciones: healthcheck del contenedor (¿vive?), del target group (¿recibe tráfico?) y grace period (¿le doy tiempo?).</li>
+          <li>Red <code>awsvpc</code>: cada tarea con su IP y security groups. <code>execute-command</code> en vez de SSH. Atender <code>SIGTERM</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🛡 Bloque 7 · Observabilidad, seguridad, IaC y CI/CD (cap. 21–24)</summary>
+      <div class="acc-body">
+
+        <h3>CloudWatch, X-Ray y CloudTrail (21)</h3>
+        <ul class="clean">
+          <li>Monitorizar responde preguntas previstas; <b>observar</b> permite responder preguntas nuevas sin desplegar.</li>
+          <li>Tres pilares: <b>métricas</b> (cuánto), <b>logs</b> (qué pasó), <b>trazas</b> (dónde se fue el tiempo, X-Ray). <b>CloudTrail</b>: quién hizo qué en la API de AWS.</li>
+          <li><b>La media miente</b>: alarmas sobre p95/p99. Cuatro señales de oro: latencia, tráfico, errores y saturación.</li>
+          <li>Logs en JSON en una línea con <code>requestId</code> → consultables con <b>Logs Insights</b>. Retención desde el día uno.</li>
+          <li>Alarmas sobre <b>síntomas accionables</b>, con varios periodos de evaluación, <code>--ok-actions</code>, alarma de «sin tráfico» y sobre la DLQ.</li>
+          <li>Cardinalidad: las dimensiones de métricas se facturan; los identificadores van a los logs. SLO y presupuesto de error.</li>
+        </ul>
+        <div class="code-block" data-lang="Logs Insights">
+<pre><code>fields @timestamp, ruta, duracionMs
+| filter servicio = "nakastream-api"
+| stats pct(duracionMs, 95) as p95, count(*) as peticiones by ruta
+| sort p95 desc</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> latencia real (p95) por ruta a partir de logs JSON. Sólo funciona si los campos se
+        registran como JSON, no como texto libre.</p>
+
+        <h3>Secrets Manager, KMS, WAF y GuardDuty (22)</h3>
+        <ul class="clean">
+          <li><b>Defensa en profundidad</b>: capas independientes, cada una asumiendo que la anterior falla.</li>
+          <li><b>Secreto</b> = lo que habría que cambiar si se filtrara. <b>Secrets Manager</b> lo guarda y lo <b>rota</b> (dos versiones vivas). ECS lo inyecta como variable con el rol de ejecución (<code>secrets</code> en la definición de tarea; con <code>:clave::</code> para un campo del JSON).</li>
+          <li><b>KMS</b> y el <b>cifrado de sobre</b>: los datos con una clave de datos local, esa clave cifrada con la maestra, que nunca sale de KMS. Una clave propia es una segunda cerradura (sin <code>kms:Decrypt</code> no se lee). <b>Bucket key</b> abarata hasta un 99 %.</li>
+          <li><b>WAF</b>: reglas gestionadas y límites por IP (más bajos en el login); primero en modo <b>Count</b>. No arregla el código.</li>
+          <li><b>GuardDuty</b> detecta (sin agentes) lo que la prevención no evitó; hallazgos graves → EventBridge → alerta. Security Hub agrega; Access Analyzer encuentra accesos externos.</li>
+        </ul>
+
+        <h3>CloudFormation y CDK (23)</h3>
+        <div class="code-block" data-lang="TypeScript · lib/nakastream-stack.ts">
+<pre><code>const vpc = new ec2.Vpc(this, 'Red', { maxAzs: 2, natGateways: 1 });
+const db = new rds.DatabaseInstance(this, 'Catalogo', {
+  engine: rds.DatabaseInstanceEngine.postgres({ version: rds.PostgresEngineVersion.VER_16 }),
+  vpc, vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+  credentials: rds.Credentials.fromGeneratedSecret('naka'),   // secreto en Secrets Manager
+  removalPolicy: cdk.RemovalPolicy.SNAPSHOT,                   // no perder datos al borrar
+});
+servicio.connections.allowTo(db, ec2.Port.tcp(5432));        // ajusta los dos security groups</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> IaC <b>declarativa</b>: describes el estado deseado y aplicar dos veces no cambia
+        nada. <b>Pila</b> = recursos que se crean en orden, se deshacen si algo falla y se borran juntos. <b>Conjunto de
+        cambios</b> antes de aplicar: mira la columna <b>Replacement</b> (renombrar una RDS la reemplaza, vacía).
+        <code>DeletionPolicy</code> <b>y</b> <code>UpdateReplacePolicy</code> en lo que tenga datos. <b>Deriva</b> = cambios a
+        mano. El CDK genera CloudFormation: <code>cdk synth</code> y <code>cdk diff</code> siempre; <code>cdk bootstrap</code>
+        una vez por cuenta y región. Pilas separadas por ciclo de vida (red / aplicación).</p>
+
+        <h3>CI/CD con OIDC y cómo borrarlo todo (24)</h3>
+        <ul class="clean">
+          <li><b>CI</b> verifica cada cambio; <b>entrega continua</b> lo deja listo para un botón; <b>despliegue continuo</b> lo lleva solo. Desplegar a menudo es más seguro (cambios pequeños).</li>
+          <li><b>OIDC</b>: GitHub firma un token y AWS da credenciales temporales de un rol. Sin secretos guardados. La condición <b><code>sub</code></b> (<code>repo:org/repo:environment:prod</code>) es toda la seguridad.</li>
+          <li>Puertas de calidad de la más barata a la más cara (formato, secretos, tests, vulnerabilidades). Imagen etiquetada con el commit y desplegada por digest.</li>
+          <li><b>Prueba de humo</b> tras desplegar, que comprueba datos; guarda la revisión anterior para volver atrás. Migraciones de BD compatibles hacia atrás.</li>
+          <li><b>Borrar</b>: NAT, ALB, IP elásticas, snapshots, logs, zonas DNS, claves KMS (espera de 7–30 días) y buckets con contenido sobreviven a <code>cdk destroy</code>. La verificación es la <b>factura dos días después</b>.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista técnica de AWS"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Usuario vs rol|SG vs NACL|Multi-AZ vs réplica|SQS vs SNS|Query vs Scan|Arquitectura|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> de AWS: las parejas de servicios y conceptos
+      que parecen iguales, los patrones de arquitectura que aplicaste en NakaStream, los errores que todo el mundo se
+      encuentra y las preguntas típicas de una entrevista técnica o de diseño, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta (en AWS casi siempre se
+      responde con «depende de…» seguido de criterios) y sólo después despliega la respuesta. El último acordeón es la
+      versión de cinco minutos.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Cuenta, identidad y red</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Región / AZ / edge location</b></td><td>Zona geográfica independiente / centros con luz y red propias dentro de la región / punto de caché de CloudFront.</td><td>Región por ley y latencia; 2 AZ para disponibilidad.</td></tr>
+            <tr><td><b>Root / usuario IAM / rol</b></td><td>Dueño absoluto / identidad permanente con claves / identidad que se asume con credenciales temporales.</td><td>Root guardado; personas con Identity Center; servicios con roles.</td></tr>
+            <tr><td><b>Política de identidad / de recurso / de confianza</b></td><td>Qué puede hacer alguien / quién puede tocar este recurso / quién puede asumir el rol.</td><td>Acceso entre cuentas: política de recurso o rol.</td></tr>
+            <tr><td><b>Deny implícito / explícito</b></td><td>Lo no permitido / prohibición que nada levanta.</td><td>Explícito como barandilla.</td></tr>
+            <tr><td><b>Cost Explorer / Budgets / Pricing Calculator</b></td><td>Pasado / aviso futuro / antes de crear.</td><td>Budget con FORECASTED el primer día.</td></tr>
+            <tr><td><b>Subred pública / privada</b></td><td>Su tabla de rutas apunta a un Internet Gateway / no.</td><td>Públicas: ALB y NAT. Privadas: app y datos.</td></tr>
+            <tr><td><b>Internet Gateway / NAT Gateway</b></td><td>Entrada y salida para recursos con IP pública / sólo salida para privados (de pago).</td><td>NAT sólo si un endpoint no basta.</td></tr>
+            <tr><td><b>NAT Gateway / VPC Endpoint Gateway</b></td><td>Salida a todo internet, ~32 USD/mes / acceso privado a S3 o DynamoDB, gratis.</td><td>Endpoint para S3/DynamoDB.</td></tr>
+            <tr><td><b>Security group / NACL</b></td><td>Instancia, con estado, sólo permitir / subred, sin estado, permitir y denegar.</td><td>SG siempre; NACL para denegar una IP.</td></tr>
+            <tr><td><b>CNAME / alias</b></td><td>Otro nombre, no en la raíz, se cobra la consulta / hacia recurso AWS, válido en la raíz, gratis.</td><td>Alias hacia CloudFront y ALB.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Cómputo, almacenamiento y datos</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>EC2 / Fargate / Lambda</b></td><td>Máquina que administras / contenedores sin máquinas / funciones por evento, máx. 15 min.</td><td>Lambda para eventos cortos; Fargate para servicios; EC2 para control total.</td></tr>
+            <tr><td><b>On-Demand / Savings Plans / Spot</b></td><td>Sin compromiso / descuento por compromiso / hasta −90 %, interrumpible.</td><td>Spot para lotes tolerantes (transcodificar).</td></tr>
+            <tr><td><b>EBS / S3</b></td><td>Disco de bloque de una instancia, en una AZ / almacén de objetos regional por HTTP.</td><td>EBS para el sistema; S3 para archivos y vídeos.</td></tr>
+            <tr><td><b>Parar / terminar una instancia</b></td><td>Conserva EBS (y lo sigues pagando), pierde la IP pública / borra la instancia y, por defecto, el disco raíz.</td><td>—</td></tr>
+            <tr><td><b>ALB / NLB</b></td><td>Capa 7 HTTP con reglas por ruta / capa 4 TCP de muy baja latencia.</td><td>ALB para webs y APIs.</td></tr>
+            <tr><td><b>Escalado vertical / horizontal</b></td><td>Máquina más grande / más máquinas.</td><td>Horizontal exige app sin estado.</td></tr>
+            <tr><td><b>Multi-AZ / réplica de lectura</b></td><td>Standby síncrono que no atiende (disponibilidad) / copia asíncrona que atiende lecturas (rendimiento).</td><td>Multi-AZ en producción; réplica si las lecturas saturan.</td></tr>
+            <tr><td><b>Backup automático / snapshot manual</b></td><td>PITR dentro de la retención / dura hasta que lo borras.</td><td>Snapshot antes de cambios grandes.</td></tr>
+            <tr><td><b>RDS / DynamoDB</b></td><td>Relacional con SQL y joins / clave-valor a cualquier escala, diseñado por consultas.</td><td>Catálogo relacional / historial masivo por usuario.</td></tr>
+            <tr><td><b>Query / Scan</b></td><td>Lee por clave / lee la tabla entera.</td><td>Scan nunca en el camino habitual.</td></tr>
+            <tr><td><b>GSI / LSI</b></td><td>Otra clave de partición, se añade después / misma partición y otra ordenación, sólo al crear.</td><td>GSI casi siempre.</td></tr>
+            <tr><td><b>On-demand / provisionada</b></td><td>Pago por petición / capacidad reservada.</td><td>On-demand hasta conocer el patrón.</td></tr>
+            <tr><td><b>Redis / Memcached</b></td><td>Estructuras, réplicas, persistencia / caché simple.</td><td>Redis por defecto.</td></tr>
+            <tr><td><b>S3 Standard / IA / Intelligent-Tiering / Glacier</b></td><td>Acceso frecuente / infrecuente con cargo por recuperar / se mueve solo / archivo.</td><td>Intelligent-Tiering si no conoces el patrón.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Integración, contenedores y operación</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>SQS / SNS / EventBridge</b></td><td>Cola (uno a uno, el consumidor tira) / tema (uno a muchos, empuja) / bus con reglas por contenido y cron.</td><td>Amortiguar / repartir / enrutar entre dominios.</td></tr>
+            <tr><td><b>Cola estándar / FIFO</b></td><td>Al menos una vez, sin orden estricto / orden y deduplicación, menos rendimiento.</td><td>FIFO sólo si el orden importa.</td></tr>
+            <tr><td><b>Coreografía / orquestación</b></td><td>Cada uno reacciona a eventos / un director conoce el flujo.</td><td>Eventos entre dominios; Step Functions dentro de un proceso.</td></tr>
+            <tr><td><b>Step Functions Standard / Express</b></td><td>Largo, exactamente una vez, historial / alto volumen y corto.</td><td>—</td></tr>
+            <tr><td><b>HTTP API / REST API</b></td><td>Barata, rápida, JWT / caché, claves de API, WAF, VTL.</td><td>HTTP API por defecto.</td></tr>
+            <tr><td><b>User Pool / Identity Pool</b></td><td>Usuarios y JWT / tokens a credenciales IAM.</td><td>User Pool casi siempre.</td></tr>
+            <tr><td><b>ID / access / refresh token</b></td><td>Para la interfaz / para la API / para renovar (revocable).</td><td>—</td></tr>
+            <tr><td><b>Imagen / contenedor</b></td><td>Plantilla inmutable / su ejecución.</td><td>—</td></tr>
+            <tr><td><b>Etiqueta / digest</b></td><td>Nombre que puede moverse / hash inmutable.</td><td>Etiqueta para hablar, digest para desplegar.</td></tr>
+            <tr><td><b>Rol de ejecución / rol de tarea (ECS)</b></td><td>Lo que necesita ECS para arrancar el contenedor / lo que hace tu código.</td><td>Error al leer secretos al arrancar → rol de ejecución.</td></tr>
+            <tr><td><b>CloudWatch / X-Ray / CloudTrail</b></td><td>Métricas y logs / trazas / auditoría de llamadas a la API de AWS.</td><td>«¿Quién borró la tabla?» → CloudTrail.</td></tr>
+            <tr><td><b>Secrets Manager / Parameter Store</b></td><td>Secretos con rotación / configuración (también secretos simples).</td><td>Credenciales de BD en Secrets Manager.</td></tr>
+            <tr><td><b>Clave gestionada por AWS / clave propia de KMS</b></td><td>Gratis, sin control / política propia, rotación, segunda cerradura.</td><td>Propia para datos sensibles.</td></tr>
+            <tr><td><b>WAF / GuardDuty</b></td><td>Previene ataques web conocidos / detecta comportamiento anómalo.</td><td>Los dos: prevenir y detectar.</td></tr>
+            <tr><td><b>CloudFormation / CDK / Terraform</b></td><td>YAML/JSON nativo / código que genera CloudFormation / multinube con estado propio.</td><td>Cualquiera menos «a mano».</td></tr>
+            <tr><td><b>CI / entrega continua / despliegue continuo</b></td><td>Verificar cada cambio / listo para un botón / a producción solo.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones de arquitectura de NakaStream</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Origen privado + CDN</b></td><td>Servir contenido estático rápido sin exponer S3.</td><td>S3 + CloudFront + OAC (5)</td></tr>
+            <tr><td><b>Red en tres capas y 2 AZ</b></td><td>Exponer sólo lo necesario y sobrevivir a una zona.</td><td>VPC pública/privada (7)</td></tr>
+            <tr><td><b>Security groups encadenados</b></td><td>Reglas que se rompen al cambiar IPs.</td><td><code>alb → app → db</code> (8)</td></tr>
+            <tr><td><b>Instancias desechables + ASG</b></td><td>Una máquina es un punto único de fallo.</td><td>Launch template + ALB (10)</td></tr>
+            <tr><td><b>Cache-aside</b></td><td>Lecturas repetidas que saturan la BD.</td><td>Portada en Redis (13)</td></tr>
+            <tr><td><b>Procesamiento por eventos</b></td><td>Trabajo pesado en la petición del usuario.</td><td>S3 → Lambda (14)</td></tr>
+            <tr><td><b>API Gateway delante</b></td><td>Autenticación, límites y CORS en cada función.</td><td>HTTP API + autorizador JWT (15–16)</td></tr>
+            <tr><td><b>Fan-out SNS → SQS</b></td><td>Añadir consumidores sin tocar al productor.</td><td>Ingesta de vídeo (17)</td></tr>
+            <tr><td><b>DLQ</b></td><td>Un mensaje venenoso bloquea o se pierde.</td><td>Todas las colas (17)</td></tr>
+            <tr><td><b>Orquestación con Retry/Catch + Saga</b></td><td>Flujos largos con fallos parciales.</td><td>Step Functions (18)</td></tr>
+            <tr><td><b>Despliegue sin corte + circuit breaker</b></td><td>Despliegues que tumban el servicio.</td><td>ECS rolling (20)</td></tr>
+            <tr><td><b>Defensa en profundidad</b></td><td>Una sola capa de seguridad que falla.</td><td>WAF, SG, IAM, KMS, GuardDuty (22)</td></tr>
+            <tr><td><b>Infraestructura como código</b></td><td>Entornos irrepetibles y cambios a mano.</td><td>CDK (23)</td></tr>
+            <tr><td><b>Credenciales federadas (OIDC)</b></td><td>Claves de larga duración en la CI.</td><td>GitHub Actions (24)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>Roles, nunca claves</b> para servicios y CI; MFA para personas; root bajo llave.</li>
+          <li><b>Mínimo privilegio</b> y Deny explícitos como barandillas.</li>
+          <li><b>Dos AZ</b> como mínimo para todo lo que deba seguir vivo.</li>
+          <li><b>Datos en subredes privadas</b>, cifrados desde la creación y con protección contra borrado.</li>
+          <li><b>Etiqueta al crear</b>, presupuesto con alertas y los «tres caros» vigilados.</li>
+          <li><b>Idempotencia</b> en todo lo dirigido por eventos.</li>
+          <li><b>DLQ y alarmas</b> sobre síntomas, con percentiles.</li>
+          <li><b>Secretos en Secrets Manager</b>; nada en código, imágenes ni variables en claro.</li>
+          <li><b>Todo como código</b>, revisado en pull request, con conjunto de cambios antes de aplicar.</li>
+          <li><b>Prueba los fallos a propósito</b>: restauraciones, rollbacks, caídas de AZ.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td>«Mi recurso ha desaparecido»</td><td>Estás en otra región (Consola o perfil de la CLI).</td></tr>
+            <tr><td><code>Unable to locate credentials</code></td><td>Falta <code>--profile</code>/<code>AWS_PROFILE</code>, o la instancia no tiene rol.</td></tr>
+            <tr><td><code>AccessDenied</code> con el Allow puesto</td><td>Hay un Deny explícito, el ARN no coincide (bucket frente a <code>bucket/*</code>) o falta permiso en la política de recurso o de la clave KMS.</td></tr>
+            <tr><td><code>not authorized to perform: sts:AssumeRole</code></td><td>La política de confianza del rol no incluye a quien lo asume.</td></tr>
+            <tr><td><code>BucketAlreadyExists</code></td><td>El nombre es global. Añade el número de cuenta o un sufijo.</td></tr>
+            <tr><td>AccessDenied en XML desde CloudFront</td><td>Falta OAC, la bucket policy no tiene el <code>SourceArn</code> correcto o no hay <em>default root object</em>.</td></tr>
+            <tr><td>El certificado no aparece en CloudFront</td><td>Se emitió fuera de us-east-1.</td></tr>
+            <tr><td>Instancia de subred «pública» sin internet</td><td>La tabla de rutas no apunta al Internet Gateway o no tiene IP pública.</td></tr>
+            <tr><td>Factura «EC2-Other» sin instancias</td><td>NAT Gateway, IP elásticas sin asociar, volúmenes EBS o snapshots.</td></tr>
+            <tr><td>Destinos siempre <em>unhealthy</em></td><td>Security group del destino no admite al del ALB, path del health check incorrecto o app aún arrancando (grace period).</td></tr>
+            <tr><td>La conexión a RDS se queda colgada</td><td>Security group o ruta. Comprueba en orden: SG de la BD, NACL, rutas, DNS (Reachability Analyzer).</td></tr>
+            <tr><td><code>ProvisionedThroughputExceededException</code></td><td>Partición caliente o capacidad baja. Revisa la clave de partición; on-demand.</td></tr>
+            <tr><td><code>Task timed out after 3.00 seconds</code></td><td>Timeout por defecto de Lambda, o la función espera a algo inalcanzable (sin NAT/endpoint en VPC).</td></tr>
+            <tr><td><code>502</code> en API Gateway con la Lambda «correcta»</td><td>La respuesta no tiene el formato proxy (<code>body</code> no es cadena, falta <code>statusCode</code>).</td></tr>
+            <tr><td>«Blocked by CORS policy» y curl funciona</td><td>CORS no declarado en la puerta, o <code>*</code> con credenciales.</td></tr>
+            <tr><td>Mensajes procesados dos o tres veces</td><td>Visibility timeout menor que el tiempo de proceso; además, falta idempotencia.</td></tr>
+            <tr><td>«videoId is undefined» en Step Functions</td><td>Un paso sin <code>ResultPath</code> sustituyó la entrada.</td></tr>
+            <tr><td><code>exec format error</code></td><td>Imagen construida para otra arquitectura (arm64 frente a amd64).</td></tr>
+            <tr><td><code>ResourceInitializationError: unable to pull secrets</code></td><td>Permisos en el rol de tarea en lugar del rol de <b>ejecución</b>, o sin ruta a Secrets Manager.</td></tr>
+            <tr><td>Un despliegue rutinario vació la base de datos</td><td>Cambio que fuerza reemplazo sin <code>UpdateReplacePolicy</code>. Lee el conjunto de cambios.</td></tr>
+            <tr><td><code>Not authorized to perform sts:AssumeRoleWithWebIdentity</code></td><td>La condición <code>sub</code>/<code>aud</code> del rol OIDC no coincide con el repositorio o entorno.</td></tr>
+            <tr><td>Sigue llegando factura tras borrarlo todo</td><td>Recursos fuera de la pila: snapshots, logs, zonas DNS, IP elásticas, buckets retenidos, claves KMS.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos, IAM y red</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Explica el modelo de responsabilidad compartida con un ejemplo.</p>
+            <div class="q-ans">AWS protege la infraestructura (centros de datos, hardware, hipervisor); tú, lo que pones encima. En EC2 parchear el sistema operativo es tuyo; en RDS los parches del motor los aplica AWS pero los usuarios y el acceso son tuyos; en S3 la durabilidad es de AWS y que el bucket no sea público, tuyo. Cuanto más gestionado el servicio, más se desplaza la línea.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué una Lambda no debe usar access keys de un usuario IAM?</p>
+            <div class="q-ans">Porque son credenciales permanentes que hay que guardar, rotar y que pueden filtrarse en variables de entorno o logs. Un rol de ejecución da credenciales temporales que AWS rota solas, sin que existan en ningún sitio. Lo mismo para EC2, ECS y la CI (OIDC).</div></div>
+          <div class="q"><p class="q-text">3. Un usuario tiene <code>AdministratorAccess</code> y una política con un Deny sobre IAM. ¿Puede crear usuarios?</p>
+            <div class="q-ans">No. En la evaluación, un Deny explícito gana siempre a cualquier Allow, venga de donde venga. Por eso los Deny explícitos sirven de barandillas que nadie levanta por descuido añadiendo permisos.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué hace pública a una subred?</p>
+            <div class="q-ans">Únicamente que su tabla de rutas tenga una ruta hacia un Internet Gateway. El nombre no influye. Además, para que una instancia sea alcanzable necesita IP pública y que el security group y la NACL lo permitan.</div></div>
+          <div class="q"><p class="q-text">5. Diferencia entre security group y NACL. ¿Cuál usarías para bloquear una IP atacante?</p>
+            <div class="q-ans">El security group va en el recurso, tiene estado y sólo permite; la NACL va en la subred, no tiene estado y permite y deniega por orden. Para bloquear una IP concreta hace falta denegar, así que NACL (o mejor, WAF si el ataque es HTTP). Un security group no puede denegar.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué referenciar security groups en vez de rangos de IP?</p>
+            <div class="q-ans">Porque con autoescalado las IPs cambian constantemente. «La base de datos acepta 5432 desde el grupo de la app» sigue siendo correcto aunque se creen y destruyan cien instancias, y deja de admitir cualquier cosa que no lleve ese grupo.</div></div>
+          <div class="q"><p class="q-text">7. Un servidor privado debe leer de S3 y descargar parches. ¿Qué pones?</p>
+            <div class="q-ans">Un VPC Endpoint Gateway para S3 (gratis, tráfico privado) y, para los parches de internet, una NAT Gateway (~32 USD/mes más datos) en subred pública. Si sólo necesitara S3 y DynamoDB, los endpoints bastarían y te ahorras la NAT.</div></div>
+          <div class="q"><p class="q-text">8. Llega una factura inesperada de 90 USD. ¿Qué haces?</p>
+            <div class="q-ans">Cost Explorer agrupado por servicio y región para localizarlo (los habituales: NAT, ALB, RDS, IP elásticas, transferencia). Lo apago si sobra. Después implanto prevención: etiquetas al crear activadas como cost allocation tags, presupuesto con alertas ACTUAL y FORECASTED, y revisión semanal.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Almacenamiento, cómputo y datos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Cómo servirías una web estática y vídeos de forma segura y rápida?</p>
+            <div class="q-ans">Bucket S3 privado con Block Public Access, CloudFront delante con Origin Access Control y una bucket policy que sólo permita a esa distribución (condición <code>SourceArn</code>), HTTPS con un certificado de ACM en us-east-1 y un alias en Route 53. Estáticos con hash en el nombre y TTL largo; HTML con TTL corto.</div></div>
+          <div class="q"><p class="q-text">2. Alguien sobrescribió un vídeo hace dos días. ¿Puedes recuperarlo?</p>
+            <div class="q-ans">Sí, si el bucket tenía versionado activado y la regla de ciclo de vida no ha caducado aún esa versión: se restaura la versión anterior. Sin versionado, no: la durabilidad de S3 protege del hardware, no de los errores humanos.</div></div>
+          <div class="q"><p class="q-text">3. ¿Cómo diseñas una aplicación en EC2 que aguante la caída de una zona y un pico de tráfico?</p>
+            <div class="q-ans">ALB en subredes públicas de dos AZ; Auto Scaling Group en subredes privadas de esas dos AZ, mínimo 2, con launch template (AMI preparada o user data), <code>HealthCheckType=ELB</code> y target tracking. La aplicación sin estado (sesiones en Redis o DynamoDB) y la base de datos Multi-AZ. Para picos previstos, escalado programado.</div></div>
+          <div class="q"><p class="q-text">4. «Tenemos Multi-AZ, así que si se corrompen los datos tiramos de la copia». ¿Qué corriges?</p>
+            <div class="q-ans">Multi-AZ replica de forma síncrona todo, incluido el error: es disponibilidad, no copia de seguridad. Para recuperar datos están las copias automáticas con restauración a un instante (PITR) o los snapshots, que crean una instancia nueva a la que hay que apuntar la aplicación.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué el catálogo en RDS y el historial de visualizaciones en DynamoDB?</p>
+            <div class="q-ans">El catálogo es relacional, con joins y consultas variadas: SQL. El historial son millones de eventos que siempre se consultan por usuario y fecha, crecen sin límite y caducan: encaja en DynamoDB con partición por usuario, ordenación por momento y TTL, a escala y sin administrar.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué es una partición caliente en DynamoDB?</p>
+            <div class="q-ans">Una clave de partición que concentra gran parte del tráfico (por ejemplo <code>pais</code>, con casi todo en «ES»). DynamoDB reparte la capacidad por particiones, así que esa se satura y aparecen errores de capacidad aunque la tabla en conjunto vaya sobrada. Se evita con claves de alta cardinalidad.</div></div>
+          <div class="q"><p class="q-text">7. Explica cache-aside y la estampida de caché.</p>
+            <div class="q-ans">Cache-aside: leer de la caché; si falla, ir a la fuente y guardar con TTL; al escribir, borrar la clave. Estampida: muchas claves populares expiran a la vez y todas las peticiones van a la base de datos simultáneamente, justo cuando la caché la estaba protegiendo. Se evita con jitter en el TTL, cerrojos o refresco anticipado.</div></div>
+          <div class="q"><p class="q-text">8. ¿Qué instancia usarías para transcodificar 500 vídeos cada noche?</p>
+            <div class="q-ans">Spot: hasta un 90 % más barata, y el trabajo es por lotes y tolerante a interrupciones si se diseña para reanudarse (cola de trabajos). On-Demand sólo si hubiera un plazo estricto que no admite reintentos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Serverless e integración</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es un arranque en frío y cómo lo mitigas?</p>
+            <div class="q-ans">La primera invocación de cada entorno de ejecución debe crearlo y cargar el código (se ve en <code>Init Duration</code>). Se mitiga con paquetes pequeños, inicialización fuera del handler reutilizable, más memoria (que también da CPU) y, si es crítico, concurrencia aprovisionada.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué una Lambda dirigida por eventos debe ser idempotente?</p>
+            <div class="q-ans">Porque las invocaciones asíncronas y SQS reintentan y entregan al menos una vez: el mismo evento puede llegar dos veces. Si procesarlo dos veces duplica un cobro o un correo, el sistema está roto. Se resuelve con claves de deduplicación, escrituras condicionales o comprobando si ya se hizo.</div></div>
+          <div class="q"><p class="q-text">3. 2.000 vídeos de golpe y la web cae porque la Lambda satura RDS. ¿Qué pasó y cómo lo evitas?</p>
+            <div class="q-ans">Lambda escaló a cientos de ejecuciones concurrentes, cada una con su conexión, y agotó las conexiones de la base de datos. Se limita con concurrencia reservada, se mete una cola SQS para amortiguar el ritmo y, si hace falta, RDS Proxy para reutilizar conexiones.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué una cola SQS entre SNS y cada Lambda?</p>
+            <div class="q-ans">La cola amortigua (el consumidor procesa a su ritmo), conserva los mensajes si el consumidor falla, permite reintentos controlados y una DLQ por consumidor, y aísla a cada consumidor de los demás. SNS directo a Lambda pierde ese colchón.</div></div>
+          <div class="q"><p class="q-text">5. Cada correo llega tres veces. El consumidor tarda 45 s. ¿Qué ocurre?</p>
+            <div class="q-ans">El visibility timeout (30 s por defecto) expira antes de que el consumidor termine y borre el mensaje, así que vuelve a ser visible y otro consumidor lo procesa. Se sube a unas seis veces el tiempo de proceso y se hace idempotente el envío.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cuándo Step Functions y cuándo colas?</p>
+            <div class="q-ans">Step Functions cuando hay un proceso con pasos ordenados, decisiones, reintentos distintos por error, compensaciones y necesidad de ver el estado de cada ejecución. Colas y eventos cuando son reacciones independientes entre dominios que no necesitan un director.</div></div>
+          <div class="q"><p class="q-text">7. <code>GET /historial/{usuarioId}</code> está protegido con JWT. ¿Qué problema tiene?</p>
+            <div class="q-ans">Autentica pero no autoriza: cualquier usuario con un token válido puede pedir el historial de otro cambiando el id de la URL. La función debe usar el <code>sub</code> del token (<code>/historial/me</code>) o comprobar que coincide.</div></div>
+          <div class="q"><p class="q-text">8. Eliminas a un empleado de Cognito y diez minutos después sigue accediendo. ¿Es un fallo?</p>
+            <div class="q-ans">Es el comportamiento esperado: el access token es un JWT que se valida localmente y vale hasta que caduca (1 h). Se revoca el refresh token y se cierran sus sesiones (global sign-out); para bloqueos inmediatos hace falta una comprobación adicional en la API o tokens de vida más corta.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Contenedores, operación y entrega</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué desplegar por digest y no con <code>:latest</code>?</p>
+            <div class="q-ans">Una etiqueta puede moverse: <code>:latest</code> hoy y mañana son imágenes distintas, así que un reinicio o un escalado puede traer otra versión y el despliegue no es reproducible ni se puede volver atrás con certeza. El digest identifica exactamente una imagen.</div></div>
+          <div class="q"><p class="q-text">2. Rol de ejecución y rol de tarea en ECS: ¿para qué es cada uno?</p>
+            <div class="q-ans">El de ejecución lo usa ECS para poner en pie el contenedor: descargar la imagen de ECR, enviar logs a CloudWatch y leer los secretos que inyecta. El de tarea es la identidad de tu código en ejecución: leer S3, escribir en DynamoDB. Separarlos aplica mínimo privilegio.</div></div>
+          <div class="q"><p class="q-text">3. La latencia media es 120 ms y soporte recibe quejas de lentitud. ¿Qué pasa?</p>
+            <div class="q-ans">La media esconde la cola: si el 5 % de peticiones tarda 3 s, la media sigue siendo baja. Hay que mirar p95 y p99, por ruta, con Logs Insights o métricas de percentil, y poner las alarmas sobre percentiles.</div></div>
+          <div class="q"><p class="q-text">4. ¿Alarmarías cuando la CPU de ECS supere el 80 %?</p>
+            <div class="q-ans">No como alarma que despierte a alguien: la CPU alta es una causa, no un síntoma, y el autoescalado ya la gestiona. Las alarmas van sobre lo que nota el usuario (latencia p99, tasa de errores, sin tráfico) y deben ser accionables. La CPU, en el panel.</div></div>
+          <div class="q"><p class="q-text">5. Alguien borró una tabla de producción el sábado. ¿Cómo sabes quién?</p>
+            <div class="q-ans">CloudTrail registra cada llamada a la API de AWS con identidad, IP y hora: busco el evento <code>DeleteTable</code>. Para que sea fiable, el trail debe existir de antemano, con validación de archivos y en un bucket que la cuenta no pueda borrar. Y la prevención: protección contra borrado y permisos acotados.</div></div>
+          <div class="q"><p class="q-text">6. La contraseña de producción lleva meses en un <code>.env</code> del repositorio. ¿Qué haces y en qué orden?</p>
+            <div class="q-ans">Primero rotarla (la filtrada deja de valer), después revisar en CloudTrail y los logs de la BD si se usó, moverla a Secrets Manager con rotación, quitarla del repositorio (y del historial si procede) y añadir un escáner de secretos en la CI para que no se repita.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué es la deriva en IaC y por qué importa?</p>
+            <div class="q-ans">Son cambios hechos a mano fuera de la plantilla. El código deja de describir la realidad y el siguiente despliegue puede deshacer ese cambio o fallar. Se detecta con la detección de deriva y se resuelve llevando el cambio al código el mismo día.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cómo despliega GitHub Actions en AWS sin guardar credenciales?</p>
+            <div class="q-ans">Con OIDC: GitHub emite un token firmado para esa ejecución, AWS lo valida contra el proveedor de identidad configurado y entrega credenciales temporales de un rol cuya política de confianza exige un <code>aud</code> y un <code>sub</code> concretos (repositorio y entorno). Sin la condición <code>sub</code>, cualquier repositorio podría asumirlo.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Consola, CLI e IaC hablan con la misma API; root con MFA y sin claves; perfiles con nombre.</li>
+          <li><b>1</b> · Región por ley y latencia; 2 AZ; responsabilidad compartida; etiquetas al crear.</li>
+          <li><b>2</b> · IAM: Deny explícito gana; roles para servicios; mínimo privilegio.</li>
+          <li><b>3</b> · Budgets avisan, no apagan; FORECASTED; apagar lo que no se usa.</li>
+          <li><b>4</b> · S3: objetos, nombre global, versionado + ciclo de vida, bucket cerrado.</li>
+          <li><b>5</b> · CloudFront + OAC + <code>SourceArn</code>; hash en estáticos.</li>
+          <li><b>6</b> · Alias en la raíz; certificado de CloudFront en us-east-1; validación DNS.</li>
+          <li><b>7</b> · VPC: pública = ruta al IGW; NAT de pago; endpoints gratis.</li>
+          <li><b>8</b> · SG con estado y por referencia; NACL sin estado.</li>
+          <li><b>9</b> · EC2: AMI por SSM, IMDSv2, Session Manager, créditos de la familia t.</li>
+          <li><b>10</b> · ALB + ASG en 2 AZ; health check ligero; app sin estado.</li>
+          <li><b>11</b> · RDS: Multi-AZ ≠ réplica ≠ backup; privado y cifrado desde el inicio.</li>
+          <li><b>12</b> · DynamoDB: diseña por consultas; Query sí, Scan no; TTL.</li>
+          <li><b>13</b> · Redis cache-aside, TTL con jitter, invalidar borrando.</li>
+          <li><b>14</b> · Lambda: handler, arranque en frío, idempotencia, concurrencia reservada.</li>
+          <li><b>15</b> · HTTP API, proxy con <code>body</code> cadena, CORS en la puerta, throttling.</li>
+          <li><b>16</b> · Cognito autentica; tú autorizas por <code>sub</code>; JWT no cifrado.</li>
+          <li><b>17</b> · SNS → SQS fan-out, visibility timeout, DLQ.</li>
+          <li><b>18</b> · Step Functions: Retry/Catch, <code>ResultPath</code>, Saga.</li>
+          <li><b>19</b> · Imagen en capas, multi-stage, ECR inmutable, digest.</li>
+          <li><b>20</b> · ECS: tarea/servicio, dos roles, rolling + circuit breaker.</li>
+          <li><b>21</b> · Métricas, logs, trazas, CloudTrail; percentiles; alarmas accionables.</li>
+          <li><b>22</b> · Secrets Manager con rotación, KMS de sobre, WAF en Count, GuardDuty.</li>
+          <li><b>23</b> · IaC declarativa, conjunto de cambios, políticas de retención, CDK.</li>
+          <li><b>24</b> · OIDC con <code>sub</code>, pruebas de humo, rollback y borrar mirando la factura.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Antes de una entrevista, dibuja NakaStream en una hoja en blanco y explica cada flecha: qué servicio, qué permiso, qué pasa si falla.</li>
+            <li>Practica el formato de respuesta de diseño: requisitos → componentes → disponibilidad → seguridad → coste.</li>
+            <li>Si vuelves a desplegar algo, hazlo con la pila de CDK y bórralo con <code>cdk destroy</code> el mismo día; revisa la factura a los dos días.</li>
+            <li>Ten el presupuesto con alertas siempre activo, también cuando creas que no queda nada encendido.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

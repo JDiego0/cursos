@@ -5690,7 +5690,445 @@ ENTREGA → curso de PostgreSQL (implementar la BD física)
     </details>
   </section>
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-14"
+    data-num="14"
+    data-title="Repaso exprés: el diseño de datos de NakaClinic en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 5 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Requisitos|Regla de negocio|Entidad|Atributo|Clave primaria|Cardinalidad|Diagrama ER|Entidad débil|Jerarquía|Tabla puente|Integridad referencial|Normalización|Desnormalización|Diccionario de datos">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria el diseño completo de NakaClinic</strong>: de la petición difusa del cliente al esquema
+      lógico normalizado, con sus restricciones y su diccionario de datos. Cada idea aparece con lo mínimo para recordarla: qué es,
+      cómo se decide y cómo quedó en NakaClinic.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo tras un tiempo sin practicar, o salta al bloque que necesites. El
+      número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las diferencias que más se confunden y
+      un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>Del cliente al esquema</h3>
+        <div class="diagram">  Petición del cliente
+        │  ANÁLISIS (0–2)    requisitos RF/RNF · reglas RN-1..RN-5 · alcance · entidades candidatas
+        ▼
+  Modelo conceptual (MER)
+        │  MER (3–6)         atributos y claves · relaciones y cardinalidad · diagrama ·
+        │                    entidades débiles y jerarquías
+        ▼
+  Modelo lógico (tablas)
+        │  ESQUEMA (7–10)    reglas de transformación · integridad y restricciones ·
+        │                    1FN-2FN-3FN · BCNF y desnormalización
+        ▼
+  Diseño inicial completo
+           CIERRE (11–13)    antipatrones · diccionario de datos · niveles del modelo ·
+                             revisión, validación con datos y trazabilidad
+                                          ──▶ el modelo físico es el curso de PostgreSQL</div>
+
+        <h3>Las ideas que vertebran todo el curso</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Idea</th><th>Dónde reaparece</th></tr></thead>
+          <tbody>
+            <tr><td><b>Diseñar antes de programar</b>: un error cuesta una línea en el diagrama o una migración en producción.</td><td>0, 5, 13.</td></tr>
+            <tr><td><b>Cada dato vive en un solo sitio</b>: la redundancia es el síntoma del mal diseño.</td><td>0, 2 (criterio de la repetición), 9 (normalización).</td></tr>
+            <tr><td><b>Las reglas de negocio se convierten en restricciones</b>.</td><td>1 (RN-1..RN-5) → 3 (claves) → 8 (UNIQUE, CHECK, FK).</td></tr>
+            <tr><td><b>La cardinalidad dicta el esquema</b>.</td><td>4 → 7.</td></tr>
+            <tr><td><b>Lenguaje del negocio</b> y glosario.</td><td>2, 5 (leer el diagrama en voz alta), 11 (diccionario).</td></tr>
+            <tr><td><b>Criterio, no dogma</b>: normaliza por defecto, desnormaliza con razón.</td><td>10, 11, 13.</td></tr>
+            <tr><td><b>Trazabilidad</b>: nada falta, nada sobra.</td><td>1, 13.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔎 Bloque 1 · Análisis: datos, requisitos y entidades (cap. 0–2)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Por qué diseñar</b> (0): la estructura de los datos es lo más caro de cambiar. Dato = hecho en bruto; información = datos en contexto; <b>modelo de datos</b> = el plano, agnóstico del motor. Análisis (qué) → diseño (cómo) → programación (con qué). La tabla <code>citas</code> ingenua, con el teléfono del paciente y la especialidad del médico en cada fila, es el ejemplo de lo que no se hace.</li>
+          <li><b>Requisitos</b> (1): <b>funcional</b> = lo que hace (RF); <b>no funcional</b> = cómo de bien (RNF); <b>regla de negocio</b> = restricción del dominio (RN). Historias «como… quiero… para…». El <b>alcance</b> dice qué queda fuera. Las reglas se cazan en los «no puede», «sólo si», «como máximo».</li>
+          <li><b>Entidades</b> (2): entidad = tipo de cosa con existencia propia; <b>instancia</b> = un individuo; <b>atributo</b> = propiedad que la describe. Se descubren por los sustantivos. <b>Criterio de la repetición</b>: si un valor se repetiría idéntico en muchas filas, es una entidad (la especialidad). Hay sustantivos que son consultas («agenda del día») o reglas. <b>Lenguaje ubicuo</b> y glosario: «cita» y «visita» no son dos entidades.</li>
+        </ul>
+        <div class="code-block" data-lang="Texto · reglas de negocio de NakaClinic">
+<pre><code>RN-1  Un médico no puede tener dos citas a la vez (misma fecha y hora).
+RN-2  No se pueden pedir citas en el pasado.
+RN-3  Un paciente tiene un único historial clínico.
+RN-4  Un médico puede ejercer varias especialidades, y una especialidad
+      la pueden ejercer varios médicos.
+RN-5  Dar de baja a un paciente NO borra su historial.</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> recoge las restricciones cazadas en el análisis. Cada una acaba siendo una pieza del
+        esquema: RN-1 un <code>UNIQUE</code> compuesto, RN-2 un <code>CHECK</code>, RN-3 un 1:1, RN-4 un N:M con tabla puente y
+        RN-5 una baja lógica (<code>activo</code>).</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔑 Bloque 2 · Atributos, claves y relaciones (cap. 3–4)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Tipos de atributo</b> (3): simple; <b>compuesto</b> (la dirección → calle, número, ciudad, cp); <b>multivaluado</b> (los teléfonos → su propia tabla); <b>derivado</b> (la edad → no se guarda, se calcula). Cada atributo tiene un <b>dominio</b>, semilla de las restricciones.</li>
+          <li><b>Claves</b> (3): única, no vacía y <b>estable</b>. Candidata (podría identificar), primaria (la elegida), alternativa (candidata no elegida, con <code>UNIQUE</code>), compuesta, natural y subrogada. Regla práctica: <code>id</code> subrogado de primaria y la natural buena como alternativa (<code>dni UNIQUE</code>; en citas, <code>(id_medico, fecha, hora)</code>).</li>
+          <li><b>Relaciones</b> (4): asociaciones nombradas con un verbo. <b>Cardinalidad</b> 1:1, 1:N, N:M, decidida con <b>dos preguntas</b>, una por sentido. <b>Participación</b> total (obligatoria) o parcial (opcional), distinta de la cardinalidad. Un N:M necesita tabla puente, que puede tener datos propios.</li>
+        </ul>
+        <div class="code-block" data-lang="Texto · cardinalidad con las dos preguntas">
+<pre><code>Cita–Sala            ¿una cita, en cuántas salas? 1  · ¿una sala, cuántas citas? N  → 1:N
+Médico–Especialidad  ¿un médico, cuántas? N          · ¿una especialidad, cuántos? N → N:M
+Paciente–Historial   ¿un paciente, cuántos? 1        · ¿un historial, de cuántos? 1  → 1:1</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> la cardinalidad es la combinación de las dos respuestas. Preguntar en un solo sentido
+        convertiría Médico–Especialidad en un 1:N y dejaría a cada médico con una sola especialidad, violando RN-4.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>✏ Bloque 3 · El diagrama, entidades débiles y jerarquías (cap. 5–6)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Diagrama ER</b> (5): sirve para comunicar, validar y documentar. <b>Chen</b>: rectángulos, óvalos y rombos; expresiva, para pensar y enseñar. <b>Pata de gallo</b>: entidades como tablas y símbolos en los extremos (mínimo y máximo); compacta, para trabajar. Validar = leer cada relación como dos frases del negocio al experto.</li>
+          <li><b>Entidad débil</b> (6): no se identifica sola y no existe sin otra. La <b>línea de factura</b>: clave = clave de la fuerte + discriminante (<code>id_factura, num_linea</code>), por una relación identificadora.</li>
+          <li><b>Jerarquías</b> (6, EER): generalizar atributos comunes en un supertipo (<code>Empleado</code>) y dejar los propios en los subtipos (<code>Médico</code>, <code>Recepcionista</code>). Es «es un», no «tiene un». Se precisa con <b>total/parcial</b> y <b>disjunta/solapada</b>. No generalices si apenas comparten nada.</li>
+        </ul>
+        <div class="code-block" data-lang="Texto · pata de gallo">
+<pre><code>MÉDICO ──||────────}o── CITA
+          │            │
+          │            └ lado CITA: cero o muchas (o + pata de gallo)
+          └ lado MÉDICO: uno y sólo uno (||)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> se lee «una cita la atiende exactamente un médico» y «un médico atiende cero o muchas
+        citas». Cada extremo codifica a la vez participación (mínimo) y cardinalidad (máximo).</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧱 Bloque 4 · Del modelo a las tablas (cap. 7)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón del MER</th><th>Regla de transformación</th><th>En NakaClinic</th></tr></thead>
+          <tbody>
+            <tr><td>Entidad fuerte</td><td>Tabla; atributos → columnas; clave → PRIMARY KEY.</td><td><code>pacientes</code>, <code>salas</code>, <code>especialidades</code></td></tr>
+            <tr><td>1:N</td><td>FK en el lado <b>muchos</b> (la regla de oro).</td><td><code>citas.id_medico</code>, <code>id_paciente</code>, <code>id_sala</code></td></tr>
+            <tr><td>N:M</td><td>Tabla puente con dos FK, PK compuesta y datos propios.</td><td><code>ejerce</code> con <code>fecha_obtencion</code></td></tr>
+            <tr><td>1:1</td><td>FK con <code>UNIQUE</code> en un lado (o fusionar).</td><td><code>historiales.id_paciente UNIQUE</code></td></tr>
+            <tr><td>Multivaluado</td><td>Tabla propia con FK.</td><td><code>telefonos</code></td></tr>
+            <tr><td>Entidad débil</td><td>PK compuesta (fuerte + discriminante) y <code>ON DELETE CASCADE</code>.</td><td><code>lineas_factura</code></td></tr>
+            <tr><td>Jerarquía</td><td>Tabla única, tabla por subtipo o super + subtipos.</td><td><code>empleados</code> + <code>medicos</code> + <code>recepcionistas</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="SQL · fragmento del esquema lógico de NakaClinic">
+<pre><code>ejerce(         id_medico       FK -&gt; medicos,
+                id_especialidad FK -&gt; especialidades,
+                fecha_obtencion,                  -- dato PROPIO de la relación
+                PRIMARY KEY (id_medico, id_especialidad) )
+
+historiales(    id PK,
+                id_paciente FK -&gt; pacientes UNIQUE,  -- UNIQUE hace que sea 1:1
+                grupo_sanguineo, alergias, antecedentes )</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> resuelve el N:M y el 1:1 con las reglas mecánicas. La fecha de obtención no cabe en
+        <code>medicos</code> ni en <code>especialidades</code>: describe la asociación. Sin el <code>UNIQUE</code>, el historial
+        sería un 1:N.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🛡 Bloque 5 · Integridad y restricciones (cap. 8)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Integridad de entidad</b>: PK única y no vacía. <b>Integridad referencial</b>: ninguna FK apunta a la nada.</li>
+          <li>La integridad la garantiza mejor la base de datos (una vez, para todos los accesos) que la aplicación (que puede olvidarlo).</li>
+          <li><code>NOT NULL</code> ← participación total; <code>UNIQUE</code> ← claves alternativas y reglas de unicidad; <code>CHECK</code> ← dominio y reglas de valor. Un <code>CHECK</code> sólo ve su propia fila.</li>
+          <li><b>Acciones referenciales</b> (<code>CASCADE</code>, <code>RESTRICT</code>, <code>SET NULL</code>): decisión de negocio, no técnica.</li>
+        </ul>
+        <div class="code-block" data-lang="SQL · las reglas convertidas en garantías">
+<pre><code>citas(
+  id_paciente FK -&gt; pacientes ON DELETE RESTRICT,   -- no borrar paciente con citas
+  UNIQUE (id_medico, fecha, hora),                  -- RN-1
+  CHECK (fecha &gt;= CURRENT_DATE),                    -- RN-2
+  CHECK (estado IN ('pedida','atendida','cancelada')) )
+lineas_factura(
+  id_factura FK -&gt; facturas ON DELETE CASCADE )     -- débil: se va con la factura
+-- Al paciente no se le borra (RN-5): baja lógica con "activo".</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> el esquema pasa de describir a imponer. <code>RESTRICT</code> en las citas y la baja
+        lógica protegen el historial; <code>CASCADE</code> sólo donde la pieza no tiene sentido sin su dueña.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📐 Bloque 6 · Normalización, BCNF y desnormalización (cap. 9–10)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Redundancia</b> → tres anomalías: de <b>actualización</b> (cambiar en muchas filas), de <b>inserción</b> (no poder guardar algo sin otra cosa) y de <b>borrado</b> (perder un dato al borrar otro).</li>
+          <li><b>Dependencia funcional</b> A → B: A determina B. Es la herramienta para normalizar con método, no con intuición.</li>
+          <li><b>1FN</b>: valores atómicos. <b>2FN</b>: sin dependencias parciales de una clave compuesta. <b>3FN</b>: sin dependencias transitivas (un no-clave que depende de otro no-clave). Mnemotecnia: «de la clave, de toda la clave y de nada más que la clave».</li>
+          <li><b>BCNF</b> (10): todo determinante es clave candidata; sólo difiere de la 3FN con claves candidatas compuestas y solapadas. Con claves subrogadas coinciden. 4FN y 5FN rara vez hacen falta.</li>
+          <li><b>Desnormalizar</b> (10): redundancia a propósito, cambiando integridad por rendimiento. Sólo después de normalizar, con razón medida, asumiendo el coste de coherencia y documentado. Buen candidato: el total de una factura emitida (cambia poco). Malo: la edad (cambia siempre).</li>
+        </ul>
+        <div class="code-block" data-lang="Texto · normalizar la tabla citas ingenua">
+<pre><code>citas(paciente_nombre, paciente_tel, medico_nombre, especialidad, fecha, hora, sala)
+  paciente_nombre -&gt; paciente_tel      el teléfono depende del paciente, no de la cita
+  medico_nombre   -&gt; especialidad      la especialidad depende del médico (y es N:M, RN-4)
+→ pacientes, telefonos, medicos, especialidades, ejerce, citas (sólo FK)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> parte de la tabla ingenua del capítulo 0, escribe las dependencias y separa cada dato a la tabla de la que depende de verdad.
+        El teléfono pasa a vivir una vez por paciente, y la especialidad una vez en su catálogo.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📦 Bloque 7 · Antipatrones, niveles del modelo y cierre (cap. 11–13)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Antipatrón</th><th>Qué viola</th><th>Alternativa</th></tr></thead>
+          <tbody>
+            <tr><td>Lista en una columna («1,4,7»)</td><td>1FN</td><td>Tabla con una fila por valor.</td></tr>
+            <tr><td>Tabla-Dios</td><td>Normalización</td><td>Una tabla por entidad.</td></tr>
+            <tr><td>EAV (entidad-atributo-valor)</td><td>Tipos e integridad</td><td>Columnas tipadas con restricciones.</td></tr>
+            <tr><td>Tabla sin clave</td><td>Integridad de entidad</td><td>PK siempre.</td></tr>
+            <tr><td>Valores mágicos (0, -1, 9999-12-31)</td><td>Dominio del atributo</td><td><code>NULL</code> para la ausencia de valor.</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="clean">
+          <li><b>Diccionario de datos</b> (11): por tabla y columna, tipo, nulabilidad, restricción, dominio, significado y notas (incluidas las desnormalizaciones). Es a los datos lo que un ADR a la arquitectura.</li>
+          <li><b>Tres niveles</b> (12): conceptual (MER), lógico (tablas) y físico (motor concreto, el curso de PostgreSQL). El <b>modelo de datos</b> (cómo se guarda) y el <b>modelo de dominio</b> (cómo se comporta, curso de Arquitectura) son dos vistas unidas por un mapeo.</li>
+          <li><b>Cierre</b> (13): el diseño inicial completo reúne requisitos, MER, esquema con integridad, normalización y diccionario. Se revisa con lista de comprobación, se <b>valida con datos de ejemplo</b> (si un caso real no cabe, el modelo está mal) y se comprueba la <b>trazabilidad</b> en los dos sentidos.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-15"
+    data-num="15"
+    data-title="Diferencias clave y preparación de entrevista de modelado de datos con NakaClinic"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 5 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Entidad vs atributo|Clave natural vs subrogada|Cardinalidad vs participación|Entidad débil|2FN vs 3FN|3FN vs BCNF|Normalizar vs desnormalizar|CASCADE vs RESTRICT|Baja lógica">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>fijar las distinciones que más se confunden</strong> en modelado de datos y a practicar las preguntas que
+      suelen aparecer en una entrevista técnica, respondiendo con el diseño de NakaClinic.</p>
+      <p><strong>Cómo usarlo:</strong> intenta responder cada pregunta en voz alta antes de desplegarla. En una entrevista de
+      modelado se valora que razones desde los requisitos y las reglas de negocio, no que recites formas normales.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Par</th><th>La diferencia</th><th>Cap.</th></tr></thead>
+          <tbody>
+            <tr><td><b>Modelo de datos · base de datos</b></td><td>El plano, agnóstico del motor · su construcción en un motor concreto.</td><td>0, 12</td></tr>
+            <tr><td><b>Requisito funcional · no funcional · regla de negocio</b></td><td>Qué hace · cómo de bien · qué combinaciones de datos son válidas.</td><td>1</td></tr>
+            <tr><td><b>Entidad · instancia · atributo</b></td><td>El molde · un individuo · una propiedad que lo describe.</td><td>2</td></tr>
+            <tr><td><b>Entidad · atributo</b></td><td>Si su valor se repetiría idéntico en muchas filas, es entidad (la especialidad).</td><td>2</td></tr>
+            <tr><td><b>Entidad · consulta</b></td><td>Algo que se guarda · algo que se calcula a partir de lo guardado («agenda del día»).</td><td>2</td></tr>
+            <tr><td><b>Compuesto · multivaluado · derivado</b></td><td>Se desglosa en columnas · va a su propia tabla · no se almacena.</td><td>3</td></tr>
+            <tr><td><b>Candidata · primaria · alternativa</b></td><td>Podría identificar · la elegida · candidata no elegida, con <code>UNIQUE</code>.</td><td>3</td></tr>
+            <tr><td><b>Clave natural · subrogada</b></td><td>Viene del dominio (DNI) · artificial y estable (<code>id</code>).</td><td>3</td></tr>
+            <tr><td><b>Cardinalidad · participación</b></td><td>Cuántos como máximo · si es obligatoria (mínimo). Se traducen en FK y <code>NOT NULL</code>.</td><td>4, 8</td></tr>
+            <tr><td><b>Chen · pata de gallo</b></td><td>Expresiva, para pensar y enseñar · compacta, casi ya son las tablas.</td><td>5</td></tr>
+            <tr><td><b>Entidad fuerte · débil</b></td><td>Se identifica sola · necesita la clave de su dueña + un discriminante.</td><td>6</td></tr>
+            <tr><td><b>«Es un» · «tiene un»</b></td><td>Jerarquía (Médico es un Empleado) · relación (Paciente tiene un Historial).</td><td>6</td></tr>
+            <tr><td><b>Total/parcial · disjunta/solapada</b></td><td>¿Todo supertipo es de algún subtipo? · ¿puede ser de varios a la vez?</td><td>6</td></tr>
+            <tr><td><b>Modelo conceptual · lógico · físico</b></td><td>MER del negocio · tablas y columnas · tipos e índices de un motor.</td><td>7, 12</td></tr>
+            <tr><td><b>Integridad de entidad · referencial</b></td><td>PK única y no vacía · ninguna FK apunta a la nada.</td><td>8</td></tr>
+            <tr><td><b>CASCADE · RESTRICT · SET NULL</b></td><td>Se borra con su dueña · impide el borrado · deja la referencia vacía. Decisión de negocio.</td><td>8</td></tr>
+            <tr><td><b>Baja lógica · borrado físico</b></td><td>Marcar <code>activo</code> y conservarlo todo · eliminar la fila (y con ella el histórico o el permiso de borrar).</td><td>3, 8</td></tr>
+            <tr><td><b>2FN · 3FN</b></td><td>Sin dependencias de parte de una clave compuesta · sin dependencias entre no-claves.</td><td>9</td></tr>
+            <tr><td><b>3FN · BCNF</b></td><td>Igual salvo con claves candidatas compuestas y solapadas.</td><td>10</td></tr>
+            <tr><td><b>Normalizar · desnormalizar</b></td><td>Por defecto · por excepción medida y documentada.</td><td>10</td></tr>
+            <tr><td><b>Diagrama · diccionario de datos</b></td><td>Estructura de un vistazo · significado, dominio y notas de cada columna.</td><td>5, 11</td></tr>
+            <tr><td><b>Modelo de datos · modelo de dominio</b></td><td>Cómo se guarda (tablas) · cómo se comporta (objetos con reglas).</td><td>12</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+        <h3>De la regla de negocio a la restricción</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Regla</th><th>Pieza del modelo</th><th>Mecanismo en el esquema</th></tr></thead>
+          <tbody>
+            <tr><td>RN-1 · un médico, una cita por franja</td><td>Clave candidata natural de Cita</td><td><code>UNIQUE (id_medico, fecha, hora)</code></td></tr>
+            <tr><td>RN-2 · no citas en el pasado</td><td>Dominio de la fecha</td><td><code>CHECK (fecha &gt;= CURRENT_DATE)</code></td></tr>
+            <tr><td>RN-3 · un historial por paciente</td><td>Relación 1:1</td><td><code>historiales.id_paciente UNIQUE</code></td></tr>
+            <tr><td>RN-4 · médico ↔ especialidades</td><td>Relación N:M</td><td>Tabla puente <code>ejerce</code></td></tr>
+            <tr><td>RN-5 · la baja no borra</td><td>Atributo <code>activo</code></td><td>Baja lógica + <code>ON DELETE RESTRICT</code></td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>El método completo, en orden</h3>
+        <ol class="steps">
+          <li><b>Requisitos numerados</b> (RF, RNF, RN) y alcance cerrado.</li>
+          <li><b>Sustantivos → entidades candidatas</b>, depuradas con el criterio de la repetición.</li>
+          <li><b>Atributos y claves</b>: id subrogado + claves naturales como alternativas.</li>
+          <li><b>Relaciones</b> con las dos preguntas y la participación.</li>
+          <li><b>Diagrama</b> en pata de gallo, leído en voz alta con el experto.</li>
+          <li><b>Transformación mecánica</b> a tablas y <b>restricciones</b> por cada regla.</li>
+          <li><b>Normalización</b> a 3FN/BCNF escribiendo las dependencias; desnormalización sólo justificada.</li>
+          <li><b>Diccionario</b>, revisión con lista, validación con datos y trazabilidad.</li>
+        </ol>
+
+        <div class="note good"><b class="t">⭐ Buenas prácticas que se repiten en todo el curso</b>
+        <ul class="clean">
+          <li>Dibuja siempre el modelo; un diseño sin diagrama es un diseño sin revisar.</li>
+          <li>Ante la duda entre entidad y atributo, empieza como atributo y promociona después.</li>
+          <li>Cada regla de negocio necesita su mecanismo en la base de datos, no sólo en la aplicación.</li>
+          <li>Elige cada acción referencial pensando qué debe pasar en la realidad.</li>
+          <li><code>NULL</code> para la ausencia de valor; nunca valores mágicos.</li>
+          <li>Mantén el diseño lógico agnóstico del motor.</li>
+        </ul></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Síntoma</th><th>Error de diseño</th><th>Corrección</th></tr></thead>
+          <tbody>
+            <tr><td>«Cardiologia», «Cardio» y «Cardiología» como especialidades distintas.</td><td>Entidad modelada como texto en otra tabla.</td><td>Entidad <code>Especialidad</code> referenciada (2).</td></tr>
+            <tr><td>Teléfonos «600111222, 600333444» en una celda.</td><td>Multivaluado como lista: viola 1FN.</td><td>Tabla <code>telefonos</code> (3, 9).</td></tr>
+            <tr><td>La edad de los pacientes está desactualizada.</td><td>Atributo derivado almacenado.</td><td>Guardar <code>fecha_nac</code> y calcular (3).</td></tr>
+            <tr><td>Al reprogramar una cita hay que actualizar sus tratamientos.</td><td>Clave primaria inestable (natural compuesta).</td><td><code>id</code> subrogado; la natural como <code>UNIQUE</code> (3).</td></tr>
+            <tr><td>Un médico sólo puede tener una especialidad.</td><td>N:M modelado como 1:N por preguntar en un sentido.</td><td>Tabla puente (4, 7).</td></tr>
+            <tr><td>La FK de la cita está en <code>medicos</code>.</td><td>FK en el lado «uno».</td><td>FK en el lado muchos: <code>citas.id_medico</code> (7).</td></tr>
+            <tr><td>Un paciente aparece con dos historiales.</td><td>Falta el <code>UNIQUE</code> del 1:1.</td><td><code>id_paciente UNIQUE</code> (7).</td></tr>
+            <tr><td>Al borrar un paciente desaparece su historial.</td><td><code>CASCADE</code> donde el negocio exige conservar.</td><td>Baja lógica + <code>RESTRICT</code> (8).</td></tr>
+            <tr><td>Dos citas del mismo médico a la misma hora.</td><td>Regla confiada sólo a la aplicación.</td><td><code>UNIQUE (id_medico, fecha, hora)</code> (8).</td></tr>
+            <tr><td>Cambiar un teléfono exige tocar muchas filas y alguna se escapa.</td><td>Redundancia: anomalía de actualización.</td><td>Normalizar a 3FN (9).</td></tr>
+            <tr><td>Un campo de total desincronizado con sus líneas.</td><td>Desnormalización sin mecanismo de coherencia.</td><td>Justificarla, mantenerla y documentarla (10, 11).</td></tr>
+            <tr><td>Fecha 9999-12-31 para «no cancelada».</td><td>Valor mágico.</td><td><code>NULL</code> (11).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Análisis y modelo conceptual</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. «Yo creo las tablas sobre la marcha y ya las arreglo.» ¿Qué respondes?</p>
+            <div class="q-ans">Que la estructura de los datos es lo más caro de cambiar: un error en el diagrama se corrige borrando una línea, y en producción exige migrar datos ya guardados. La tabla <code>citas</code> ingenua, con el teléfono del paciente y la especialidad del médico copiados en cada fila, funciona el primer día y luego produce inconsistencias, no permite dar de alta un paciente sin cita y obliga a migrar para arreglarlo.</div></div>
+          <div class="q"><p class="q-text">2. Clasifica: «el paciente puede reprogramar su cita», «un médico no puede atender dos citas a la vez», «la agenda carga en menos de dos segundos».</p>
+            <div class="q-ans">Requisito funcional (algo que el sistema hace), regla de negocio (una restricción sobre qué datos son válidos, que sería cierta aunque la clínica usara papel) y requisito no funcional (una calidad). La regla acabará siendo una restricción del esquema: <code>UNIQUE (id_medico, fecha, hora)</code>.</div></div>
+          <div class="q"><p class="q-text">3. ¿Cómo decides si la especialidad es un atributo del médico o una entidad?</p>
+            <div class="q-ans">Con el criterio de la repetición: como columna, «Cardiología» se escribiría igual en la fila de cada cardiólogo, con errores de escritura, anomalías al renombrar y, sobre todo, una sola especialidad por médico, cuando RN-4 dice que pueden ser varias. Se promueve a entidad <code>Especialidad</code> con una relación N:M con <code>Médico</code>.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué un <code>id</code> subrogado si el paciente ya tiene DNI?</p>
+            <div class="q-ans">Porque la clave primaria debe ser estable y siempre presente, y todo lo demás la referencia. El DNI puede faltar (un extranjero) o corregirse, y cada cambio arrastraría a citas, facturas e historial. El <code>id</code> no significa nada y por eso no cambia. El DNI no se pierde: queda como clave alternativa con <code>UNIQUE</code>.</div></div>
+          <div class="q"><p class="q-text">5. Diferencia entre cardinalidad y participación en Cita–Paciente.</p>
+            <div class="q-ans">Cardinalidad: un paciente tiene muchas citas y una cita es de un paciente (1:N), lo que pone la FK <code>id_paciente</code> en <code>citas</code>. Participación: toda cita debe tener paciente (total), lo que hace esa FK <code>NOT NULL</code>; un paciente puede no tener citas (parcial). Una dice cuántos como máximo; la otra, si es obligatorio.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué la línea de factura es una entidad débil y cómo se identifica?</p>
+            <div class="q-ans">Porque no existe sin su factura y su número de línea se repite entre facturas: la «línea 2» no identifica nada por sí sola. Su clave es la de la fuerte más un discriminante, <code>(id_factura, num_linea)</code>, mediante una relación identificadora. En tablas lleva <code>ON DELETE CASCADE</code>: si desaparece la factura, sus líneas no tienen sentido.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Paso a tablas e integridad</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Dónde va la clave foránea de un 1:N y por qué no al revés?</p>
+            <div class="q-ans">En el lado muchos: <code>citas.id_medico</code>. Cada cita tiene un solo médico, así que una columna basta, y que muchas citas apunten al mismo médico es simplemente muchas filas. En <code>medicos</code> haría falta una columna capaz de guardar muchas citas, lo que acaba en listas en una celda y viola la 1FN.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué un N:M necesita tabla puente y qué va en ella?</p>
+            <div class="q-ans">Porque una FK apunta a una sola fila, y en un N:M los dos lados son muchos: no hay dónde ponerla. La tabla puente <code>ejerce</code> tiene una FK a cada lado, clave primaria compuesta <code>(id_medico, id_especialidad)</code> que impide duplicados, y los datos propios de la asociación, como <code>fecha_obtencion</code>, que no pertenecen ni al médico ni a la especialidad por separado.</div></div>
+          <div class="q"><p class="q-text">3. ¿Cómo se implementa un 1:1 en tablas?</p>
+            <div class="q-ans">Con una FK marcada <code>UNIQUE</code> en uno de los lados: <code>historiales.id_paciente UNIQUE</code>. Sin el <code>UNIQUE</code> sería un 1:N; con él, cada paciente tiene como mucho un historial. La alternativa es fusionar las tablas, que compensa cuando siempre van juntas y no tienen ciclos de vida ni accesos distintos.</div></div>
+          <div class="q"><p class="q-text">4. Tres estrategias para pasar una jerarquía a tablas. ¿Cuál eligió NakaClinic?</p>
+            <div class="q-ans">Tabla única con todos los atributos y un discriminante (simple, pero con muchas columnas vacías), una tabla por subtipo repitiendo lo común (sin nulos, pero duplica estructura y complica consultar a todos los empleados) y supertipo + subtipos que comparten la clave. NakaClinic eligió la tercera: <code>empleados</code> con lo común y <code>medicos</code>/<code>recepcionistas</code> con <code>id_empleado</code> como PK y FK, porque comparten bastante y cada subtipo tiene atributos propios.</div></div>
+          <div class="q"><p class="q-text">5. «La aplicación ya comprueba todo; no hacen falta restricciones en la base de datos.» Rebátelo.</p>
+            <div class="q-ans">La aplicación no es el único acceso: hay scripts, migraciones, otras aplicaciones y consultas manuales, y cada una puede olvidar una comprobación. Además, dos peticiones simultáneas pueden pasar la comprobación a la vez. La restricción en la base de datos se define una vez y se cumple para todos los accesos: es la línea de defensa que no se olvida.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué acción referencial pondrías al borrar una factura y al borrar un paciente?</p>
+            <div class="q-ans">Una línea de factura no tiene sentido sin su factura: <code>CASCADE</code>. Un paciente no se borra (RN-5): baja lógica con <code>activo</code>, y sus citas usan <code>RESTRICT</code> para que nadie pueda borrarlo físicamente y llevarse el historial. La elección la dicta qué debe pasar en la realidad, no un valor por defecto.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué regla de NakaClinic puede garantizar un <code>CHECK</code> y cuál no?</p>
+            <div class="q-ans">Sí: que la fecha de una cita no sea pasada, que el coste no sea negativo o que el estado esté entre los válidos, porque sólo miran la propia fila. No: reglas que dependen de otras filas, como un aforo total o que un médico no tenga dos citas a la vez; esta última se resuelve con un <code>UNIQUE</code> compuesto, y otras requieren mecanismos que van más allá de un <code>CHECK</code>.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Normalización y desnormalización</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Explica las tres anomalías con la tabla de citas ingenua.</p>
+            <div class="q-ans">Actualización: si Ana cambia de teléfono, hay que cambiarlo en todas sus citas y alguna se escapará. Inserción: no se puede dar de alta a un paciente o a un médico hasta que tenga una cita. Borrado: al borrar la única cita de un médico se pierde que existe y su especialidad. Las tres vienen de guardar el mismo dato en varias filas.</div></div>
+          <div class="q"><p class="q-text">2. Diferencia entre una dependencia parcial y una transitiva.</p>
+            <div class="q-ans">Parcial: un atributo depende de parte de una clave compuesta (en una tabla con clave <code>(id_medico, id_especialidad)</code>, el nombre del médico depende sólo de <code>id_medico</code>): viola la 2FN, que por eso sólo puede romperse con claves compuestas. Transitiva: un no-clave depende de otro no-clave (en la cita, el teléfono depende del paciente, no de la cita): viola la 3FN.</div></div>
+          <div class="q"><p class="q-text">3. ¿Cómo compruebas con método que una tabla está en 3FN?</p>
+            <div class="q-ans">Escribo sus dependencias funcionales y compruebo, en orden: valores atómicos (1FN), que ningún no-clave dependa de parte de la clave (2FN) y que ningún no-clave dependa de otro no-clave (3FN): «de la clave, de toda la clave y de nada más que la clave». Cada violación se resuelve llevando el atributo a la tabla de la que depende de verdad.</div></div>
+          <div class="q"><p class="q-text">4. ¿En qué se diferencia la BCNF de la 3FN y cuándo importa?</p>
+            <div class="q-ans">La BCNF exige que todo determinante sea clave candidata. Sólo se separa de la 3FN con claves candidatas compuestas que se solapan, un caso raro. Con claves subrogadas simples, como en NakaClinic, coinciden. Perseguir 4FN o 5FN por defecto es sobre-ingeniería: el objetivo realista es 3FN/BCNF.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué desnormalizar el total de una factura y no la edad de un paciente?</p>
+            <div class="q-ans">Desnormalizar cambia integridad por rendimiento, así que sólo compensa si el dato cambia poco y la lectura es frecuente. El total de una factura emitida apenas cambia, y mantenerlo coherente es barato. La edad cambia cada día para todos: guardarla garantiza datos desactualizados. Además se exige normalizar primero, una razón medida, asumir el coste de coherencia y documentarlo en el diccionario.</div></div>
+          <div class="q"><p class="q-text">6. Te proponen un modelo EAV «para poder añadir atributos sin tocar el esquema». ¿Qué dices?</p>
+            <div class="q-ans">Que la flexibilidad es un espejismo: todos los valores se vuelven texto sin tipo, se pierden <code>NOT NULL</code>, <code>CHECK</code> y FK sobre cada atributo, las consultas se convierten en muchos JOIN de la misma tabla y nadie sabe qué atributos existen. Se paga con integridad y legibilidad lo que se ahorra en un <code>ALTER TABLE</code>. Casi siempre es un error.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Documentar, validar y conectar con el sistema</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué aporta un diccionario de datos que no dé el diagrama?</p>
+            <div class="q-ans">El significado: por cada columna, tipo, nulabilidad, restricciones, dominio, qué representa y notas (por qué <code>dni</code> puede ser nulo, qué desnormalización existe y cómo se mantiene). El diagrama muestra la estructura; el diccionario convierte el conocimiento del diseñador en algo transmisible, como un ADR para la arquitectura.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué diferencia hay entre el modelo de datos y el modelo de dominio?</p>
+            <div class="q-ans">Son dos vistas del mismo dominio para fines distintos. El modelo de datos describe cómo se guarda (tablas normalizadas, como <code>pacientes</code> y <code>telefonos</code>); el modelo de dominio, cómo se comporta (un objeto Paciente con sus reglas, quizá con su lista de teléfonos dentro). Se conectan con un mapeo; ninguno es «el correcto».</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué validar el diseño con datos de ejemplo?</p>
+            <div class="q-ans">Porque es la prueba más honesta: si un caso real no cabe (un médico con dos especialidades, un paciente extranjero sin DNI, una cita reprogramada), el modelo está mal, no el caso. Se cargan casos variados y se comprueba que cada uno se puede guardar sin chapuzas y que las restricciones rechazan los inválidos.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué es la trazabilidad en los dos sentidos?</p>
+            <div class="q-ans">De requisito a modelo: cada requisito y regla tiene piezas que lo soportan (detecta lo que falta, como una sala sin modelar para RF-4). De modelo a requisito: cada tabla responde a algún requisito (detecta lo que sobra, como una entidad <code>Aseguradora</code> que nadie pidió). La primera garantiza un diseño completo; la segunda, ajustado.</div></div>
+          <div class="q"><p class="q-text">5. ¿Dónde acaba este curso y qué viene después?</p>
+            <div class="q-ans">Acaba en el modelo lógico, agnóstico del motor. El físico (tipos, índices, creación real de tablas) corresponde al curso de PostgreSQL, y la estructura del código que se apoya en el esquema, al de Arquitectura. El esquema es el cimiento: si se tuerce, se tuerce todo lo que se construye encima.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <h3>Una idea por capítulo</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Cap.</th><th>Si sólo recuerdas una cosa</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>Diseña antes de programar: cada dato en un solo sitio.</td></tr>
+            <tr><td>1</td><td>Requisitos numerados; las reglas de negocio serán restricciones.</td></tr>
+            <tr><td>2</td><td>Si se repetiría en muchas filas, es una entidad.</td></tr>
+            <tr><td>3</td><td>Clave estable: <code>id</code> subrogado y la natural como alternativa.</td></tr>
+            <tr><td>4</td><td>Cardinalidad con dos preguntas; participación aparte.</td></tr>
+            <tr><td>5</td><td>Dibuja en pata de gallo y léelo en voz alta con el experto.</td></tr>
+            <tr><td>6</td><td>Débil = clave de la dueña + discriminante; jerarquías «es un».</td></tr>
+            <tr><td>7</td><td>FK en el lado muchos; N:M con tabla puente; 1:1 con <code>UNIQUE</code>.</td></tr>
+            <tr><td>8</td><td>La base de datos hace cumplir las reglas; acciones referenciales de negocio.</td></tr>
+            <tr><td>9</td><td>De la clave, de toda la clave y de nada más que la clave.</td></tr>
+            <tr><td>10</td><td>Normaliza por defecto; desnormaliza por excepción medida.</td></tr>
+            <tr><td>11</td><td>Desconfía de los atajos; documenta en el diccionario.</td></tr>
+            <tr><td>12</td><td>Conceptual, lógico y físico; datos y dominio son dos vistas.</td></tr>
+            <tr><td>13</td><td>Revisa, valida con datos y traza en los dos sentidos.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+        <ul class="clean">
+          <li>Toma una aplicación que uses a diario y dibuja su MER en pata de gallo.</li>
+          <li>Normaliza a 3FN una hoja de cálculo real escribiendo sus dependencias funcionales.</li>
+          <li>Busca en un esquema existente un antipatrón del capítulo 11 y propón su alternativa.</li>
+          <li>Escribe las reglas de negocio de un dominio nuevo y su restricción correspondiente.</li>
+        </ul></div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de comandos</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

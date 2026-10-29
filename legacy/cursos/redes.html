@@ -12565,7 +12565,439 @@ ls ~/nakahub/docs</code></pre>
     </details>
   </section>
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-24"
+    data-num="24"
+    data-title="Repaso exprés: la red de NakaHub en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="60 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Modelo TCP/IP|Encapsulación|MAC y ARP|IPv4|Subredes|IPv6|DHCP|Enrutamiento|TCP y UDP|NAT|DNS|HTTPS|SSH|Runbook|Firewall|VLAN|WireGuard">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria toda la red de NakaHub</strong>: del cable y la trama al servicio publicado con HTTPS
+      en un VPS y accesible por VPN, pasando por el plan de direccionamiento, el DNS con doble vista, el runbook de averías, el
+      firewall y las VLAN. Cada idea aparece con lo mínimo para recordarla: qué es, en qué capa vive y con qué comando se comprueba.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo tras un tiempo sin practicar, o salta al bloque que necesites. El
+      número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las diferencias que más se confunden y
+      un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>La red de NakaHub, terminada</h3>
+        <div class="diagram">               Internet ──── VPS (reservas.nakahub.example · nginx + HTTPS · WireGuard 10.20.200.1)
+                  │                            ▲ túnel WireGuard (UDP 51820)
+          router + firewall + NAT ─────────────┘
+                  │ troncal 802.1Q
+          switch con VLAN
+     ┌──────────┬─────────┼──────────┬──────────┐
+  VLAN 10    VLAN 20    VLAN 30    VLAN 40    VLAN 99
+  Personal   Coworkers  Invitados  Servicios  Gestión
+  10.20.10/24 10.20.20/24 10.20.30/24 10.20.40/24 10.20.99.0/28</div>
+
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Módulo</th><th>Qué aporta</th><th>Cap.</th></tr></thead>
+          <tbody>
+            <tr><td>1 · Fundamentos</td><td>Laboratorio, qué es una red, capas, Ethernet y ARP.</td><td>0–3</td></tr>
+            <tr><td>2 · Direccionamiento</td><td>IPv4, subredes y CIDR, IPv6, DHCP.</td><td>4–7</td></tr>
+            <tr><td>3 · Entre redes</td><td>Enrutamiento, TCP/UDP y puertos, NAT.</td><td>8–10</td></tr>
+            <tr><td>4 · Servicios</td><td>DNS (dos capítulos), HTTP/HTTPS, SSH.</td><td>11–14</td></tr>
+            <tr><td>5 · Diagnóstico</td><td>Runbook, DNS/puertos/servicios, Wireshark, Wi-Fi y rendimiento.</td><td>15–18</td></tr>
+            <tr><td>6 · Seguridad</td><td>Firewalls con estado, VLAN y segmentación.</td><td>19–20</td></tr>
+            <tr><td>7 · Internet y nube</td><td>VPS endurecido, VPN WireGuard, publicar con HTTPS y borrar.</td><td>21–23</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note warn"><b class="t">La regla que acompaña todo el curso</b>
+        <p>Captura y explora sólo redes propias o con autorización por escrito. Las capturas contienen datos personales.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧱 Bloque 1 · Fundamentos: redes, capas, Ethernet y ARP (cap. 0–3)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Laboratorio</b> (0): la terminal (PowerShell y Bash), WSL 2 con espacios de nombres de red para simular NakaHub, y Wireshark para ver lo que viaja.</li>
+          <li><b>Qué es una red</b> (1): nodos y enlaces; LAN, WAN e Internet (red de redes, con el ISP); la información viaja en <b>paquetes</b>; un <b>protocolo</b> son las reglas de la conversación. <b>Ancho de banda</b> (Mbps, cuánto cabe) y <b>latencia</b> (ms, cuánto tarda) son independientes; Mbps ÷ 8 = MB/s. Switch une equipos de una red; router une redes; punto de acceso conecta el Wi-Fi.</li>
+          <li><b>Capas</b> (2): OSI (7, la numeración) y TCP/IP (4, el que se usa). Cada capa tiene su dirección: MAC (enlace), IP (red), puerto (transporte), nombre (aplicación). <b>Encapsulación</b>: trama ⊃ paquete ⊃ segmento ⊃ datos. La MAC de destino es la del siguiente salto; la IP, la del destino final. Se diagnostica de abajo arriba.</li>
+          <li><b>Ethernet y ARP</b> (3): trama con MAC destino, origen, tipo y CRC; MTU 1500. La MAC (OUI = fabricante) nunca cruza un router. El switch aprende MAC por puerto e inunda lo desconocido. <b>ARP</b> traduce IP → MAC por difusión y lo guarda en caché; para destinos remotos pide la MAC del router. ARP no autentica: se puede suplantar.</li>
+        </ul>
+        <div class="diagram">  Aplicación   HTTP, DNS, SSH      nombre      reservas.nakahub.example
+  Transporte   TCP, UDP            puerto      443
+  Red          IP                  IP          198.51.100.20
+  Enlace       Ethernet, Wi-Fi     MAC         la del siguiente salto</div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔢 Bloque 2 · Direccionamiento: IPv4, subredes, IPv6 y DHCP (cap. 4–7)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>IPv4</b> (4): 32 bits en cuatro octetos. La <b>máscara</b> separa red y host (/24 = 255.255.255.0). Primera dirección = red; última = difusión; una /24 tiene 254 útiles. El equipo decide: destino local → ARP directo; remoto → a la <b>puerta de enlace</b>. Rangos: 127/8 loopback; 10/8, 172.16/12 y 192.168/16 privadas; 169.254/16 APIPA (el DHCP no respondió).</li>
+          <li><b>Subredes y CIDR</b> (5): direcciones = 2<sup>(32 − prefijo)</sup>, útiles = eso − 2. <b>Tamaño de bloque</b> = 256 − octeto interesante; las redes empiezan en múltiplos del bloque. <b>VLSM</b>: tamaños distintos, primero las grandes. <b>Sumarizar</b>: 10.20.0.0/16 en una sola ruta. Convención: tercer octeto = VLAN, .1 = router.</li>
+          <li><b>IPv6</b> (6): 128 bits en hexadecimal; se quitan ceros a la izquierda y una sola secuencia de ceros se abrevia con <code>::</code>. LAN siempre /64. Tipos: global (2…), link-local (fe80::), ULA (fd…), ::1, multidifusión (ff…). NDP sustituye a ARP; SLAAC autoconfigura. Sin NAT: el firewall es la única protección.</li>
+          <li><b>DHCP</b> (7): <b>DORA</b> (Discover, Offer, Request, Ack) empieza por difusión, así que hace falta servidor en la red o un <b>relay</b>. Concesiones que se renuevan a la mitad; <b>reservas</b> por MAC. No autentica: un DHCP pirata reparte puertas de enlace falsas.</li>
+        </ul>
+        <div class="code-block" data-lang="Texto · plan de direccionamiento de NakaHub">
+<pre><code>VLAN  Red           Prefijo  Útiles  Uso                          Puerta de enlace
+ 10   10.20.10.0    /24        254   Personal                     10.20.10.1
+ 20   10.20.20.0    /24        254   Coworkers                    10.20.20.1
+ 30   10.20.30.0    /24        254   Invitados                    10.20.30.1
+ 40   10.20.40.0    /24        254   Servicios: NAS, impresora    10.20.40.1
+ 99   10.20.99.0    /28         14   Gestión: router, switch, AP  10.20.99.1
+ —    10.20.200.0   /24        254   VPN del personal (WireGuard) 10.20.200.1</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> resume la decisión más cara de cambiar del curso. Todo cabe en 10.20.0.0/16 (una
+        sola ruta sumarizada), deja margen para crecer y la dirección «se lee sola». La gestión es una /28 porque sólo tiene
+        cuatro aparatos.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧭 Bloque 3 · Entre redes: rutas, puertos y NAT (cap. 8–10)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Enrutamiento</b> (8): rutas conectadas, estáticas, por defecto (0.0.0.0/0) y dinámicas (OSPF dentro, BGP en Internet). Gana el <b>prefijo más largo</b>; a igualdad, la menor métrica. En cada salto cambian las MAC y baja el <b>TTL</b>; las IP no cambian. Toda comunicación necesita <b>camino de vuelta</b>. Un Linux enruta sólo con reenvío IP activado.</li>
+          <li><b>TCP y UDP</b> (9): el puerto entrega al programa correcto; servidor en puerto conocido, cliente en uno efímero. TCP: saludo SYN, SYN-ACK, ACK, fiable y ordenado. UDP: sin conexión (DNS, voz, vídeo). Escuchar en 127.0.0.1 (sólo local) o 0.0.0.0 (todas). <b>Refused</b> = llegó y no hay nadie; <b>timeout</b> = no hubo respuesta (red o firewall).</li>
+          <li><b>NAT</b> (10): PAT/masquerade comparte la IP pública usando puertos y la tabla de traducciones (conntrack). SNAT cambia el origen al salir; DNAT (reenvío de puertos) el destino al entrar. NAT no es un firewall; UPnP abre puertos solo. Hairpin: la IP pública no suele funcionar desde dentro. Con <b>CGNAT</b> (100.64.0.0/10) no hay conexiones entrantes: VPS o IPv6.</li>
+        </ul>
+        <div class="code-block" data-lang="Terminal · Linux">
+<pre><code>ip route
+ss -tlnp</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> <code>ip route</code> muestra la tabla de rutas (conectadas, por defecto y estáticas).
+        <b><code>ss -tlnp</code></b> · lista los sockets TCP (<code>-t</code>) en escucha (<code>-l</code>), sin resolver
+        nombres (<code>-n</code>) y con su proceso (<code>-p</code>). <b>Resultado esperado:</b> ver en qué dirección y puerto
+        escucha cada servicio; <code>127.0.0.1:5432</code> significa «sólo local».</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌐 Bloque 4 · Servicios: DNS, HTTPS y SSH (cap. 11–14)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>DNS I</b> (11): nombres leídos de derecha a izquierda (raíz → TLD → dominio). Resolvedor local, <b>recursivo</b> y <b>autoritativo</b>. Todo se cachea durante el <b>TTL</b>: «propagación» es esperar a que caduque; bájalo antes de un cambio. NXDOMAIN = no existe. El archivo <code>hosts</code> gana siempre. DoT y DoH cifran.</li>
+          <li><b>DNS II</b> (12): registros A/AAAA, CNAME (no en el apex ni junto a otros), MX, TXT (SPF), NS, SOA y PTR (inverso, con los octetos al revés en <code>in-addr.arpa</code>). Dominio propio = registrador + servidores + delegación. <b>Split DNS</b>: vista interna y pública de <code>nakahub.example</code>. Evita <code>.local</code>.</li>
+          <li><b>HTTP/HTTPS</b> (13): URL = esquema + nombre + puerto + ruta + consulta + fragmento. Si recibes un código HTTP, la red funciona. HTTPS = HTTP dentro de TLS. Certificado válido para unos nombres (SAN), firmado por una CA y con caducidad. Let's Encrypt para lo público, CA interna para lo interno. HTTPS no oculta la IP ni, normalmente, el nombre (SNI).</li>
+          <li><b>SSH</b> (14): terminal cifrada en TCP/22. Dos identidades: el servidor (clave de host, <code>known_hosts</code>) y tú (<code>authorized_keys</code>). Claves ed25519 con frase de paso y <code>ssh-agent</code>. «Host identification has changed» = reinstalación o impostor: verifica la huella por otro canal. Túnel <code>-L</code>. Endurecer: <code>PasswordAuthentication no</code>, <code>PermitRootLogin no</code>. Nunca RDP expuesto.</li>
+        </ul>
+        <div class="code-block" data-lang="Terminal · comparar resolvedores">
+<pre><code>nslookup reservas.nakahub.example
+nslookup reservas.nakahub.example 1.1.1.1</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> pregunta lo mismo a tu resolvedor y a uno público. <b>Resultado esperado:</b> la
+        misma IP en los dos. Si sólo falla el primero, el problema es tu resolvedor (o su vista interna), no el dominio.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🩺 Bloque 5 · Diagnóstico con método (cap. 15–18)</summary>
+      <div class="acc-body">
+        <h3>El runbook de NakaHub: de abajo arriba, parar en el primer fallo</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Pregunta</th><th>Windows</th><th>Linux</th><th>Si falla, mira…</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>¿Hay enlace?</td><td><code>Get-NetAdapter</code></td><td><code>ip link</code></td><td>cable, Wi-Fi, adaptador</td></tr>
+            <tr><td>2</td><td>¿Tengo una IP válida?</td><td><code>ipconfig</code></td><td><code>ip -4 a</code></td><td>DHCP (¿169.254?)</td></tr>
+            <tr><td>3</td><td>¿Llego a la puerta de enlace?</td><td><code>ping &lt;gw&gt;</code></td><td><code>ping &lt;gw&gt;</code></td><td>red local, máscara, router</td></tr>
+            <tr><td>4</td><td>¿Llego a Internet por IP?</td><td><code>ping 1.1.1.1</code>, <code>tracert</code></td><td><code>ping</code>, <code>mtr</code></td><td>router, NAT, operador</td></tr>
+            <tr><td>5</td><td>¿Resuelvo nombres?</td><td><code>nslookup</code></td><td><code>dig</code></td><td>DNS</td></tr>
+            <tr><td>6</td><td>¿Abre el puerto del servicio?</td><td><code>Test-NetConnection -Port</code></td><td><code>nc -zv</code></td><td>servicio o firewall</td></tr>
+            <tr><td>7</td><td>¿Responde bien la aplicación?</td><td><code>curl.exe -v</code></td><td><code>curl -v</code></td><td>la aplicación</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="clean">
+          <li><b>Antes de tocar</b> (15): qué falla, a quién, qué sí funciona, desde cuándo y qué ha cambiado. En ping importa <b>quién responde</b>. No responder al ping no significa caído. En <code>mtr</code>/<code>pathping</code> sólo cuenta la pérdida que se mantiene hasta el destino.</li>
+          <li><b>Pasos 5–7</b> (16): DNS comparando resolvedores (NXDOMAIN, SERVFAIL, sin respuesta); ante un timeout, <b>captura en los dos extremos</b>; <code>curl -w</code> pone números a la lentitud por fases.</li>
+          <li><b>Capturas</b> (17): filtro de captura BPF (<code>host</code>, <code>port</code>) frente a filtro de visualización (<code>ip.addr ==</code>). Retransmisiones y ACK duplicados = pérdida; SYN sin respuesta = timeout; RST = rechazo; zero window = receptor saturado. Guarda capturas de referencia.</li>
+          <li><b>Wi-Fi y rendimiento</b> (18): el aire es compartido; 2,4 GHz con canales 1, 6 y 11; señal −67 dBm o mejor. Velocidad de enlace ≠ rendimiento real (<code>iperf3</code>). <b>Bufferbloat</b> (latencia bajo carga) se arregla con SQM. MTU reducida + ICMP bloqueado = «unas webs cargan y otras no». Sin línea base, «va lento» no se comprueba.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🛡 Bloque 6 · Firewalls y VLAN (cap. 19–20)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Firewall</b> (19): reglas en orden, la primera que encaja decide; el resto recibe la <b>política por defecto: denegar</b>. <b>Con estado</b>: sólo se evalúa el primer paquete, lo <code>established,related</code> pasa. Cadenas <code>input</code> (para el equipo), <code>forward</code> (lo que lo atraviesa, la clave en un router) y <code>output</code>. <code>drop</code> da timeouts (hacia Internet); <code>reject</code>, rechazos claros (dentro). Firewall de host y de red; filtrar también la salida; IPv6 incluido.</li>
+          <li><b>VLAN</b> (20): un switch físico, varios lógicos. Etiqueta <b>802.1Q</b> (VLAN 1–4094). Puerto de <b>acceso</b> (una VLAN sin etiqueta, equipos finales) y <b>troncal</b> (varias etiquetadas). <b>Router-on-a-stick</b>: una subinterfaz por VLAN, todo el tráfico entre VLAN cruza el firewall. Un SSID por VLAN y aislamiento de clientes en invitados. No uses la VLAN 1.</li>
+        </ul>
+        <div class="code-block" data-lang="Texto · política entre redes (quién habla con quién)">
+<pre><code>Invitados  → sólo Internet (y aislados entre sí)
+Coworkers  → Internet + impresora
+Staff      → todo (Internet, NAS, impresora, cámaras, gestión)
+Cámaras    → sólo el NAS (graban allí), nunca Internet
+Todo lo demás → denegado por defecto</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> resume la tabla «quién habla con quién» que el firewall convierte en reglas
+        comentadas de la cadena <code>forward</code>. Las VLAN separan; el firewall decide qué cruza.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>☁ Bloque 7 · VPS, VPN y publicar con HTTPS (cap. 21–23)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>VPS</b> (21): máquina virtual con IP pública, facturada por horas; resuelve el CGNAT y la disponibilidad. Primeros minutos: actualizar → usuario con sudo → probar → endurecer SSH → <code>ufw</code> (permitiendo SSH antes de activarlo) → actualizaciones automáticas. Probar el acceso nuevo en otra ventana. Consola de emergencia. Dos capas de firewall: proveedor y servidor. Apagar no es borrar.</li>
+          <li><b>WireGuard</b> (22): VPN con claves al estilo SSH sobre UDP 51820, silenciosa ante quien no tiene clave. <b>AllowedIPs</b> es a la vez tabla de rutas (al enviar) y control de acceso (al recibir). Túnel <b>dividido</b> en NakaHub; quien está tras NAT llama al centro con <code>PersistentKeepalive</code>. Una pareja de claves por dispositivo.</li>
+          <li><b>Publicar</b> (23): DNS → red → TLS → proxy → aplicación. <b>nginx</b> como proxy inverso centraliza TLS y deja la aplicación en 127.0.0.1; <b>502</b> = el proxy no obtiene respuesta de la aplicación. <b>certbot</b> con Let's Encrypt (nombre real, puerto 80, 90 días: renovación automática). HSTS y registro CAA. En la nube, lo mismo con otros nombres (VPC, subnet, security group). Cerrar = destruir los recursos y limpiar el DNS.</li>
+        </ul>
+        <div class="code-block" data-lang="Texto · /etc/wireguard/wg0.conf (en el VPS)">
+<pre><code>[Interface]
+Address = 10.20.200.1/24
+ListenPort = 51820
+
+# Router de NakaHub: detrás de él, el personal y los servicios
+[Peer]
+PublicKey = (clave pública del router de la oficina)
+AllowedIPs = 10.20.200.2/32, 10.20.10.0/24, 10.20.40.0/24
+
+# Portátil de Ana
+[Peer]
+PublicKey = (clave pública del portátil)
+AllowedIPs = 10.20.200.12/32</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> convierte el VPS en el centro de una VPN en estrella. <b><code>AllowedIPs</code></b> del
+        router incluye las redes que hay detrás de él, así que el VPS sabe enviarles tráfico; el portátil sólo puede usar su
+        /32. <b>Resultado esperado:</b> <code>wg show</code> muestra un <code>latest handshake</code> reciente por peer.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Diferencias clave y preparación de entrevista de redes con NakaHub"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="65 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Switch vs router|MAC vs IP|TCP vs UDP|Refused vs timeout|SNAT vs DNAT|Recursivo vs autoritativo|drop vs reject|Acceso vs troncal|Túnel completo vs dividido">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>fijar las distinciones que más se confunden</strong> en redes y a practicar las preguntas que suelen aparecer
+      en una entrevista técnica de soporte, sistemas o DevOps, respondiendo con la red de NakaHub.</p>
+      <p><strong>Cómo usarlo:</strong> intenta responder cada pregunta en voz alta antes de desplegarla. En redes se valora sobre
+      todo el método: en qué capa está el problema, qué comando lo demuestra y qué descartas con cada resultado.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Par</th><th>La diferencia</th><th>Cap.</th></tr></thead>
+          <tbody>
+            <tr><td><b>Ancho de banda · latencia</b></td><td>Cuánto cabe (Mbps) · cuánto tarda (ms). Independientes.</td><td>1</td></tr>
+            <tr><td><b>Mbps · MB/s</b></td><td>Megabits · megabytes: divide entre 8.</td><td>1</td></tr>
+            <tr><td><b>Switch · router · punto de acceso</b></td><td>Une equipos de una red (MAC, capa 2) · une redes (IP, capa 3) · conecta el Wi-Fi a la red cableada.</td><td>1, 2</td></tr>
+            <tr><td><b>OSI · TCP/IP</b></td><td>7 capas, la numeración que se usa al hablar · 4 capas, lo que implementa Internet.</td><td>2</td></tr>
+            <tr><td><b>MAC · IP</b></td><td>Identifica la tarjeta en la red local, cambia en cada salto · identifica la interfaz de extremo a extremo.</td><td>2, 3</td></tr>
+            <tr><td><b>Trama · paquete · segmento</b></td><td>PDU de enlace · de red · de transporte.</td><td>2</td></tr>
+            <tr><td><b>IP privada · pública</b></td><td>Dentro (10/8, 172.16/12, 192.168/16) · en Internet, la del router.</td><td>4</td></tr>
+            <tr><td><b>Dirección de red · de difusión</b></td><td>La primera, nombra la red · la última, llega a todos. Ninguna se asigna a un equipo.</td><td>4</td></tr>
+            <tr><td><b>Estática · DHCP · reserva</b></td><td>A mano en el equipo · prestada · prestada pero siempre la misma, gestionada en el servidor.</td><td>4, 7</td></tr>
+            <tr><td><b>ARP · NDP</b></td><td>IP → MAC en IPv4, por difusión · lo mismo en IPv6, por multidifusión.</td><td>3, 6</td></tr>
+            <tr><td><b>Ruta por defecto · ruta específica</b></td><td>0.0.0.0/0, lo que no encaja en nada más · gana siempre el prefijo más largo.</td><td>8</td></tr>
+            <tr><td><b>TCP · UDP</b></td><td>Conexión, fiable y ordenado · sin conexión ni garantías, ligero.</td><td>9</td></tr>
+            <tr><td><b>127.0.0.1 · 0.0.0.0</b></td><td>Escuchar sólo en local · en todas las interfaces.</td><td>9</td></tr>
+            <tr><td><b>Connection refused · timeout</b></td><td>Llegó y nadie escucha (mira el servicio) · no hubo respuesta (mira la red y los firewalls).</td><td>9, 16</td></tr>
+            <tr><td><b>SNAT · DNAT</b></td><td>Cambia el origen al salir · cambia el destino al entrar (reenvío de puertos).</td><td>10</td></tr>
+            <tr><td><b>NAT · firewall</b></td><td>Traduce direcciones · decide qué pasa. NAT no protege.</td><td>10, 19</td></tr>
+            <tr><td><b>Resolvedor recursivo · autoritativo</b></td><td>Hace el trabajo y cachea · tiene la respuesta oficial (<code>aa</code>).</td><td>11</td></tr>
+            <tr><td><b>NXDOMAIN · SERVFAIL</b></td><td>El nombre no existe · el resolvedor no pudo obtener respuesta.</td><td>11, 16</td></tr>
+            <tr><td><b>A · CNAME</b></td><td>Nombre → IP · nombre → otro nombre (no en el apex ni junto a otros registros).</td><td>12</td></tr>
+            <tr><td><b>HTTP · HTTPS</b></td><td>Texto en claro · dentro de TLS (confidencial, íntegro y autenticado).</td><td>13</td></tr>
+            <tr><td><b>Clave de host · clave de usuario</b></td><td>Demuestra quién es el servidor (<code>known_hosts</code>) · quién eres tú (<code>authorized_keys</code>).</td><td>14</td></tr>
+            <tr><td><b>Filtro de captura · de visualización</b></td><td>Decide qué se guarda (BPF) · sólo oculta lo capturado.</td><td>17</td></tr>
+            <tr><td><b>Velocidad de enlace · rendimiento real</b></td><td>Lo que negocia el Wi-Fi o el cable · lo que mide <code>iperf3</code>.</td><td>18</td></tr>
+            <tr><td><b>drop · reject</b></td><td>Silencio (timeout) · rechazo claro.</td><td>19</td></tr>
+            <tr><td><b>input · forward · output</b></td><td>Para el propio equipo · lo que lo atraviesa · lo que genera.</td><td>19</td></tr>
+            <tr><td><b>Puerto de acceso · troncal</b></td><td>Una VLAN sin etiquetar · varias VLAN etiquetadas (802.1Q).</td><td>20</td></tr>
+            <tr><td><b>Túnel completo · dividido</b></td><td>Todo por la VPN · sólo las redes de la empresa.</td><td>22</td></tr>
+            <tr><td><b>Apagar · borrar</b></td><td>Un VPS apagado se sigue pagando · destruirlo y limpiar su DNS.</td><td>21, 23</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+        <h3>Cómo responder cualquier «no funciona»</h3>
+        <ol class="steps">
+          <li><b>Acota</b>: qué falla, a quién, qué sí funciona, desde cuándo y qué ha cambiado.</li>
+          <li><b>Recorre el runbook</b> de abajo arriba: enlace, IP, puerta de enlace, Internet por IP, nombres, puerto, aplicación.</li>
+          <li><b>Para en el primer fallo</b>: todo lo de arriba depende de él.</li>
+          <li><b>Divide y vencerás</b> en tramos largos: captura en un punto intermedio.</li>
+          <li><b>Busca la causa</b>, no el síntoma, y <b>documenta</b> con la salida literal.</li>
+        </ol>
+
+        <div class="code-block" data-lang="PowerShell · comprobar un puerto">
+<pre><code>Test-NetConnection 10.20.40.20 -Port 9100</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> intenta abrir una conexión TCP al puerto de impresión. <b><code>-Port</code></b> · el
+        puerto a probar. <b>Resultado esperado:</b> <code>TcpTestSucceeded : True</code>. Si tarda y da <code>False</code> con
+        <code>PingSucceeded : True</code>, hay un firewall o el servicio no escucha en esa dirección: captura en los dos extremos.</p>
+
+        <div class="note good"><b class="t">⭐ Buenas prácticas que se repiten en todo el curso</b>
+        <ul class="clean">
+          <li>Guarda la configuración y las capturas «de cuando funciona» para comparar.</li>
+          <li>.1 para el router y tercer octeto = VLAN: la dirección se lee sola.</li>
+          <li>Separa el rango DHCP del de direcciones fijas.</li>
+          <li>Expón el mínimo: un puerto concreto hacia un equipo concreto; nunca RDP ni SSH con contraseña a Internet.</li>
+          <li>Denegar por defecto, también en IPv6, y cada regla con un comentario.</li>
+          <li>Aplicaciones detrás de un proxy y escuchando sólo en 127.0.0.1.</li>
+          <li>Una pareja de claves por persona y dispositivo (SSH y WireGuard).</li>
+        </ul></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Comprobación o arreglo</th></tr></thead>
+          <tbody>
+            <tr><td><code>ipconfig</code> muestra 169.254.x.x</td><td>El DHCP no respondió.</td><td>Servidor DHCP, relay o rango agotado (4, 7).</td></tr>
+            <tr><td>Lo local funciona, Internet no; sin puerta de enlace</td><td>Falta o es incorrecta la puerta de enlace.</td><td>Debe estar dentro de la red del equipo (4).</td></tr>
+            <tr><td>El ping sale pero no vuelve</td><td>Falta el camino de vuelta en el destino o un router.</td><td>Capturar en el destino (8).</td></tr>
+            <tr><td><code>curl localhost:3000</code> funciona, desde otro equipo refused</td><td>El servicio escucha en 127.0.0.1.</td><td><code>ss -tlnp</code>; escuchar en 0.0.0.0 si debe ser accesible (9).</td></tr>
+            <tr><td>Reenvío de puertos configurado y desde fuera no llega</td><td>CGNAT, firewall o servicio que no escucha.</td><td>IP WAN en 100.64.0.0/10 = CGNAT (10).</td></tr>
+            <tr><td>Desde dentro, la IP pública de un servicio publicado no funciona</td><td>Hairpin NAT.</td><td>Split DNS con la IP interna (10, 12).</td></tr>
+            <tr><td>Nadie abre webs, pero <code>ping 1.1.1.1</code> va</td><td>Resolución de nombres.</td><td>Comparar resolvedores con <code>nslookup</code> (11, 16).</td></tr>
+            <tr><td>Media clientela ve la web nueva y media la antigua</td><td>TTL alto en el registro.</td><td>Bajar el TTL antes del cambio (11).</td></tr>
+            <tr><td><code>ERR_CERT_COMMON_NAME_INVALID</code></td><td>El nombre no está en los SAN del certificado.</td><td>Certificado para el nombre correcto, de una CA de confianza (13).</td></tr>
+            <tr><td>502 Bad Gateway</td><td>El proxy no obtiene respuesta de la aplicación.</td><td>¿Está arrancada y escuchando en el puerto que espera nginx? (13, 23)</td></tr>
+            <tr><td><code>REMOTE HOST IDENTIFICATION HAS CHANGED!</code></td><td>Reinstalación o impostor.</td><td>Verificar la huella por otro canal antes de aceptar (14).</td></tr>
+            <tr><td>«Unas webs cargan y otras no»</td><td>MTU reducida e ICMP bloqueado.</td><td><code>ping</code> sin fragmentar para hallar la MTU del camino (18).</td></tr>
+            <tr><td>La videollamada se corta cuando alguien descarga</td><td>Bufferbloat.</td><td>Medir latencia bajo carga; SQM (18).</td></tr>
+            <tr><td>Tras activar IPv6, un panel interno es accesible desde Internet</td><td>Sin NAT y sin reglas IPv6.</td><td>Denegar por defecto también en IPv6 (6, 19).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos y direccionamiento</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué cambia y qué se mantiene en un paquete al atravesar un router?</p>
+            <div class="q-ans">Cambian las direcciones MAC (en cada tramo, origen el router y destino el siguiente salto) y el TTL baja en uno. Se mantienen las IP de origen y destino (salvo que haya NAT). Por eso, en una captura, la MAC de destino de un paquete hacia Internet es la del router y la IP de destino, la del servidor final.</div></div>
+          <div class="q"><p class="q-text">2. Un equipo tiene 10.20.10.13/24 y puerta de enlace 10.20.1.1. Llega al NAS de su red pero no a Internet. ¿Por qué?</p>
+            <div class="q-ans">La puerta de enlace no pertenece a su red (10.20.10.0/24), así que no puede alcanzarla por ARP. Lo local funciona porque no la necesita; lo remoto no tiene a quién entregarse. Debe ser 10.20.10.1, el router según la convención de NakaHub.</div></div>
+          <div class="q"><p class="q-text">3. Una cámara tiene 10.20.40.77/27. ¿Red, difusión y puede usar 10.20.40.1 de puerta de enlace?</p>
+            <div class="q-ans">Una /27 tiene bloques de 32 (256 − 224). 77 cae en el bloque que empieza en 64: red 10.20.40.64, difusión 10.20.40.95, útiles de .65 a .94. La 10.20.40.1 está en otra red (10.20.40.0/27), así que no puede ser su puerta de enlace.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué significa una dirección 169.254.x.x?</p>
+            <div class="q-ans">Es APIPA: el equipo pidió dirección por DHCP, nadie respondió y se asignó una de enlace local. «Tener IP» no sirve de nada: no hay puerta de enlace. Hay que mirar el servidor DHCP (caído, rango agotado), el relay si el servidor está en otra red o el enlace (VLAN equivocada en el puerto).</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué una LAN IPv6 es siempre /64, aunque tenga cuatro equipos?</p>
+            <div class="q-ans">Porque SLAAC y muchos equipos construyen la parte de interfaz con 64 bits; con otro prefijo dejan de autoconfigurarse. En IPv6 sobran direcciones: no hay que ahorrar como en IPv4 (donde la gestión de NakaHub es una /28).</div></div>
+          <div class="q"><p class="q-text">6. Varios PC tienen de pronto la puerta de enlace 192.168.0.1 y no navegan. ¿Qué buscas?</p>
+            <div class="q-ans">Un servidor DHCP pirata, típicamente un router doméstico conectado por un puerto de la LAN. DHCP no autentica: responde quien conteste antes. Se localiza mirando qué servidor dio la concesión (<code>ipconfig /all</code>) y su MAC; se previene con DHCP snooping y separando redes.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Rutas, puertos, NAT y servicios</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Rutas: 10.20.0.0/16 vía A, 10.20.40.0/24 vía B, 0.0.0.0/0 vía C. ¿Por dónde van 10.20.40.10, 10.20.7.5 y 8.8.8.8?</p>
+            <div class="q-ans">10.20.40.10 encaja en las tres, pero gana el prefijo más largo: vía B. 10.20.7.5 encaja en la /16 y en la por defecto: vía A. 8.8.8.8 sólo encaja en la por defecto: vía C.</div></div>
+          <div class="q"><p class="q-text">2. Diferencia entre «connection refused» y «timeout».</p>
+            <div class="q-ans">Refused: el paquete llegó al equipo y nadie escucha en ese puerto (o un firewall respondió con reject): hay que mirar el servicio. Timeout: no hubo ninguna respuesta (un firewall con drop, una ruta, el equipo apagado): hay que mirar la red. Ante un timeout, capturar en los dos extremos dice dónde deja de verse el SYN.</div></div>
+          <div class="q"><p class="q-text">3. «La red está segura porque tiene NAT.» ¿Qué respondes?</p>
+            <div class="q-ans">NAT impide que desde fuera se inicien conexiones sin un reenvío de puertos, pero no es un firewall: no filtra lo que sale, no protege entre redes internas, UPnP puede abrir puertos solo y con IPv6 normalmente no hay NAT. La protección es un firewall con política de denegar por defecto.</div></div>
+          <div class="q"><p class="q-text">4. Cambias la IP de la web de reservas y una hora después media clientela ve la antigua. ¿Qué pasa?</p>
+            <div class="q-ans">Los resolvedores cachean la respuesta durante el TTL del registro; con 86.400 segundos, hasta un día. No hay «propagación» que acelerar: hay que bajar el TTL con antelación (al menos un TTL antiguo antes del cambio), hacer el cambio y subirlo después.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué protege HTTPS y qué no?</p>
+            <div class="q-ans">Protege el contenido (confidencialidad e integridad) y autentica al servidor con su certificado. No oculta la IP de destino ni, normalmente, el nombre del sitio, que viaja en el SNI. Alguien en el Wi-Fi de invitados no ve las páginas, pero sí a qué sitios se conecta cada equipo.</div></div>
+          <div class="q"><p class="q-text">6. Un técnico externo con acceso SSH termina su contrato. ¿Qué haces?</p>
+            <div class="q-ans">Con claves: quitar su clave pública de <code>authorized_keys</code> en cada equipo, sin afectar a nadie más. Con una contraseña compartida habría que cambiarla y repartir la nueva a todos, sin saber si la ha copiado. Por eso: una pareja de claves por persona y <code>PasswordAuthentication no</code>.</div></div>
+          <div class="q"><p class="q-text">7. Un desarrollador pide abrir el 5432 para consultar una base de datos que escucha en 127.0.0.1. ¿Qué propones?</p>
+            <div class="q-ans">Un túnel SSH: <code>ssh -L 5432:127.0.0.1:5432 usuario@servidor</code> lleva un puerto local de su equipo al puerto del servidor a través de SSH. La base de datos sigue sin exponerse y sólo accede quien tiene clave.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Diagnóstico y rendimiento</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Te llaman: «no funciona nada». ¿Cuáles son tus primeras preguntas?</p>
+            <div class="q-ans">¿Qué exactamente no funciona? ¿A quién le pasa (una persona, una red, todos)? ¿Qué sí funciona? ¿Desde cuándo? ¿Qué ha cambiado? Acotar así descarta media red sin teclear nada: si sólo fallan los coworkers y el personal navega, la salida a Internet y el NAT funcionan.</div></div>
+          <div class="q"><p class="q-text">2. Un servidor no responde al ping. ¿Está caído?</p>
+            <div class="q-ans">No necesariamente: muchos equipos y firewalls bloquean ICMP. Hay que probar el servicio que importa (<code>Test-NetConnection -Port</code>, <code>nc -zv</code>, <code>curl -v</code>). Y en el ping importa quién responde: el destino, tu propio equipo («host inaccesible», suele ser ARP) o un router («red inaccesible», «TTL expiró»).</div></div>
+          <div class="q"><p class="q-text">3. Un <code>mtr</code> da 0 % de pérdida en los saltos 1–4, 25 % en el 5, 30 % en el 6 y 28 % en el destino. ¿Dónde está el problema?</p>
+            <div class="q-ans">Entre el salto 4 y el 5, porque la pérdida aparece ahí y se mantiene hasta el destino. Una pérdida que sólo aparece en un salto intermedio y no llega al destino suele ser el router limitando sus respuestas ICMP, no un problema real.</div></div>
+          <div class="q"><p class="q-text">4. «La intranet va lenta» y <code>curl -w</code> da 2 segundos en la fase DNS y casi nada en las demás. ¿Qué arreglas?</p>
+            <div class="q-ans">La resolución de nombres: probablemente el primer resolvedor configurado no responde y el sistema espera su timeout antes de preguntar al segundo. La red y la aplicación están bien. Se corrige el resolvedor o el orden de los servidores DNS.</div></div>
+          <div class="q"><p class="q-text">5. En una captura ves muchas retransmisiones y ACK duplicados. ¿Qué indica?</p>
+            <div class="q-ans">Pérdida de paquetes en el camino: TCP retransmite lo que no se confirmó y el receptor repite el último ACK válido. La pérdida es desproporcionadamente dañina para TCP porque reduce su ventana. Hay que buscar dónde se pierden (Wi-Fi saturado, enlace con errores, bufferbloat).</div></div>
+          <div class="q"><p class="q-text">6. El contrato dice 600 Mbps y un coworker descarga a 70. ¿Problema?</p>
+            <div class="q-ans">Si son 70 MB/s, son unos 560 Mbps: está bien (MB/s × 8 = Mbps). Si son 70 Mbps, hay que medir por tramos: con <code>iperf3</code> dentro de la red y luego hacia Internet, comprobando la señal del Wi-Fi (dBm), la banda y la velocidad negociada del enlace.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Seguridad, VPN y publicación</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es un firewall con estado y por qué simplifica las reglas?</p>
+            <div class="q-ans">Recuerda las conexiones (conntrack) y sólo evalúa contra las reglas el primer paquete; las respuestas y lo relacionado (<code>established,related</code>) pasan solas. Así basta con permitir «el personal puede abrir conexiones al NAS» sin escribir reglas para el tráfico de vuelta.</div></div>
+          <div class="q"><p class="q-text">2. ¿drop o reject?</p>
+            <div class="q-ans">Hacia Internet, drop: no da información a quien escanea y le hace esperar. Dentro de la red, reject: el usuario o el administrador recibe un rechazo inmediato en vez de un timeout, y el diagnóstico es más rápido.</div></div>
+          <div class="q"><p class="q-text">3. ¿Qué aportan las VLAN si ya hay subredes distintas?</p>
+            <div class="q-ans">Separan de verdad los dominios de difusión sobre el mismo switch: sin VLAN, varias subredes en el mismo switch comparten difusión y un equipo puede cambiarse de subred poniéndose otra IP. Con VLAN, el tráfico entre redes tiene que cruzar el router, y ahí el firewall aplica la política. La red de invitados, además, con aislamiento de clientes.</div></div>
+          <div class="q"><p class="q-text">4. El dueño quiere ver las cámaras desde casa abriendo el 554 en el router. ¿Qué propones?</p>
+            <div class="q-ans">No exponerlas: las cámaras suelen tener firmware vulnerable y quedarían a la vista de cualquier escáner. La alternativa es la VPN de NakaHub: con WireGuard llega a la red de servicios desde casa, cifrado y sólo con su clave, sin ningún puerto abierto hacia las cámaras.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué hace <code>AllowedIPs</code> en WireGuard?</p>
+            <div class="q-ans">Dos cosas a la vez: al enviar, es la tabla de rutas (qué destinos van por ese peer); al recibir, es el control de acceso (qué direcciones de origen se aceptan de ese peer). Por eso se hace lo más estrecho posible: el portátil de Ana sólo tiene su /32 en el VPS, y en su equipo un túnel dividido con las redes de la empresa.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué piezas hay entre el nombre <code>reservas.nakahub.example</code> y la aplicación, y cómo diagnosticas un fallo?</p>
+            <div class="q-ans">DNS (el registro apunta al VPS), red (firewall del proveedor y <code>ufw</code> con 80 y 443), TLS (certificado de Let's Encrypt renovado por certbot), proxy (nginx) y aplicación en 127.0.0.1. Cada una es un paso del runbook: <code>nslookup</code>, <code>Test-NetConnection -Port 443</code>, <code>curl -v</code> para el certificado y el código; un 502 apunta a la aplicación.</div></div>
+          <div class="q"><p class="q-text">7. Terminado el proyecto, ¿cómo lo cierras?</p>
+            <div class="q-ans">Destruyendo los recursos de pago (el VPS, sus instantáneas y volúmenes), no apagándolos, porque un VPS apagado se sigue facturando. Y limpiando el DNS que apuntaba a ellos: un registro que apunta a una IP que el proveedor reasigna a otro cliente es un riesgo.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <h3>Una idea por capítulo</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Cap.</th><th>Si sólo recuerdas una cosa</th></tr></thead>
+          <tbody>
+            <tr><td>0–1</td><td>Modelo mental + método; ancho de banda y latencia son distintos.</td></tr>
+            <tr><td>2–3</td><td>Capas de abajo arriba; la MAC es del siguiente salto; ARP no autentica.</td></tr>
+            <tr><td>4–5</td><td>Dirección, máscara y puerta de enlace; tamaño de bloque y plan con margen.</td></tr>
+            <tr><td>6–7</td><td>IPv6 /64 sin NAT, firewall obligatorio; 169.254 = DHCP sin respuesta.</td></tr>
+            <tr><td>8</td><td>Prefijo más largo y camino de vuelta.</td></tr>
+            <tr><td>9</td><td>Refused = servicio; timeout = red o firewall.</td></tr>
+            <tr><td>10</td><td>NAT no es un firewall; CGNAT impide lo entrante.</td></tr>
+            <tr><td>11–12</td><td>Caché y TTL; compara resolvedores; split DNS.</td></tr>
+            <tr><td>13–14</td><td>Código HTTP = la red funciona; certificados por nombre; SSH con claves.</td></tr>
+            <tr><td>15–16</td><td>Runbook de 7 pasos; para en el primer fallo; captura en los dos extremos.</td></tr>
+            <tr><td>17–18</td><td>Si lo ves en el paquete, es verdad; línea base antes de decir «va lento».</td></tr>
+            <tr><td>19–20</td><td>Denegar por defecto; VLAN separan, el firewall decide.</td></tr>
+            <tr><td>21–23</td><td>VPS endurecido, VPN con AllowedIPs estrechos, proxy + HTTPS; borrar al terminar.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+        <ul class="clean">
+          <li>Vuelve a levantar el laboratorio de espacios de nombres y rompe una pieza cada vez.</li>
+          <li>Pasa el runbook a la red de tu casa y guarda la salida «de cuando funciona».</li>
+          <li>Abre Wireshark mientras cargas una web y localiza DNS, el saludo TCP y el TLS.</li>
+          <li>Calcula a mano la red y la difusión de cada dirección que veas en tu trabajo.</li>
+        </ul></div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de comandos</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

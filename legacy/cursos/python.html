@@ -18256,6 +18256,894 @@ nakadata --help</code></pre>
   </section>
 
 
+  <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: Python y NakaData de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Tipos|Colecciones|Funciones|Excepciones|dataclass|Generadores|pandas|Automatización|FastAPI">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del primer
+      <code>print</code> al proceso nocturno, la API con FastAPI y las pruebas con pytest. Cada concepto aparece con lo
+      mínimo para recordarlo —qué es, para qué sirve y cómo se escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a Python tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  7 · ENTREGA                FastAPI · pytest · ruff · pyproject · Docker      (23–24)
+                ▲
+  6 · DATOS QUE PERDURAN     SQLite · SQL · scikit-learn                       (21–22)
+                ▲
+  5 · AUTOMATIZACIÓN         CLI · Excel y correo · APIs · scraping · cron     (16–20)
+                ▲
+  4 · ANÁLISIS DE DATOS      NumPy · pandas · groupby · Matplotlib             (11–15)
+                ▲
+  3 · PYTHON IDIOMÁTICO      comprensiones · generadores · archivos · regex    (8–10)
+                ▲
+  2 · CÓDIGO ORGANIZADO      módulos · excepciones · logging · dataclasses     (5–7)
+                ▲
+  1 · FUNDAMENTOS            tipos · colecciones · control · funciones         (0–4)</div>
+
+        <h3>El flujo de datos de NakaData</h3>
+        <div class="diagram">  datos/crudos ──▶ leer (csv) ──▶ limpiar (fechas, regex, pandas) ──▶ datos/limpios
+                                                                        │
+     informe (groupby) ◀────────────────────────────────────────────────┤
+        │                                                               ▼
+        ├─▶ gráficos PNG · Excel · correo                           SQLite
+        │                                                               │
+        └─▶ CLI + tarea programada                  modelo ML ◀─────────┤
+                                                        │               ▼
+                                                        └────────▶  API FastAPI</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos</b></td><td>Nombres que apuntan a objetos; colecciones con distintas garantías.</td><td>Un proyecto, un <code>.venv</code>.</td></tr>
+            <tr><td><b>Código organizado</b></td><td>Módulos, errores explícitos y objetos que no pueden nacer mal.</td><td>Nunca <code>except: pass</code>.</td></tr>
+            <tr><td><b>Idiomático</b></td><td>Comprensiones, generadores y archivos leídos sin cargarlo todo.</td><td><code>encoding="utf-8"</code> siempre.</td></tr>
+            <tr><td><b>Análisis</b></td><td>Operar sobre columnas enteras, no fila a fila.</td><td>Primer vistazo antes de calcular.</td></tr>
+            <tr><td><b>Automatización</b></td><td>Procesos que corren solos, fallan ruidosamente y se pueden repetir.</td><td>Timeout y código de salida.</td></tr>
+            <tr><td><b>Datos e inteligencia</b></td><td>Persistir con SQL y predecir sin hacerse trampas.</td><td>Consultas parametrizadas; división por fecha.</td></tr>
+            <tr><td><b>Entrega</b></td><td>Exponer, probar y empaquetar.</td><td>Las pruebas permiten cambiar el código.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Abre un REPL mientras lees y escribe cada fragmento de memoria antes de mirarlo. Python premia la práctica
+        inmediata: comprobar algo en el intérprete cuesta cinco segundos.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐍 Bloque 1 · Entorno, tipos, colecciones y control (cap. 0–3)</summary>
+      <div class="acc-body">
+
+        <h3>Entorno (0)</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>python -m venv .venv                 # crea el entorno virtual del proyecto
+.venv\Scripts\activate               # Windows   ·   source .venv/bin/activate (macOS/Linux)
+python -m pip install pandas         # instala en el entorno activo
+python -m nakadata                   # ejecuta un paquete como programa</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> Python es <b>interpretado</b> (los errores aparecen al llegar a esa línea).
+        El <b>entorno virtual</b> aísla las librerías de cada proyecto; <code>ModuleNotFoundError</code> tras instalar suele ser
+        «instalé en otro Python». <code>.venv</code> no se comparte ni se sube: se recrea con <code>requirements.txt</code>.
+        Tres formas de ejecutar: REPL para probar, script para trabajar, <code>python -m</code> para módulos.</p>
+
+        <h3>Variables y tipos (1)</h3>
+        <ul class="clean">
+          <li>Una variable es un <b>nombre pegado a un objeto</b>; el tipo lo aporta el valor. Básicos: <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code>, <code>None</code> («no hay dato», no es 0).</li>
+          <li><code>0.1 + 0.2 != 0.3</code>: los <code>float</code> son aproximaciones. Redondea <b>al mostrar</b> (<code>:.2f</code>), no en cada línea antes de sumar.</li>
+          <li>Python <b>no convierte solo</b>: <code>"12" * 3</code> = <code>"121212"</code>. <code>input()</code> devuelve texto. <code>int()</code> trunca, <code>round()</code> redondea.</li>
+          <li>Operadores: <code>//</code> división entera, <code>%</code> resto, <code>**</code> potencia.</li>
+          <li><code>str</code> es inmutable: sus métodos devuelven una cadena nueva (<code>s = s.strip()</code>).</li>
+        </ul>
+        <div class="code-block" data-lang="Python">
+<pre><code>precio = float("4,75".replace(",", "."))
+ticket = "T-2026-03-14-0042"
+anio = ticket[2:6]                                 # slicing: [inicio:fin)
+print(f"{'Total':&lt;10}{precio * 3:&gt;10.2f} EUR")      # f-string con formato
+print(f"{1234567.891:,.2f}")                       # 1,234,567.89</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> convierte un número con coma, corta un texto y alinea columnas con el
+        mini-lenguaje de formato (<code>&lt;</code> izquierda, <code>&gt;</code> derecha, <code>,</code> miles, <code>.2f</code> decimales).</p>
+
+        <h3>Colecciones (2)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Tipo</th><th>Sintaxis</th><th>Garantía</th><th>Para qué</th></tr></thead>
+          <tbody>
+            <tr><td><b>list</b></td><td><code>[1, 2]</code></td><td>Ordenada, mutable, duplicados</td><td>«Muchas cosas» (opción por defecto)</td></tr>
+            <tr><td><b>tuple</b></td><td><code>(41.3, 2.1)</code></td><td>Ordenada, inmutable</td><td>Grupos fijos, desempaquetado, claves de dict</td></tr>
+            <tr><td><b>dict</b></td><td><code>{"sku": "A-1"}</code></td><td>Clave → valor, búsqueda O(1)</td><td>Buscar por nombre; forma nativa del JSON</td></tr>
+            <tr><td><b>set</b></td><td><code>{"a", "b"}</code> · <code>set()</code></td><td>Sin duplicados ni orden, <code>in</code> O(1)</td><td>Pertenencia, unión, intersección</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="clean">
+          <li><code>{}</code> es un <b>diccionario</b> vacío; el conjunto vacío es <code>set()</code>.</li>
+          <li><code>lista.sort()</code> modifica y <b>devuelve <code>None</code></b>; <code>sorted(lista)</code> devuelve una nueva.</li>
+          <li><b>Aliasing</b>: <code>b = a</code> no copia, crea otro nombre para el mismo objeto. Copia con <code>a.copy()</code> o <code>list(a)</code>.</li>
+          <li><code>d.get("stock", 0)</code> evita el <code>KeyError</code>. Las claves deben ser inmutables (<code>unhashable type: 'list'</code>).</li>
+          <li>Una <b>lista de diccionarios es una tabla</b>: el modelo mental de un DataFrame.</li>
+        </ul>
+
+        <h3>Condicionales y bucles (3)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>unidades = {}
+for i, linea in enumerate(ticket, start=1):        # posición + elemento
+    if linea.get("cantidad") is None:              # guarda: no tumbar el proceso
+        continue
+    cat = linea["categoria"]
+    unidades[cat] = unidades.get(cat, 0) + linea["cantidad"]   # contador
+
+for sku, datos in catalogo.items(): ...           # parejas de un dict
+for sku, cant in zip(skus, cantidades): ...       # dos colecciones a la vez
+
+match tipo:                                        # 3.10+
+    case "venta": ...
+    case "devolucion" | "anulacion": ...
+    case _: ...</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> la <b>indentación de 4 espacios es sintaxis</b>. <code>if/elif/else</code>
+        ejecuta el primer bloque verdadero (el orden es la prioridad). <b>Truthiness</b>: vacío, 0 y <code>None</code> son
+        falsos; cuidado si 0 es un dato válido (usa <code>is None</code>). <code>for</code> recorre elementos;
+        <code>while</code> cuando no sabes cuántas vueltas. Acumulador y contador con <code>.get(k, 0)</code> resuelven la
+        mayoría de cálculos.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧱 Bloque 2 · Funciones, módulos, excepciones y clases (cap. 4–7)</summary>
+      <div class="acc-body">
+
+        <h3>Funciones (4)</h3>
+        <div class="code-block" data-lang="Python · nakadata/calculos.py">
+<pre><code>def importe_linea(cantidad: int, precio: float, descuento: float = 0.0) -&gt; float:
+    """Importe de una línea tras aplicar el descuento."""
+    return cantidad * precio * (1 - descuento)
+
+def acumular(fila, historico=None):     # nunca historico=[]
+    if historico is None:
+        historico = []
+    historico.append(fila)
+    return historico
+
+def total(*importes, **opciones): ...   # args: tupla · kwargs: dict</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> sin <code>return</code>, la función devuelve <code>None</code>. Argumentos por
+        posición o por nombre; los que tienen valor por defecto, al final. Un valor por defecto <b>mutable</b> se crea una sola
+        vez y se comparte entre llamadas. Las anotaciones de tipo <b>no se comprueban al ejecutar</b>. Lo creado dentro muere
+        dentro; asignar a un nombre global dentro de una función lo vuelve local (<code>UnboundLocalError</code>). Separa
+        <b>cálculo puro</b> de presentación; devuelve un <code>dict</code> cuando son varios valores con nombre.</p>
+
+        <h3>Módulos y paquetes (5)</h3>
+        <ul class="clean">
+          <li><b>Módulo</b> = archivo <code>.py</code>; <b>paquete</b> = carpeta con <code>__init__.py</code>. Importaciones absolutas: <code>from nakadata.calculos import importe_linea</code>.</li>
+          <li>Importar <b>ejecuta</b> el archivo la primera vez (luego lo reutiliza de <code>sys.modules</code>).</li>
+          <li><code>if __name__ == "__main__":</code> separa «me ejecutan» de «me importan». <code>__main__.py</code> permite <code>python -m nakadata</code>.</li>
+          <li>Python busca en <code>sys.path</code> empezando por la carpeta del script: <b>nunca</b> llames a un archivo <code>json.py</code> o <code>random.py</code>.</li>
+          <li><code>pip freeze &gt; requirements.txt</code> e <code>pip install -r requirements.txt</code> = reproducible. Fija versiones (<code>pandas==2.2.3</code>).</li>
+          <li>Importaciones circulares = señal de diseño: falta un tercer módulo.</li>
+        </ul>
+
+        <h3>Excepciones y logging (6)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>class NakaDataError(Exception): ...                 # base del proyecto
+class DatosInsuficientesError(NakaDataError): ...
+
+try:
+    precio = catalogo[sku]["precio"]                # lo mínimo dentro del try
+except KeyError:
+    log.warning("SKU desconocido %r · línea %d", sku, n)
+else:
+    total += precio                                 # camino feliz
+finally:
+    archivo.close()                                 # siempre
+
+if not lineas:
+    raise DatosInsuficientesError("El ticket no tiene líneas")</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el <b>traceback se lee de abajo arriba</b> (última línea = qué; bloque anterior
+        = dónde). Excepciones concretas; nunca <code>except:</code> desnudo ni <code>pass</code> silencioso. <code>raise</code>
+        con mensaje útil mejor que devolver <code>None</code>. <b>EAFP</b> (intentar y capturar) es el estilo idiomático.
+        <code>logging</code> sustituye a <code>print</code>: niveles, hora, módulo, varios destinos; se configura una vez en el
+        punto de entrada. <code>log.exception</code> dentro de un <code>except</code> incluye el traceback. Código de salida
+        0 = correcto.</p>
+
+        <h3>Clases y dataclasses (7)</h3>
+        <div class="code-block" data-lang="Python · nakadata/modelo.py">
+<pre><code>from dataclasses import dataclass, field
+
+@dataclass(frozen=True, slots=True)
+class Producto:
+    sku: str
+    nombre: str
+    precio: float
+
+    def __post_init__(self):                         # valida al construir
+        if self.precio &lt; 0:
+            raise ValueError(f"Precio negativo en {self.sku}: {self.precio}")
+
+    @classmethod
+    def desde_dict(cls, d: dict) -&gt; "Producto":      # constructor alternativo
+        return cls(d["sku"], d["nombre"].strip(), float(d["precio"]))
+
+@dataclass
+class LineaVenta:
+    producto: Producto                               # composición
+    cantidad: int
+
+    @property
+    def importe(self) -&gt; float:                      # se lee como atributo
+        return self.producto.precio * self.cantidad
+
+@dataclass
+class Ticket:
+    lineas: list[LineaVenta] = field(default_factory=list)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>@dataclass</code> genera <code>__init__</code>, <code>__repr__</code> y
+        <code>__eq__</code> desde las anotaciones. <code>frozen=True</code> = inmutable (para «cambiarlo», crea otro con
+        <code>dataclasses.replace</code>); <code>slots=True</code> ahorra memoria. Los métodos reciben <code>self</code>.
+        <b>Composición</b> antes que herencia. Para millones de filas, no objetos: pandas.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>✨ Bloque 3 · Python idiomático: comprensiones, archivos, fechas y regex (cap. 8–10)</summary>
+      <div class="acc-body">
+
+        <h3>Comprensiones, generadores y orden superior (8)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>importes = [l["cantidad"] * l["precio"] for l in lineas if l["cantidad"] &gt; 0]   # lista
+precios = {p.sku: p.precio for p in productos}                                  # dict
+tiendas = {v["tienda"] for v in ventas}                                         # set
+total = sum(float(l["importe"]) for l in leer_csv(ruta))                        # generador
+
+def leer_lotes(ruta):
+    for linea in ruta.open(encoding="utf-8"):
+        yield linea.rstrip("\n")                    # produce de uno en uno
+
+top3 = sorted(productos, key=lambda p: p.importe, reverse=True)[:3]
+from collections import Counter, defaultdict
+Counter(v["tienda"] for v in ventas).most_common(3)
+por_tienda = defaultdict(list)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> corchetes → lista, llaves con <code>:</code> → dict, llaves sin <code>:</code>
+        → set, <b>paréntesis → generador</b>: produce bajo demanda, ocupa casi nada y <b>se consume una sola vez</b> (no tiene
+        <code>len</code> ni índice). <code>yield</code> convierte una función en generador. <code>key=</code> flexibiliza
+        <code>sorted</code>, <code>max</code> y <code>min</code>; <code>any</code>/<code>all</code> para sí/no.
+        <code>itertools.groupby</code> exige datos ordenados. Semilla fija (<code>random.seed</code>) = datos reproducibles.</p>
+
+        <h3>Archivos: pathlib, CSV y JSON (9)</h3>
+        <div class="code-block" data-lang="Python · nakadata/almacen.py">
+<pre><code>from pathlib import Path
+import csv, json
+
+RAIZ = Path(__file__).resolve().parent.parent       # independiente del directorio actual
+CRUDO = RAIZ / "datos" / "crudos" / "ventas.csv"
+
+def leer_csv(ruta: Path):
+    with ruta.open(encoding="utf-8", newline="") as f:
+        yield from csv.DictReader(f, delimiter=";")    # cada fila: dict de str
+
+with (RAIZ / "salidas" / "informe.json").open("w", encoding="utf-8") as f:
+    json.dump(datos, f, ensure_ascii=False, indent=2, default=str)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> rutas con <code>/</code> y relativas al archivo, no al directorio desde el que
+        se ejecuta (por eso falla en el programador de tareas). <code>with</code> cierra siempre. <code>encoding="utf-8"</code>
+        explícito («MÃ¡laga» = codificación). <code>newline=""</code> en CSV (si no, líneas en blanco). <b>Un CSV no tiene
+        tipos</b>: todo llega como texto. JSON conserva tipos y anidamiento pero no fechas (<code>default=str</code>).
+        <code>"w"</code> sobrescribe, <code>"a"</code> añade, <code>"x"</code> falla si existe.</p>
+
+        <h3>Fechas y expresiones regulares (10)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>from datetime import datetime, timedelta
+import re
+
+f = datetime.strptime("14/03/2026", "%d/%m/%Y")      # texto → fecha
+f.strftime("%Y-%m-%d"); f.isoformat()                 # fecha → texto (ISO para guardar)
+f + timedelta(days=7)                                  # aritmética de fechas
+
+PATRON = re.compile(r"T-(\d{4})(\d{2})\d{2}-(\d+)")   # compila fuera del bucle
+m = PATRON.match(codigo)
+if m:
+    anio, mes, numero = m.groups()</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> una fecha en texto no se puede calcular ni ordenar bien: conviértela. Guarda en
+        <b>ISO 8601</b>. Restar fechas da <code>timedelta</code>. Fechas ingenuas sin zona; en sistemas distribuidos, <b>UTC
+        dentro y local al mostrar</b>. Regex con cadena cruda <code>r""</code>; comprueba que <code>match</code> no es
+        <code>None</code>. No uses regex para HTML, CSV ni fechas. <b>Normalizar ≠ validar</b>: lo arreglable se arregla, lo
+        demás se descarta <b>contándolo</b>, y los recuentos deben cuadrar.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔢 Bloque 4 · NumPy y pandas: cargar, explorar y limpiar (cap. 11–13)</summary>
+      <div class="acc-body">
+
+        <h3>NumPy (11)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>import numpy as np
+importes = np.array(lista, dtype=float)
+con_iva = importes * 1.21                          # vectorizado: sin bucle
+grandes = importes[(importes &gt; 20) &amp; (tiendas == "Naka Sur")]   # máscara: &amp; | ~ con paréntesis
+m.sum(axis=0)                                      # matriz (tiendas × días): axis=0 → total por día
+np.percentile(importes, 50); np.nanmean(importes)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un <code>ndarray</code> guarda elementos del <b>mismo tipo</b> en memoria
+        contigua; las operaciones corren en C. <b>Vectorizar</b> = operar sobre el array entero. <b>Broadcasting</b> combina
+        formas compatibles. <code>axis</code> es el eje que desaparece. Un corte es una <b>vista</b>, no una copia.
+        <code>np.nan</code> contamina los cálculos y <code>nan != nan</code>. <code>and</code>/<code>or</code> sobre arrays
+        → «truth value is ambiguous». La media engaña con distribuciones sesgadas: mira la mediana.</p>
+
+        <h3>pandas I · cargar y explorar (12)</h3>
+        <div class="code-block" data-lang="Python · nakadata/analisis.py">
+<pre><code>import pandas as pd
+df = pd.read_csv(ruta, sep=";", encoding="utf-8", parse_dates=["fecha"],
+                 dtype={"tienda": "category", "sku": "string"})
+
+df.shape; df.head(); df.sample(5); df.info(); df.describe()   # primer vistazo, siempre
+
+df.loc[df["tienda"] == "Naka Sur", ["fecha", "importe"]]       # por etiqueta (rango incluye el final)
+df.iloc[0:5]                                                    # por posición
+df[(df["importe"] &gt; 20) &amp; df["tienda"].isin(["Naka Sur", "Naka Norte"])]
+df["importe"] = df["cantidad"] * df["precio_unitario"]         # columna calculada
+df["tienda"].value_counts(); df["sku"].nunique(); df.nlargest(5, "importe")</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un <b>DataFrame</b> es un conjunto de <b>Series</b> que comparten índice,
+        sobre arrays de NumPy. Si <code>info()</code> dice <code>object</code> en una columna numérica, hay texto dentro:
+        arréglalo antes de calcular. <code>count</code> menor que filas = nulos. Para modificar un subconjunto, usa
+        <code>.loc</code> o <code>.copy()</code> (<code>SettingWithCopyWarning</code>). <code>category</code> para texto repetido.</p>
+
+        <h3>pandas II · limpiar y combinar (13)</h3>
+        <div class="code-block" data-lang="Python · nakadata/limpieza.py">
+<pre><code>df["precio"] = pd.to_numeric(df["precio"].str.replace(",", "."), errors="coerce")
+print(df["precio"].isna().sum())                    # convertir → contar → decidir
+df = df.dropna(subset=["precio"])
+df["tienda"] = df["tienda"].str.strip().str.title()
+df = df.drop_duplicates(subset=["ticket", "linea"])
+
+df = df.merge(catalogo, on="sku", how="left", validate="m:1", indicator=True)
+print(df["_merge"].value_counts())                   # auditar el cruce</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> ausentes: <code>NaN</code>, <code>None</code>, <code>NaT</code>;
+        <code>isna</code>/<code>fillna</code>/<code>dropna</code> son <b>decisiones de negocio</b> (rellenar con 0 o con la media
+        sesga el informe). <code>errors="coerce"</code> convierte lo inválido en NaN. <code>.str</code> aplica métodos de
+        texto a la columna. <b>merge</b>: <code>how="left"</code> para no perder filas, <code>validate="m:1"</code> para que un
+        catálogo duplicado no multiplique filas, <code>indicator=True</code> para auditar. <code>_x</code>/<code>_y</code> =
+        columnas con el mismo nombre. Pipeline por etapas con nombre.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📊 Bloque 5 · Agregar, series temporales y gráficos (cap. 14–15)</summary>
+      <div class="acc-body">
+
+        <h3>groupby, pivot_table y tiempo (14)</h3>
+        <div class="code-block" data-lang="Python · nakadata/informe.py">
+<pre><code>por_tienda = df.groupby("tienda", observed=True).agg(
+    facturacion=("importe", "sum"),
+    tickets=("ticket", "nunique"),
+    ticket_medio=("importe", "mean"),
+).sort_values("facturacion", ascending=False)
+
+tabla = df.pivot_table(index="tienda", columns="categoria", values="importe",
+                       aggfunc="sum", margins=True, observed=True)
+
+diario = df.set_index("momento").resample("D")["importe"].sum()
+tendencia = diario.rolling(7).mean()
+variacion = diario.pct_change()
+
+df["peso"] = df["importe"] / df.groupby("tienda")["importe"].transform("sum")
+mejor = df.loc[df.groupby("tienda")["importe"].idxmax()]   # el mejor de cada grupo</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>groupby</code> = dividir, aplicar, combinar; agregaciones con nombre dejan
+        el resultado listo para publicar. <code>observed=True</code> al agrupar por <code>category</code> (si no, aparecen
+        combinaciones vacías con ceros). <b><code>agg</code></b> devuelve una fila por grupo; <b><code>transform</code></b>, una
+        por fila original. <code>resample</code> necesita un <code>DatetimeIndex</code> y rellena huecos. <code>rolling</code>
+        tiene NaN al principio (no los rellenes con ceros). El «ticket medio» real se calcula por ticket, no por línea:
+        agrupa por ticket primero.</p>
+
+        <h3>Matplotlib (15)</h3>
+        <div class="code-block" data-lang="Python · nakadata/graficos.py">
+<pre><code>import matplotlib
+matplotlib.use("Agg")                               # antes de pyplot: sin pantalla
+import matplotlib.pyplot as plt
+
+def barras_tiendas(tabla, ruta):
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ax.bar(tabla.index, tabla["facturacion"])
+    ax.set_title("Naka Centro lidera la facturación de marzo")   # la conclusión
+    ax.set_ylabel("EUR"); ax.set_ylim(bottom=0)                  # barras desde cero
+    fig.savefig(ruta, dpi=150, bbox_inches="tight")
+    plt.close(fig)                                               # libera memoria</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> trabaja siempre sobre <code>ax</code> (interfaz explícita). Línea para el
+        tiempo, barras para comparar, histograma para distribuciones, <code>imshow</code> para cruzar dos categorías.
+        <code>reindex()</code> impone el orden lógico (los días de la semana no van en orden alfabético). Los gráficos
+        <b>reciben tablas ya calculadas</b>: calcular y dibujar son módulos distintos.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚙ Bloque 6 · Automatización: CLI, informes, APIs, scraping y tareas (cap. 16–20)</summary>
+      <div class="acc-body">
+
+        <h3>CLI y sistema de archivos (16)</h3>
+        <div class="code-block" data-lang="Python · nakadata/cli.py">
+<pre><code>import argparse, sys
+
+def main(argv=None) -&gt; int:
+    comunes = argparse.ArgumentParser(add_help=False)
+    comunes.add_argument("--periodo", required=True, help="AAAA-MM")
+    p = argparse.ArgumentParser(prog="nakadata")
+    sub = p.add_subparsers(dest="comando", required=True)
+    sub.add_parser("informe", parents=[comunes]).add_argument("--sin-graficos", action="store_true")
+    args = p.parse_args(argv)
+    if not crudo_existe(args.periodo):
+        log.error("No hay datos de %s", args.periodo)
+        return 2                                    # ≠ 0: el sistema se entera
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>argparse</code> da ayuda, validación y errores; <code>--sin-graficos</code>
+        llega como <code>args.sin_graficos</code>. El <b>código de salida</b> es la interfaz con el sistema operativo y los
+        orquestadores. <code>shutil</code> copia, mueve, comprime y borra árboles (<code>rmtree</code> es irreversible:
+        valida la ruta y muestra antes de borrar). <code>subprocess.run([...], timeout=…, check=True)</code>, nunca
+        <code>shell=True</code> con datos externos. Importa lo pesado dentro de la función para que <code>--help</code> sea rápido.</p>
+
+        <h3>Excel y correo (17)</h3>
+        <ul class="clean">
+          <li><code>with pd.ExcelWriter(ruta, engine="openpyxl") as w: df.to_excel(w, sheet_name="Tiendas")</code>; <code>w.book</code> da acceso a openpyxl.</li>
+          <li>El formato va en <code>number_format</code>, no en el valor: guarda números, no textos «1.234,56 €», o Excel no podrá sumarlos. <code>freeze_panes</code> y anchos de columna.</li>
+          <li><code>EmailMessage</code>: <code>set_content</code> (texto), <code>add_alternative</code> (HTML), <code>add_attachment</code>. <code>smtplib.SMTP(host, 587, timeout=30)</code> + <code>starttls()</code> + <code>login()</code>.</li>
+          <li>Credenciales en <b>variables de entorno</b>; Gmail/Outlook exigen contraseña de aplicación. Si una contraseña llegó al repositorio, cámbiala <b>y</b> considérala comprometida (sigue en el historial).</li>
+          <li>Prueba sin enviar: guarda un <code>.eml</code> o usa un servidor SMTP local. Componer y enviar, funciones separadas.</li>
+        </ul>
+
+        <h3>HTTP y APIs con requests (18)</h3>
+        <div class="code-block" data-lang="Python · nakadata/api_cliente.py">
+<pre><code>sesion = requests.Session()
+sesion.headers.update({"User-Agent": "NakaData/1.0", "Authorization": f"Bearer {os.environ['API_KEY']}"})
+
+def obtener(url, **params):
+    for intento in range(4):
+        try:
+            r = sesion.get(url, params=params, timeout=10)     # sin timeout no hay proceso fiable
+            if r.status_code in (429, 500, 502, 503, 504):
+                time.sleep(2 ** intento); continue            # espera creciente
+            r.raise_for_status()                               # 4xx/5xx → excepción
+            return r.json()
+        except requests.RequestException as e:
+            ultimo = e
+    raise NakaDataError(f"No se pudo obtener {url}") from ultimo</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> petición = método + URL + parámetros + cabeceras; respuesta = código + cabeceras
+        + cuerpo. <b>4xx = culpa tuya</b> (no reintentes, salvo 429); <b>5xx = del servidor</b> (reintenta con espera). Una
+        <code>Session</code> reutiliza conexión y cabeceras. Paginación respetando el límite de peticiones. Guarda la respuesta
+        cruda: los datos externos no siempre se pueden volver a pedir.</p>
+
+        <h3>Web scraping (19)</h3>
+        <ul class="clean">
+          <li><b>Último recurso</b>: antes, API oficial, descargas o la API interna que usa la propia web. Respeta <code>robots.txt</code>, los términos y el ritmo (<code>time.sleep</code>); identifícate; nada de datos personales ni logins.</li>
+          <li><code>BeautifulSoup(html, "html.parser")</code>; <code>select</code> / <code>select_one</code> con selectores CSS; <code>.get_text(strip=True)</code> y <code>["href"]</code>.</li>
+          <li>Si el dato no está en el HTML descargado, lo pinta JavaScript: busca la petición en la pestaña Network.</li>
+          <li>Nunca analices HTML con regex. Lista de dicts → DataFrame. Un scraper <b>se romperá</b>: valida lo extraído y falla ruidosamente si sale vacío.</li>
+        </ul>
+
+        <h3>Ejecución desatendida (20)</h3>
+        <ul class="clean">
+          <li>Configuración con prioridad <b>argumentos &gt; entorno &gt; <code>.env</code> &gt; defecto</b>. El <code>.env</code> nunca se sube. Secretos con <code>field(repr=False)</code>. Valida al arrancar.</li>
+          <li><b>Idempotencia</b>: ejecutar dos veces da el mismo resultado. Marcador de trabajo hecho escrito <b>al final</b> y una vía <code>--forzar</code>.</li>
+          <li><b>Bloqueo</b> con un archivo creado en modo <code>"x"</code>, liberado en <code>finally</code>.</li>
+          <li><b>Reintentos por etapa</b>, cronometrados: el tiempo por etapa detecta degradaciones antes del fallo.</li>
+          <li>Logs rotativos (<code>TimedRotatingFileHandler</code>) y el <b>programador del sistema</b> (cron, Programador de tareas), no un <code>while True</code>.</li>
+          <li>Si falla sólo en la tarea programada: directorio de trabajo distinto o Python sin el <code>.venv</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · SQLite, machine learning, FastAPI y entrega (cap. 21–24)</summary>
+      <div class="acc-body">
+
+        <h3>SQLite y SQL (21)</h3>
+        <div class="code-block" data-lang="Python · nakadata/db.py">
+<pre><code>import sqlite3
+from contextlib import contextmanager
+
+@contextmanager
+def conexion(ruta):
+    con = sqlite3.connect(ruta)
+    con.execute("PRAGMA foreign_keys = ON")         # en cada conexión
+    try:
+        yield con
+        con.commit()                                # todo…
+    except Exception:
+        con.rollback()                              # …o nada
+        raise
+    finally:
+        con.close()
+
+with conexion(DB) as con:
+    con.executemany("INSERT OR REPLACE INTO ventas VALUES (?, ?, ?)", filas)   # idempotente y rápido
+    filas = con.execute("SELECT tienda, SUM(importe) FROM ventas WHERE fecha &gt;= ? GROUP BY tienda",
+                        (desde,)).fetchall()
+df = pd.read_sql("SELECT * FROM ventas", con)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> orden de SQL: <code>SELECT … FROM … WHERE … GROUP BY … HAVING … ORDER BY …
+        LIMIT</code> (el <code>groupby</code> de pandas en otro idioma). <b>Consultas parametrizadas siempre</b> (<code>?</code>
+        o <code>:nombre</code>), aunque el valor «sea interno». Sin <code>commit</code> no se guarda nada. Índices en columnas
+        de filtro y unión; <code>EXPLAIN QUERY PLAN</code> dice si se usan. <code>CHECK</code> en la base aunque valides en
+        Python: es la última defensa. SQLite = un escritor a la vez; para muchas escrituras concurrentes, PostgreSQL.</p>
+
+        <h3>Machine learning con scikit-learn (22)</h3>
+        <div class="code-block" data-lang="Python · nakadata/prediccion.py">
+<pre><code>corte = "2026-03-01"
+train, test = datos[datos.fecha &lt; corte], datos[datos.fecha &gt;= corte]   # por fecha, no aleatorio
+
+modelo = Pipeline([
+    ("prep", ColumnTransformer([("cat", OneHotEncoder(handle_unknown="ignore"), ["tienda", "dia"])],
+                               remainder="passthrough")),
+    ("reg", RandomForestRegressor(random_state=42)),
+])
+modelo.fit(train[X], train[y])
+mae = mean_absolute_error(test[y], modelo.predict(test[X]))
+referencia = mean_absolute_error(test[y], [train[y].mean()] * len(test))   # ¿mejoras lo trivial?
+joblib.dump(modelo, "salidas/modelo.joblib")</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> supervisado = aprender de ejemplos con respuesta (regresión → número;
+        clasificación → categoría). En series temporales, <b>división por fecha</b>: la aleatoria filtra el futuro y da métricas
+        falsas. Las variables deben existir en el momento de predecir. El <b>Pipeline</b> aplica al predecir lo mismo que al
+        entrenar. <b>MAE</b> en unidades reales, <b>RMSE</b> castiga errores grandes, <b>R²</b> negativo = peor que la media.
+        Siempre contra una <b>referencia</b>. Sobreajuste = muy bien en train y mal en test. Los modelos se degradan: vigila el error.</p>
+
+        <h3>FastAPI (23)</h3>
+        <div class="code-block" data-lang="Python · nakadata/web.py">
+<pre><code>@asynccontextmanager
+async def lifespan(app):
+    app.state.modelo = joblib.load(RUTA_MODELO)     # lo caro, una vez al arrancar
+    yield
+
+app = FastAPI(title="NakaData", lifespan=lifespan)
+
+class Pedido(BaseModel):                            # Pydantic: contrato de entrada
+    tienda: str
+    fecha: date
+
+@app.get("/resumen")
+def resumen(periodo: str = Query(pattern=r"^\d{4}-\d{2}$"), limite: int = Query(100, ge=1, le=500)):
+    datos = consultar(periodo, limite)
+    if not datos:
+        raise HTTPException(status_code=404, detail=f"Sin datos para {periodo}")
+    return datos</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> las anotaciones de tipo convierten, validan, documentan y eligen el código de
+        respuesta. Entrada inválida → <b>422</b> sin ejecutar la función; no existe → <b>404</b>; dependencia caída →
+        <b>503</b>. <code>/docs</code> y <code>/openapi.json</code> gratis. <code>def</code> normal con código bloqueante
+        (sqlite3, pandas); <code>async def</code> sólo con librerías asíncronas. Antes de publicar: autenticación, CORS,
+        límites y HTTPS. Se arranca con <code>uvicorn nakadata.web:app --reload</code>.</p>
+
+        <h3>pytest, ruff y empaquetado (24)</h3>
+        <div class="code-block" data-lang="Python · tests/test_calculos.py">
+<pre><code>@pytest.mark.parametrize("cantidad, esperado", [(1, 4.75), (10, 42.75)])
+def test_importe_con_descuento_por_volumen(cantidad, esperado):
+    assert importe_linea(cantidad, 4.75) == pytest.approx(esperado)
+
+def test_ticket_vacio_falla():
+    with pytest.raises(DatosInsuficientesError):
+        desglosar_ticket([])</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> archivos <code>test_*.py</code>, funciones <code>test_*</code>,
+        <code>assert</code> normal, <code>pytest.approx</code> para decimales, <code>pytest.raises</code> para errores,
+        <code>parametrize</code> para casos, <b>fixtures</b> en <code>conftest.py</code>. Una buena prueba es independiente,
+        determinista, rápida y sin efectos (nada de correos ni de producción). La cobertura es un mapa, no un objetivo.
+        <b>ruff</b> revisa y formatea; <b>mypy</b> comprueba tipos. <b><code>pyproject.toml</code></b> declara proyecto,
+        dependencias, comando de entrada y configuración de herramientas; un contenedor Docker fija también el sistema y la
+        versión de Python.</p>
+      </div>
+    </details>
+  </section>
+
+    <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista técnica de Python"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Mutable vs inmutable|Lista vs generador|is vs ==|loc vs iloc|merge|Idempotencia|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> del curso: las parejas de conceptos que
+      parecen iguales, los patrones que aplicaste en NakaData, los errores que todo desarrollador Python ha visto alguna vez
+      y las preguntas típicas de una entrevista técnica (de Python, de datos y de automatización), con respuestas cortas y
+      razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después
+      despliega la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>El lenguaje</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b><code>==</code> / <code>is</code></b></td><td>Mismo valor / mismo objeto.</td><td><code>is</code> sólo para <code>None</code>, <code>True</code>, <code>False</code>.</td></tr>
+            <tr><td><b>Mutable / inmutable</b></td><td><code>list</code>, <code>dict</code>, <code>set</code> cambian / <code>int</code>, <code>str</code>, <code>tuple</code>, <code>frozenset</code> no.</td><td>Claves de dict y valores por defecto: inmutables.</td></tr>
+            <tr><td><b>Lista / tupla</b></td><td>Modificable / fija y hashable.</td><td>Tupla para registros fijos y claves.</td></tr>
+            <tr><td><b>Lista / conjunto (búsqueda)</b></td><td><code>in</code> recorre todo O(n) / O(1).</td><td>Set para comprobar pertenencia muchas veces.</td></tr>
+            <tr><td><b><code>None</code> / 0 / <code>""</code></b></td><td>«No hay dato» / cero real / texto vacío. Los tres son falsos.</td><td><code>if x is None</code> cuando 0 es válido.</td></tr>
+            <tr><td><b><code>sort()</code> / <code>sorted()</code></b></td><td>Ordena en el sitio y devuelve <code>None</code> / devuelve una lista nueva.</td><td>sorted si necesitas conservar el original.</td></tr>
+            <tr><td><b>Asignar / copiar</b></td><td><code>b = a</code> crea otro nombre / <code>a.copy()</code> crea otro objeto.</td><td>Copia antes de modificar algo que no es tuyo.</td></tr>
+            <tr><td><b><code>int()</code> / <code>round()</code></b></td><td>Trunca / redondea.</td><td>—</td></tr>
+            <tr><td><b><code>/</code> / <code>//</code> / <code>%</code></b></td><td>División real / entera / resto.</td><td>Repartos en lotes: <code>//</code> y <code>%</code>.</td></tr>
+            <tr><td><b><code>for</code> / <code>while</code></b></td><td>Recorre una colección / repite mientras se cumpla.</td><td>while para reintentos, colas y esperas.</td></tr>
+            <tr><td><b><code>*args</code> / <code>**kwargs</code></b></td><td>Posicionales en tupla / nombrados en dict.</td><td>Funciones de número variable de argumentos.</td></tr>
+            <tr><td><b><code>return</code> / <code>yield</code></b></td><td>Devuelve y termina / produce y se pausa.</td><td>yield para procesar datos más grandes que la memoria.</td></tr>
+            <tr><td><b>Lista / generador</b></td><td>Todo en memoria, reutilizable / bajo demanda, una sola pasada.</td><td>Generador en sumas y recorridos de un solo uso.</td></tr>
+            <tr><td><b>Clase normal / <code>@dataclass</code></b></td><td>Lo escribes todo / genera init, repr, eq.</td><td>Dataclass para objetos de datos.</td></tr>
+            <tr><td><b><code>@property</code> / <code>@classmethod</code></b></td><td>Cálculo que se lee como atributo / método que recibe la clase.</td><td>Valores derivados / constructores alternativos.</td></tr>
+            <tr><td><b>EAFP / LBYL</b></td><td>Intentar y capturar / comprobar antes.</td><td>EAFP es lo idiomático en Python.</td></tr>
+            <tr><td><b><code>log.error</code> / <code>log.exception</code></b></td><td>Mensaje / mensaje + traceback.</td><td>exception dentro de un <code>except</code>.</td></tr>
+            <tr><td><b>Módulo / paquete</b></td><td>Un <code>.py</code> / carpeta con <code>__init__.py</code>.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Datos, archivos y automatización</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>CSV / JSON</b></td><td>Tabla plana sin tipos / estructura anidada con tipos básicos.</td><td>CSV para tablas; JSON para datos anidados.</td></tr>
+            <tr><td><b>Modo <code>"w"</code> / <code>"a"</code> / <code>"x"</code></b></td><td>Sobrescribe / añade / falla si existe.</td><td><code>"x"</code> para bloqueos.</td></tr>
+            <tr><td><b>date / datetime / timedelta</b></td><td>Día / día y hora / duración.</td><td>Aritmética de fechas con timedelta.</td></tr>
+            <tr><td><b>Lista de Python / ndarray</b></td><td>Objetos sueltos de cualquier tipo / un tipo, memoria contigua, operaciones en C.</td><td>NumPy para cálculo numérico masivo.</td></tr>
+            <tr><td><b>Series / DataFrame</b></td><td>Una columna con índice / varias Series con índice común.</td><td>—</td></tr>
+            <tr><td><b><code>loc</code> / <code>iloc</code></b></td><td>Por etiqueta, rango incluye el final / por posición, excluye el final.</td><td>loc con filtros y nombres de columna.</td></tr>
+            <tr><td><b><code>and</code> / <code>&amp;</code></b></td><td>Lógico de Python / elemento a elemento en arrays y Series.</td><td><code>&amp;</code>, <code>|</code>, <code>~</code> con paréntesis en filtros.</td></tr>
+            <tr><td><b><code>fillna</code> / <code>dropna</code></b></td><td>Rellenar / eliminar huecos.</td><td>Decisión de negocio; siempre contando.</td></tr>
+            <tr><td><b><code>merge</code> / <code>concat</code></b></td><td>Cruza por clave / apila tablas.</td><td>merge para enriquecer; concat para unir lotes.</td></tr>
+            <tr><td><b><code>how="inner"</code> / <code>"left"</code></b></td><td>Sólo coincidencias / conserva todas las filas de la izquierda.</td><td>left + indicator para no perder ventas en silencio.</td></tr>
+            <tr><td><b><code>agg</code> / <code>transform</code> / <code>apply</code></b></td><td>Una fila por grupo / una por fila original / función libre (lenta).</td><td>transform para porcentajes sobre el grupo.</td></tr>
+            <tr><td><b><code>groupby</code> por fecha / <code>resample</code></b></td><td>Sólo fechas presentes / intervalos completos, rellena huecos.</td><td>resample para series temporales.</td></tr>
+            <tr><td><b>Media / mediana</b></td><td>Sensible a extremos / valor central.</td><td>Mediana con distribuciones sesgadas.</td></tr>
+            <tr><td><b>4xx / 5xx</b></td><td>Error del cliente / del servidor.</td><td>Reintentar 5xx y 429; nunca 401/404.</td></tr>
+            <tr><td><b>API / scraping</b></td><td>Contrato estable / HTML que cambia sin aviso.</td><td>Scraping como último recurso.</td></tr>
+            <tr><td><b>Normalizar / validar</b></td><td>Arreglar lo arreglable / rechazar lo inválido.</td><td>Ambos, contando lo descartado.</td></tr>
+            <tr><td><b>MAE / RMSE / R²</b></td><td>Error medio en unidades / castiga grandes / frente a predecir la media.</td><td>MAE para negocio; siempre con referencia.</td></tr>
+            <tr><td><b>Split aleatorio / por fecha</b></td><td>Mezcla pasado y futuro / entrena con el pasado.</td><td>Por fecha en series temporales.</td></tr>
+            <tr><td><b><code>def</code> / <code>async def</code> (FastAPI)</b></td><td>Se ejecuta en un hilo / en el bucle de eventos.</td><td>async sólo con librerías asíncronas.</td></tr>
+            <tr><td><b>422 / 404</b></td><td>Entrada con formato inválido / no existe el recurso.</td><td>—</td></tr>
+            <tr><td><b><code>.venv</code> / Docker</b></td><td>Aísla librerías / aísla también sistema y versión de Python.</td><td>Docker para desplegar igual en cualquier sitio.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en NakaData</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Acumulador / contador con <code>.get</code></b></td><td>Totales y recuentos por clave.</td><td>Ventas por categoría (3)</td></tr>
+            <tr><td><b>Cláusula de guarda + <code>continue</code></b></td><td>Un dato malo tumba el proceso.</td><td>Bucle de líneas (3)</td></tr>
+            <tr><td><b>Función pura</b></td><td>Cálculo mezclado con impresión, imposible de probar.</td><td><code>calculos.py</code> (4)</td></tr>
+            <tr><td><b>Punto de entrada único</b></td><td>Módulos que ejecutan código al importarse.</td><td><code>__main__.py</code> (5)</td></tr>
+            <tr><td><b>Jerarquía de excepciones propia</b></td><td>No distinguir error de datos y bug.</td><td><code>NakaDataError</code> (6)</td></tr>
+            <tr><td><b>Objeto que no nace mal</b></td><td>Datos inválidos que viajan lejos.</td><td><code>__post_init__</code> (7)</td></tr>
+            <tr><td><b>Constructor alternativo</b></td><td>Conversión de datos externos repetida.</td><td><code>Producto.desde_dict</code> (7)</td></tr>
+            <tr><td><b>Lectura en streaming</b></td><td>Archivos más grandes que la memoria.</td><td><code>leer_csv</code> con <code>yield</code> (9)</td></tr>
+            <tr><td><b>Pipeline por etapas</b></td><td>Limpieza imposible de depurar.</td><td><code>limpieza.py</code> (13)</td></tr>
+            <tr><td><b>Calcular / dibujar separados</b></td><td>Gráficos que recalculan y divergen.</td><td><code>informe.py</code> + <code>graficos.py</code> (15)</td></tr>
+            <tr><td><b>Envoltorio de librería externa</b></td><td>Excepciones ajenas por todo el código.</td><td><code>api_cliente.obtener</code> (18)</td></tr>
+            <tr><td><b>Reintentos con espera creciente</b></td><td>Fallos transitorios.</td><td>API y etapas (18, 20)</td></tr>
+            <tr><td><b>Idempotencia + bloqueo</b></td><td>Ejecuciones dobles o solapadas.</td><td>Marcador y archivo de bloqueo (20)</td></tr>
+            <tr><td><b>Gestor de contexto</b></td><td>Recursos sin cerrar, transacciones a medias.</td><td><code>with</code>, <code>conexion()</code> (9, 21)</td></tr>
+            <tr><td><b>Pipeline de ML</b></td><td>Preparar distinto al entrenar y al predecir.</td><td><code>Pipeline</code> de scikit-learn (22)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>Un proyecto, un entorno virtual</b>, dependencias fijadas.</li>
+          <li><b>Explícito mejor que implícito</b>: conversiones, <code>encoding</code>, <code>timeout</code>, <code>validate</code>.</li>
+          <li><b>Falla pronto y ruidosamente</b>: <code>raise</code> con mensaje, código de salida distinto de 0, sin <code>except: pass</code>.</li>
+          <li><b>Cuenta lo que descartas</b>: limpieza, merge y scraping deben cuadrar sus recuentos.</li>
+          <li><b>Mira antes de calcular</b>: <code>info()</code>, <code>describe()</code>, <code>value_counts()</code>.</li>
+          <li><b>Vectoriza</b>: un <code>for</code> sobre un DataFrame es una señal de alarma.</li>
+          <li><b>Secretos fuera del código</b>: variables de entorno y <code>.env</code> en <code>.gitignore</code>.</li>
+          <li><b>Consultas parametrizadas</b>, siempre.</li>
+          <li><b>Compara con una referencia</b>: una métrica sola no dice nada.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>ModuleNotFoundError</code> tras instalar</td><td>Instalaste en otro Python. Activa el <code>.venv</code> y usa <code>python -m pip</code>.</td></tr>
+            <tr><td><code>TypeError: can only concatenate str (not "int") to str</code></td><td>Mezclas texto y número. Convierte con <code>int()</code>/<code>str()</code> o usa f-string.</td></tr>
+            <tr><td><code>ValueError: could not convert string to float: '19,90'</code></td><td>Coma decimal. <code>.replace(",", ".")</code> antes de convertir.</td></tr>
+            <tr><td><code>KeyError: 'stock'</code></td><td>Falta la clave. <code>.get("stock", 0)</code> o captura y registra.</td></tr>
+            <tr><td>Mi lista vale <code>None</code> tras ordenarla</td><td><code>lista = lista.sort()</code>. Usa <code>lista.sort()</code> sola o <code>sorted()</code>.</td></tr>
+            <tr><td>Modifico una lista y cambia otra</td><td>Aliasing. Copia con <code>.copy()</code>.</td></tr>
+            <tr><td>Los resultados se acumulan entre llamadas</td><td>Valor por defecto mutable. Usa <code>None</code> y crea dentro.</td></tr>
+            <tr><td><code>UnboundLocalError</code></td><td>Asignas dentro de la función a un nombre global. Pásalo como parámetro y devuélvelo.</td></tr>
+            <tr><td><code>IndentationError</code> / <code>TabError</code></td><td>Indentación ausente o mezcla de tabuladores y espacios.</td></tr>
+            <tr><td>El generador está vacío la segunda vez</td><td>Se consume una vez. Vuelve a crearlo o conviértelo en lista.</td></tr>
+            <tr><td><code>FileNotFoundError</code> sólo en la tarea programada</td><td>Ruta relativa al directorio actual. Construye desde <code>Path(__file__)</code>.</td></tr>
+            <tr><td>Acentos rotos: <code>MÃ¡laga</code></td><td>Codificación. <code>encoding="utf-8"</code> al leer y al escribir.</td></tr>
+            <tr><td><code>The truth value of a Series is ambiguous</code></td><td><code>and</code>/<code>or</code> sobre columnas. Usa <code>&amp;</code>/<code>|</code> con paréntesis.</td></tr>
+            <tr><td>Columna numérica como <code>object</code></td><td>Hay texto dentro. <code>pd.to_numeric(..., errors="coerce")</code> y cuenta los NaN.</td></tr>
+            <tr><td>Tras el merge hay más filas</td><td>Clave duplicada en la tabla derecha. <code>validate="m:1"</code>.</td></tr>
+            <tr><td><code>SettingWithCopyWarning</code></td><td>Modificas un subconjunto filtrado. <code>.copy()</code> o <code>.loc</code>.</td></tr>
+            <tr><td>El proceso se queda colgado en la API</td><td>Falta <code>timeout</code>.</td></tr>
+            <tr><td><code>sqlite3.OperationalError: database is locked</code></td><td>Otra conexión escribe o no hiciste commit/close. Usa el gestor de contexto.</td></tr>
+            <tr><td>Métricas excelentes y desastre en producción</td><td>Fuga de datos: split aleatorio o variables del futuro.</td></tr>
+            <tr><td>Todo responde 422 en FastAPI</td><td>El cuerpo o los parámetros no cumplen el modelo Pydantic. Mira el <code>detail</code>.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · El lenguaje</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué significa que en Python «una variable no es una caja»?</p>
+            <div class="q-ans">Que un nombre es una etiqueta pegada a un objeto. <code>b = a</code> no copia nada: los dos nombres apuntan al mismo objeto. Con inmutables no se nota; con listas o diccionarios, modificar a través de un nombre se ve desde el otro.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué <code>def f(x, acc=[])</code> es un error clásico?</p>
+            <div class="q-ans">Los valores por defecto se evalúan una sola vez, al definir la función. Esa lista es la misma en todas las llamadas, así que los datos se acumulan entre ellas. Se usa <code>acc=None</code> y se crea la lista dentro.</div></div>
+          <div class="q"><p class="q-text">3. Lista, tupla, diccionario o conjunto: ¿cómo eliges?</p>
+            <div class="q-ans">Lista para una secuencia que cambia; tupla para un registro fijo o una clave compuesta; diccionario para buscar por clave; conjunto para eliminar duplicados o comprobar pertenencia rápido. Comprobar <code>sku in lista</code> 40.000 veces es O(n) cada vez; con un set, O(1).</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué es un generador y cuándo lo usarías?</p>
+            <div class="q-ans">Un objeto que produce valores bajo demanda (con <code>yield</code> o una expresión entre paréntesis) y recuerda dónde se quedó. Ocupa casi nada de memoria, así que sirve para procesar archivos más grandes que la RAM. A cambio, se recorre una sola vez y no tiene longitud ni índice.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué hace <code>if __name__ == "__main__":</code>?</p>
+            <div class="q-ans">Ejecuta ese bloque sólo cuando el archivo se lanza directamente, no cuando se importa. Permite que un módulo sea a la vez biblioteca y programa, y evita que importarlo (por ejemplo desde un test) ejecute el proceso.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué es EAFP y por qué es idiomático en Python?</p>
+            <div class="q-ans">«Es más fácil pedir perdón que permiso»: intentar la operación y capturar la excepción concreta, en vez de comprobar antes. Evita condiciones de carrera (el archivo puede desaparecer entre la comprobación y el uso), hace un solo acceso y deja el camino feliz limpio.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué ganas con <code>@dataclass(frozen=True)</code> y <code>__post_init__</code>?</p>
+            <div class="q-ans">El decorador genera constructor, representación y comparación. <code>frozen</code> lo hace inmutable (hashable, seguro de compartir) y <code>__post_init__</code> valida al construir: si el objeto existe, sus datos son válidos. Un precio negativo se detiene en la frontera, no en el informe.</div></div>
+          <div class="q"><p class="q-text">8. ¿Las anotaciones de tipo hacen que Python compruebe los tipos?</p>
+            <div class="q-ans">No en ejecución: son información para el editor y para herramientas como mypy. Donde sí actúan es en librerías que las leen a propósito, como dataclasses, Pydantic o FastAPI, que las usan para generar código, convertir y validar.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Datos con NumPy y pandas</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué NumPy es mucho más rápido que una lista?</p>
+            <div class="q-ans">Guarda elementos del mismo tipo en memoria contigua y ejecuta las operaciones en bucles compilados en C sobre todo el bloque. Una lista guarda referencias a objetos sueltos y cada operación pasa por el intérprete. Por eso se vectoriza en vez de recorrer.</div></div>
+          <div class="q"><p class="q-text">2. Diferencia entre <code>loc</code> e <code>iloc</code>.</p>
+            <div class="q-ans"><code>loc</code> selecciona por etiqueta (índice y nombre de columna) y su rango incluye el final; admite máscaras booleanas. <code>iloc</code> selecciona por posición entera y excluye el final, como el slicing de Python.</div></div>
+          <div class="q"><p class="q-text">3. Tras un merge tienes más filas que antes. ¿Qué ha pasado y cómo lo evitas?</p>
+            <div class="q-ans">La tabla derecha tiene claves duplicadas y cada venta casó con varias filas. <code>validate="m:1"</code> lanza un error si la derecha no es única. Al revés, si faltan filas tras un <code>inner</code>, había claves sin pareja: usa <code>how="left"</code> con <code>indicator=True</code> y cuenta.</div></div>
+          <div class="q"><p class="q-text">4. ¿Rellenarías los nulos de importe con la media?</p>
+            <div class="q-ans">Depende de para qué es el dato, y es una decisión de negocio. Para un total de facturación, inventar importes falsea el resultado; quizá hay que descartarlos y contarlos o recuperarlos de la fuente. Para un modelo, imputar puede ser razonable. Nunca en silencio.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué diferencia hay entre <code>agg</code> y <code>transform</code> en un groupby?</p>
+            <div class="q-ans"><code>agg</code> reduce cada grupo a una fila (total por tienda). <code>transform</code> devuelve un valor por cada fila original con el resultado de su grupo, lo que permite calcular, por ejemplo, el peso de cada venta sobre el total de su tienda sin un merge.</div></div>
+          <div class="q"><p class="q-text">6. Dirección pide el «ticket medio». Tus datos tienen una fila por línea de ticket. ¿Qué calculas?</p>
+            <div class="q-ans">Primero agrupo por ticket para obtener el importe de cada compra y después hago la media. La media de las líneas es otra métrica (importe medio por línea) y da un número más bajo. Además aclaro si incluye devoluciones y añado la mediana si la distribución está sesgada.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué no se hace un split aleatorio para predecir la demanda?</p>
+            <div class="q-ans">Porque mezcla días futuros en el entrenamiento: el modelo «ve» el futuro y las métricas salen falsamente buenas. En series temporales se entrena con el pasado y se evalúa con un periodo posterior, como ocurrirá en producción.</div></div>
+          <div class="q"><p class="q-text">8. Tu modelo tiene un MAE de 523 € frente a 586 € de la referencia. ¿Lo pones en producción?</p>
+            <div class="q-ans">Mejora un 11 % a la referencia ingenua: es una mejora real pero modesta. La decisión depende de lo que cueste mantenerlo y de lo que valga ese error menor para el negocio. Y si se despliega, hay que vigilar su error con el tiempo, porque los modelos se degradan cuando cambian los datos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Automatización y procesos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Tu script funciona a mano y la tarea programada termina «bien» sin generar nada. ¿Qué compruebas?</p>
+            <div class="q-ans">Las dos causas más habituales: el directorio de trabajo es otro (rutas relativas que no apuntan donde crees) y el Python que lanza la tarea no es el del <code>.venv</code>. Y si «termina bien», el programa no está devolviendo un código de salida distinto de 0 cuando falla.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué es la idempotencia y cómo la conseguiste en NakaData?</p>
+            <div class="q-ans">Que ejecutar el proceso dos veces deje el mismo resultado que una. Con un marcador de «trabajo hecho» escrito al final (para no darlo por terminado si falla a medias), una opción <code>--forzar</code> para repetir a propósito, cargas con <code>INSERT OR REPLACE</code> sobre clave primaria y un archivo de bloqueo contra ejecuciones solapadas.</div></div>
+          <div class="q"><p class="q-text">3. Una API devuelve 401 y tu cliente reintenta tres veces. ¿Qué está mal?</p>
+            <div class="q-ans">Un 401 es un error del cliente (credenciales) y no va a cambiar reintentando; sólo retrasa el fallo y puede bloquear la cuenta. Se reintentan los 5xx y el 429, con espera creciente. Los 4xx se registran y se falla.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué todo <code>requests.get</code> debe llevar <code>timeout</code>?</p>
+            <div class="q-ans">Porque por defecto espera indefinidamente. Si el servidor no responde, el proceso nocturno se queda colgado hasta que alguien lo mata, sin error ni log. Con timeout falla, se registra y se puede reintentar.</div></div>
+          <div class="q"><p class="q-text">5. ¿Cómo gestionas las credenciales de correo y API?</p>
+            <div class="q-ans">Fuera del código: variables de entorno o un <code>.env</code> excluido de Git, declaradas con <code>repr=False</code> para que no salgan en logs. Si alguna llegó al repositorio, se cambia y se considera comprometida, porque sigue en el historial.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cuándo es aceptable hacer scraping?</p>
+            <div class="q-ans">Como último recurso, cuando no hay API ni descarga, respetando <code>robots.txt</code> y los términos, con un ritmo que no cargue el servidor, identificándote y sin datos personales ni saltarse logins. Y asumiendo que se romperá: hay que validar lo extraído y fallar si sale vacío.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué consultas parametrizadas aunque el valor venga de un desplegable interno?</p>
+            <div class="q-ans">Porque «interno» deja de serlo cuando alguien reutiliza la función, y porque los parámetros también resuelven comillas en los datos y tipos. La regla no tiene excepciones: el valor nunca se concatena en el SQL.</div></div>
+          <div class="q"><p class="q-text">8. ¿<code>def</code> o <code>async def</code> en un endpoint de FastAPI que usa pandas y sqlite3?</p>
+            <div class="q-ans"><code>def</code>. FastAPI ejecuta las funciones normales en un grupo de hilos. Si pones <code>async def</code> con código bloqueante, bloqueas el bucle de eventos y todas las peticiones esperan a esa. <code>async def</code> sólo tiene sentido con librerías asíncronas.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Calidad y entrega</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Para qué sirven las pruebas automáticas?</p>
+            <div class="q-ans">Para poder cambiar el código con confianza: cada cambio se comprueba en segundos contra el comportamiento esperado. No demuestran que el código sea correcto, pero detectan en el momento cualquier cosa que se rompa.</div></div>
+          <div class="q"><p class="q-text">2. Tu jefe pide 90 % de cobertura. Tienes 24 % centrado en la lógica de negocio y la API. ¿Qué respondes?</p>
+            <div class="q-ans">Que la cobertura es un mapa de lo que no se prueba, no un objetivo: perseguir el porcentaje lleva a pruebas que ejecutan líneas sin comprobar nada. Propondría revisar qué riesgos quedan sin cubrir (cálculos, validación, cruces, API) y priorizar por impacto.</div></div>
+          <div class="q"><p class="q-text">3. Una prueba falla sólo cuando corre toda la suite. ¿Qué pasa?</p>
+            <div class="q-ans">Las pruebas no son independientes: alguna deja estado compartido (un archivo, una base de datos, una variable global, una configuración) que afecta a la siguiente. Se arregla con fixtures que preparen y limpien, y datos aislados por prueba.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué <code>pytest.approx</code> al comparar decimales?</p>
+            <div class="q-ans">Porque los <code>float</code> son aproximaciones binarias: <code>0.1 + 0.2</code> no es exactamente <code>0.3</code>. Comparar con <code>==</code> falla por diferencias ínfimas; <code>approx</code> compara con tolerancia.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué es un fixture?</p>
+            <div class="q-ans">Una función de preparación que pytest inyecta en las pruebas que la piden por nombre (datos de ejemplo, una base temporal, un cliente de la API). Se definen en <code>conftest.py</code>, se comparten sin duplicar código y pueden limpiar al terminar.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué aporta <code>pyproject.toml</code>?</p>
+            <div class="q-ans">Un único archivo estándar que declara el proyecto (nombre, versión, dependencias), el comando de entrada y la configuración de las herramientas (pytest, ruff, mypy). Permite instalarlo con <code>pip install -e .</code> y que cualquiera lo construya igual.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué aporta Docker frente al entorno virtual?</p>
+            <div class="q-ans">El <code>.venv</code> aísla las librerías de Python. El contenedor fija además la versión de Python, las librerías del sistema y la forma de arrancar: la aplicación corre igual en tu máquina, en la CI y en el servidor.</div></div>
+          <div class="q"><p class="q-text">8. ¿Por qué un formateador automático como ruff?</p>
+            <div class="q-ans">Porque elimina las discusiones de estilo y los diffs ruidosos: todo el código sale con el mismo formato. La revisión se centra en lo que importa, y el linter detecta además errores reales como imports sin usar o nombres indefinidos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Interpretado; un proyecto, un <code>.venv</code>; REPL, script y <code>-m</code>.</li>
+          <li><b>1</b> · Nombres que apuntan a objetos; conversión explícita; f-strings; float no cuadra céntimos.</li>
+          <li><b>2</b> · list, tuple, dict, set; aliasing; <code>sort()</code> devuelve None.</li>
+          <li><b>3</b> · Indentación es sintaxis; truthiness; acumulador y contador con <code>.get</code>.</li>
+          <li><b>4</b> · Funciones puras; nunca valores por defecto mutables.</li>
+          <li><b>5</b> · Módulos y paquetes; <code>__main__</code>; <code>requirements.txt</code> fijado.</li>
+          <li><b>6</b> · Traceback de abajo arriba; excepciones concretas; logging en vez de print.</li>
+          <li><b>7</b> · <code>@dataclass</code>, <code>__post_init__</code>, <code>@property</code>, composición.</li>
+          <li><b>8</b> · Comprensiones; generadores de un solo uso; <code>Counter</code> y <code>key=</code>.</li>
+          <li><b>9</b> · pathlib, <code>with</code>, UTF-8, <code>newline=""</code>; CSV sin tipos.</li>
+          <li><b>10</b> · strptime/strftime, ISO, UTC dentro; regex compiladas; normalizar ≠ validar.</li>
+          <li><b>11</b> · Vectorizar, máscaras con <code>&amp;</code>, <code>axis</code>, NaN contamina.</li>
+          <li><b>12</b> · read_csv bien parametrizado; head/info/describe; loc vs iloc.</li>
+          <li><b>13</b> · to_numeric coerce; merge left + validate + indicator.</li>
+          <li><b>14</b> · groupby con nombre, pivot_table, resample, transform.</li>
+          <li><b>15</b> · fig/ax, Agg, savefig + close; título con la conclusión.</li>
+          <li><b>16</b> · argparse con subcomandos; código de salida; borrar con cuidado.</li>
+          <li><b>17</b> · Excel con number_format; EmailMessage + SMTP con credenciales de entorno.</li>
+          <li><b>18</b> · timeout, raise_for_status, reintentar sólo 5xx/429.</li>
+          <li><b>19</b> · Scraping como último recurso, ético y que falle ruidosamente.</li>
+          <li><b>20</b> · Configuración por capas, idempotencia, bloqueo, cron.</li>
+          <li><b>21</b> · SQLite, parámetros, transacciones, índices.</li>
+          <li><b>22</b> · Split por fecha, Pipeline, MAE contra referencia.</li>
+          <li><b>23</b> · FastAPI: tipos que validan, 422/404/503, lifespan, def vs async.</li>
+          <li><b>24</b> · pytest, fixtures, approx; ruff; pyproject; Docker.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Una vez por semana, añade a NakaData una pregunta nueva de análisis (con groupby) o un endpoint.</li>
+            <li>Antes de una entrevista de datos, rehaz de memoria el ciclo cargar → primer vistazo → limpiar → cruzar → agrupar.</li>
+            <li>Antes de una de backend o automatización, rehaz un cliente HTTP con timeout y reintentos, y un endpoint FastAPI con validación.</li>
+            <li>Practica en el REPL las diferencias de la primera tabla: muchas se comprueban en una línea.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

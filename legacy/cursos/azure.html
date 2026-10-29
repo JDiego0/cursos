@@ -6617,6 +6617,482 @@ curl -f https://app-nakashop-jd01.azurewebsites.net/health</code></pre>
 
 
 
+  <section class="view chapter" id="cap-12"
+    data-num="12"
+    data-title="Repaso exprés: Azure y NakaShop de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 6 · Repaso y recuperación"
+    data-time="45 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Resource Group|RBAC|VNet|App Service|Storage|Azure SQL|Cosmos DB|Functions|Service Bus|Key Vault|GitHub Actions">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: de la primera suscripción a NakaShop
+      desplegada con Key Vault, Managed Identity, API Management y GitHub Actions. Cada servicio aparece con lo mínimo para
+      recordarlo —qué problema resuelve, sus piezas, el comando clave y en qué se equivoca todo el mundo—.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a Azure tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>NakaShop en un diagrama</h3>
+        <div class="diagram">  Cliente ──▶ API Management (políticas: claves, límites, caché)
+                     │
+                     ▼
+             App Service (app-nakashop-jd01) ── Managed Identity ──▶ Key Vault (kv-nakashop-jd01)
+               │         │           │
+               ▼         ▼           ▼
+        Azure SQL   Cosmos DB    Blob Storage (stnakashopjd01)
+       (catálogo)   (pedidos)    (imágenes)
+               │
+               └─▶ Service Bus (sb-nakashop-jd01) ──▶ Azure Functions (func-nakashop-jd01)
+                                                       Timer · Queue · Blob · HTTP
+  Herramientas: vm-nakashop-tools en vnet-nakashop (NSG)
+  Todo en rg-nakashop-dev · RBAC por grupos de Entra ID · GitHub Actions + OIDC + Bicep</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos</b></td><td>ARM es la puerta única; el Resource Group, el ciclo de vida.</td><td>Borrar el RG borra todo lo de dentro.</td></tr>
+            <tr><td><b>Identidad</b></td><td>Quién + qué rol + dónde.</td><td>Roles a grupos, mínimo privilegio.</td></tr>
+            <tr><td><b>Red y VM</b></td><td>IaaS: control total y todo el mantenimiento.</td><td>Sólo deallocate deja de facturar el cómputo.</td></tr>
+            <tr><td><b>App Service y Storage</b></td><td>PaaS para código; blobs para archivos.</td><td>Escucha en <code>process.env.PORT</code>.</td></tr>
+            <tr><td><b>Datos</b></td><td>SQL relacional y Cosmos documental, cada dato en su sitio.</td><td>La partition key es irreversible.</td></tr>
+            <tr><td><b>Serverless e integración</b></td><td>Pagar por ejecución y desacoplar con mensajes.</td><td>Consumidores idempotentes.</td></tr>
+            <tr><td><b>Seguridad y entrega</b></td><td>Cero secretos y despliegue automático.</td><td>Managed Identity y OIDC.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note warn"><b class="t">Antes de volver a practicar</b>
+        <p>Crea o revisa el <b>presupuesto con alerta</b> antes de crear nada, y al terminar cada sesión borra el resource group
+        (y purga los Key Vaults en <i>soft delete</i> si quieres reutilizar el nombre).</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>☁ Bloque 1 · Azure, ARM, CLI, regiones y Resource Groups (cap. 0–1)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li>Azure alquila servicios de computación por internet y pagas por uso.</li>
+          <li><b>ARM</b> (Azure Resource Manager) es la puerta única: Portal, CLI y plantillas acaban hablando con él; por eso todos ven lo mismo.</li>
+          <li><b>Cuenta</b> = quién eres; <b>suscripción</b> = quién paga. Cloud Shell = terminal con la CLI ya autenticada en el navegador.</li>
+          <li>Patrón de la CLI: <code>az servicio acción --parámetros</code>; <code>--output table</code> para leer, <code>tsv</code> para variables.</li>
+          <li><b>IaaS / PaaS / SaaS</b>: cambia dónde está la frontera entre tu trabajo y el de Azure. <b>Responsabilidad compartida</b>: Microsoft protege la nube; tú, lo que pones dentro (los datos siempre son tuyos).</li>
+          <li><b>Región</b> = dónde están los servidores; <b>Availability Zone</b> = edificios separados dentro de la región.</li>
+          <li>Jerarquía: <b>Management Group → Suscripción → Resource Group → Recurso</b>. Un RG = recursos con el mismo ciclo de vida (un recurso puede estar en otra región que su RG).</li>
+          <li><b>Tags</b> clave=valor para costes y responsables (no se heredan solos a los recursos). Nombres <code>tipo-proyecto-entorno</code>.</li>
+        </ul>
+        <div class="code-block" data-lang="Azure CLI">
+<pre><code>az login --use-device-code
+az account show --output table            # ¿qué suscripción estoy usando?
+az group create --name rg-nakashop-dev --location eastus \
+  --tags proyecto=nakashop entorno=dev
+az group exists --name rg-nakashop-dev</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> inicia sesión, comprueba la suscripción activa antes de crear nada y crea el
+        contenedor del proyecto con etiquetas. <b>Recuerda:</b> <code>az group delete</code> borra todo lo de dentro.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>👥 Bloque 2 · Entra ID y RBAC (cap. 2)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Microsoft Entra ID</b> (antes Azure AD): usuarios, grupos y aplicaciones. <b>Tenant</b> = tu directorio de identidad; un tenant, varias suscripciones.</li>
+          <li>Usuarios <b>member</b> (de casa) y <b>guest</b> (de otro tenant). Un usuario nuevo no tiene ningún permiso.</li>
+          <li><b>RBAC</b> = <b>quién</b> (principal) + <b>qué</b> (rol) + <b>dónde</b> (scope). Los permisos se heredan hacia abajo.</li>
+          <li>Roles base: <b>Owner</b> (todo + repartir permisos), <b>Contributor</b> (todo menos permisos), <b>Reader</b> (sólo mirar).</li>
+          <li>Roles a <b>grupos</b>, nunca a personas. <b>Mínimo privilegio</b>: el rol más pequeño en el scope más pequeño.</li>
+          <li>Gestionar un recurso (plano de control) no da acceso a sus datos (plano de datos): por eso hay roles como «Storage Blob Data Reader».</li>
+        </ul>
+        <div class="code-block" data-lang="Azure CLI">
+<pre><code>az role assignment create \
+  --assignee &lt;id-del-grupo&gt; \
+  --role Contributor \
+  --scope /subscriptions/&lt;sub&gt;/resourceGroups/rg-nakashop-dev</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> da al grupo de desarrolladores Contributor sólo sobre el RG del proyecto.
+        <b>Recuerda:</b> los cambios de rol pueden tardar unos minutos en aplicarse.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌐 Bloque 3 · Redes virtuales y máquinas virtuales (cap. 3)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>VNet</b> = tu red privada; <b>subnet</b> = un trozo (debe estar dentro del rango de la VNet y no solaparse).</li>
+          <li>IP <b>privada</b> para hablar dentro; IP <b>pública</b> (recurso aparte) para ser accesible desde internet (puede cambiar si es dinámica).</li>
+          <li><b>NSG</b> = cortafuegos de reglas con prioridad; por defecto bloquea casi todo lo entrante. Puertos: 22 SSH, 80 HTTP, 443 HTTPS, 3389 RDP. Restringe el origen a tu IP.</li>
+          <li>Una VM son <b>varios recursos</b>: VM, disco, NIC, IP pública, NSG y red. Borrar la VM puede dejar disco e IP facturando.</li>
+          <li><b><code>az vm deallocate</code></b> libera el hardware y deja de facturar el cómputo; apagar desde dentro (o <code>stop</code>) no.</li>
+          <li>Claves SSH mejor que contraseñas (permisos 600 en la clave privada).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 4 · App Service y Blob Storage (cap. 4–5)</summary>
+      <div class="acc-body">
+
+        <h3>App Service (4)</h3>
+        <ul class="clean">
+          <li><b>PaaS</b>: subes código y Azure pone SO, runtime, servidor web y HTTPS.</li>
+          <li><b>App Service Plan</b> = infraestructura y coste; <b>Web App</b> = la aplicación. Varias apps pueden compartir un plan.</li>
+          <li>Tiers: <b>F1</b> gratis, <b>Standard</b> para producción (slots y autoescalado). Nombre global → <code>app-nakashop-jd01.azurewebsites.net</code>.</li>
+          <li>Despliegue: GitHub, ZIP deploy o <code>az webapp up</code>. <b>Escucha en <code>process.env.PORT</code></b>.</li>
+          <li>Configuración en <b>Application Settings</b> (variables de entorno), nunca en el repositorio. <b>Log stream</b> como consola remota.</li>
+          <li><b>Deployment slots</b> (Standard+): staging y <i>swap</i> para revertir en segundos.</li>
+        </ul>
+        <div class="code-block" data-lang="Azure CLI">
+<pre><code>az webapp config appsettings set -g rg-nakashop-dev -n app-nakashop-jd01 \
+  --settings NODE_ENV=production
+az webapp log tail -g rg-nakashop-dev -n app-nakashop-jd01</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> define una variable de entorno (reinicia la app) y sigue los logs en directo.
+        «Application Error» → mira el log stream: casi siempre el puerto o una dependencia.</p>
+
+        <h3>Blob Storage (5)</h3>
+        <ul class="clean">
+          <li><b>Storage Account</b>: Blob, File, Queue y Table; nombre global de 3–24 caracteres en minúsculas y números (<code>stnakashopjd01</code>).</li>
+          <li>Redundancia: <b>LRS</b> (un datacenter), <b>ZRS</b> (3 zonas), <b>GRS</b> (2 regiones).</li>
+          <li><b>Container</b> agrupa blobs; las carpetas son parte del nombre. Acceso: Private (defecto), Blob (leer con la URL exacta), Container (además listar).</li>
+          <li>Tiers <b>Hot</b>, <b>Cool</b>, <b>Archive</b> (barato de guardar, hay que rehidratar para leer).</li>
+          <li><b>Access keys</b> = llave maestra (dos, para rotar sin corte; nunca en el código). <b>SAS</b> = pase temporal y limitado.</li>
+          <li>El disco de un App Service es efímero: <b>los archivos van a Blob Storage</b>; en la base, sólo la URL.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🗄 Bloque 5 · Azure SQL Database y Cosmos DB (cap. 6–7)</summary>
+      <div class="acc-body">
+
+        <h3>Azure SQL Database (6)</h3>
+        <ul class="clean">
+          <li>SQL Server como PaaS: tú pones esquema y consultas; Azure, el resto.</li>
+          <li><b>Servidor lógico</b> (<code>sql-nakashop-jd01</code>) = administración y firewall, sin CPU propia; <b>base de datos</b> (<code>sqldb-nakashop</code>) = datos y rendimiento.</li>
+          <li><b>DTU</b> (unidad mezclada, simple para empezar) frente a <b>vCore</b> (núcleos y memoria, más control).</li>
+          <li><b>Firewall de SQL</b> independiente del NSG: tu IP para conectarte y «Allow Azure services» (0.0.0.0) para App Service.</li>
+          <li>Backups automáticos con <b>Point-in-Time Restore</b>; restaurar crea una base nueva.</li>
+          <li>Desde código: <code>encrypt: true</code> y consultas parametrizadas. <code>DECIMAL</code> para dinero, <code>NVARCHAR</code> para texto, fechas en UTC.</li>
+        </ul>
+
+        <h3>Cosmos DB (7)</h3>
+        <ul class="clean">
+          <li>NoSQL <b>documental</b>: cada registro es un JSON. Jerarquía: Account → Database → Container → Items. La API se elige al crear la cuenta.</li>
+          <li><b>Partition key</b> (en NakaShop, <code>/clienteId</code>): alta cardinalidad, distribución uniforme y presente en las consultas. <b>Irreversible</b>: cambiarla es crear otro container y migrar.</li>
+          <li>Coste en <b>Request Units</b>: un <b>point read</b> (id + partition key) = 1 RU; una consulta cross-partition, cientos. 429 = te pasaste del throughput.</li>
+          <li>Throughput: Provisioned, Autoscale o Serverless. Cinco niveles de consistencia; <b>Session</b> es el equilibrio (con Eventual, un pedido recién creado puede tardar en verse).</li>
+          <li>SQL y Cosmos conviven: catálogo relacional en SQL; pedidos por cliente en Cosmos.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚡ Bloque 6 · Azure Functions y mensajería (cap. 8–9)</summary>
+      <div class="acc-body">
+
+        <h3>Azure Functions (8)</h3>
+        <div class="code-block" data-lang="JavaScript · Timer trigger">
+<pre><code>app.timer('informeDiario', {
+  schedule: '0 0 8 * * *',            // NCRONTAB: 6 campos (segundo primero), en UTC
+  handler: async (timer, context) =&gt; {
+    context.log('Generando informe…');
+  },
+});</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>serverless</b> = nada corre hasta que un evento lo dispara; pagas por
+        ejecución. Cada función tiene <b>un trigger</b> (HTTP, Timer, Blob, Queue) y puede tener varios <b>bindings</b> de entrada y
+        salida (la propiedad <code>connection</code> es el <b>nombre</b> de la App Setting, no la cadena). La <b>Function App</b>
+        necesita una Storage Account que no se debe borrar. Plan <b>Consumption</b> (casi gratis, con <b>cold start</b> y límite de
+        tiempo) frente a <b>Premium</b>. Horario en UTC salvo <code>WEBSITE_TIME_ZONE</code>. Desarrolla en local con Core Tools
+        (<code>func start</code>). Funciones pequeñas e <b>idempotentes</b>.</p>
+
+        <h3>Mensajería (9)</h3>
+        <div class="diagram">  API ──▶ Service Bus topic «pedido-creado» ──┬─▶ sub-facturacion ─▶ Function
+     (202 Accepted)                           └─▶ sub-inventario ──▶ Function
+         complete (borrar) · abandon (reintentar) · deadLetter (apartar)
+  Event Grid: evento «imagen subida» empujado en sub-segundos a una Function</div>
+        <ul class="clean">
+          <li>Desacoplar: el productor no espera al consumidor y un fallo no arrastra al resto (la API responde <b>202</b>).</li>
+          <li><b>Service Bus</b> = mensajes (órdenes que alguien debe cumplir); <b>Event Grid</b> = eventos (hechos que se anuncian, push, sub-segundo).</li>
+          <li><b>Queue</b>: un mensaje, un consumidor. <b>Topic</b>: una copia por suscripción (requiere tier Standard).</li>
+          <li><b>Dead-letter queue</b>: tras varios fallos el mensaje se aparta; nada se pierde en silencio (ponle una alerta).</li>
+          <li><b>Logic Apps</b>: integración visual sin código. Consumidores idempotentes: el mismo mensaje puede llegar dos veces.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔐 Bloque 7 · Key Vault, Managed Identity, APIM, CI/CD y limpieza (cap. 10–11)</summary>
+      <div class="acc-body">
+
+        <h3>Key Vault y Managed Identity (10)</h3>
+        <div class="code-block" data-lang="Azure CLI">
+<pre><code>az webapp identity assign -g rg-nakashop-dev -n app-nakashop-jd01      # identidad gestionada
+az role assignment create --assignee &lt;principalId&gt; \
+  --role "Key Vault Secrets User" --scope &lt;id-del-key-vault&gt;
+az webapp config appsettings set -g rg-nakashop-dev -n app-nakashop-jd01 --settings \
+  SQL_PASSWORD="@Microsoft.KeyVault(SecretUri=https://kv-nakashop-jd01.vault.azure.net/secrets/sql-password/)"</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>Key Vault</b> centraliza secrets, keys y certificates con RBAC, auditoría y
+        versionado. Roles: Administrator, Secrets Officer (personas), <b>Secrets User</b> (la aplicación). Ser Owner no da acceso
+        a los datos. La <b>paradoja</b>: para leer el secreto necesitarías otro secreto; la <b>Managed Identity</b> la resuelve
+        (identidad gestionada por Azure, sin contraseñas). Las <b>Key Vault References</b> usan el secreto sin tocar el código (si
+        llega el texto <code>@Microsoft.KeyVault(...)</code> literal, falla el permiso o la sintaxis). Un vault por entorno.</p>
+
+        <h3>API Management (10)</h3>
+        <ul class="clean">
+          <li>Gateway delante de la API: controla quién llama (claves de suscripción) y cuántas veces (límites, 429), cachea, valida y documenta.</li>
+          <li>Las <b>policies</b> se aplican en <code>inbound</code>, <code>backend</code>, <code>outbound</code> y <code>on-error</code> sin tocar el backend. Tarda mucho en crearse.</li>
+        </ul>
+
+        <h3>CI/CD, Bicep y limpieza (11)</h3>
+        <ul class="clean">
+          <li><b>CI</b> valida cada cambio; <b>Continuous Delivery</b> deja listo con aprobación; <b>Continuous Deployment</b>, sin ella.</li>
+          <li>Workflow = <code>on:</code> + <code>jobs</code> + <code>steps</code>. <b>Artifacts</b>: se despliega lo que se probó. <b>Environments</b>: reglas y aprobaciones.</li>
+          <li><b>OIDC + Federated Credential</b>: el pipeline entra en Azure sin secretos estáticos (misma idea que la Managed Identity); exige <code>permissions: id-token: write</code>.</li>
+          <li><b>IaC</b> con Bicep o Terraform; <code>what-if</code> antes de aplicar. Nunca directo a producción: staging y slot swap.</li>
+          <li>Borrar el RG elimina casi todo, pero no lo que vive en el tenant (grupos, apps registradas) ni los Key Vaults en <i>soft delete</i> (<code>az keyvault purge</code>).</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-13"
+    data-num="13"
+    data-title="Diferencias clave y preparación de entrevista técnica de Azure"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 6 · Repaso y recuperación"
+    data-time="45 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Tenant vs suscripción|Stop vs deallocate|SAS vs access key|Service Bus vs Event Grid|Managed Identity|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> de Azure: las parejas de servicios y conceptos
+      que parecen iguales, los patrones que aplicaste en NakaShop, los errores que todo el mundo se encuentra y las preguntas
+      típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después despliega
+      la respuesta. El último acordeón es la versión de cinco minutos.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Cuenta / suscripción / tenant</b></td><td>Quién eres / quién paga / tu directorio de identidad.</td><td>Un tenant, varias suscripciones.</td></tr>
+            <tr><td><b>Management Group / suscripción / RG</b></td><td>Agrupa suscripciones / factura y límites / ciclo de vida de recursos.</td><td>Un RG por proyecto y entorno.</td></tr>
+            <tr><td><b>IaaS / PaaS / SaaS</b></td><td>VM (tú el SO) / App Service (tú el código) / Microsoft 365 (tú los datos).</td><td>PaaS salvo que necesites el SO.</td></tr>
+            <tr><td><b>Región / Availability Zone</b></td><td>Ubicación / edificios separados dentro de ella.</td><td>Zonas para alta disponibilidad.</td></tr>
+            <tr><td><b>Member / guest</b></td><td>Usuario del tenant / invitado de otro.</td><td>—</td></tr>
+            <tr><td><b>Owner / Contributor / Reader</b></td><td>Todo + permisos / todo menos permisos / sólo mirar.</td><td>Contributor para desarrolladores sobre el RG.</td></tr>
+            <tr><td><b>Plano de control / de datos</b></td><td>Gestionar el recurso / acceder a su contenido.</td><td>Owner no lee secretos ni blobs sin rol de datos.</td></tr>
+            <tr><td><b>NSG / firewall de SQL</b></td><td>Tráfico de red de una subred o NIC / acceso a un servidor SQL.</td><td>Son independientes.</td></tr>
+            <tr><td><b>IP privada / pública</b></td><td>Dentro de la VNet / accesible desde internet (recurso aparte).</td><td>—</td></tr>
+            <tr><td><b><code>az vm stop</code> / <code>deallocate</code></b></td><td>Apaga pero conserva el hardware (factura) / libera el hardware (no factura cómputo).</td><td>Deallocate al terminar.</td></tr>
+            <tr><td><b>App Service Plan / Web App</b></td><td>Infraestructura y coste / la aplicación.</td><td>Varias apps en un plan.</td></tr>
+            <tr><td><b>App Service / Functions</b></td><td>Siempre encendido, carga constante / por evento, pago por ejecución.</td><td>Tráfico constante → App Service.</td></tr>
+            <tr><td><b>Consumption / Premium (Functions)</b></td><td>Casi gratis, cold start y límite de tiempo / sin cold start, más caro.</td><td>—</td></tr>
+            <tr><td><b>Trigger / binding</b></td><td>Lo que dispara la función (uno) / entradas y salidas declarativas (varios).</td><td>—</td></tr>
+            <tr><td><b>LRS / ZRS / GRS</b></td><td>Un datacenter / 3 zonas / 2 regiones.</td><td>Según qué fallo debas sobrevivir.</td></tr>
+            <tr><td><b>Hot / Cool / Archive</b></td><td>Leer barato / intermedio / guardar barato, rehidratar para leer.</td><td>—</td></tr>
+            <tr><td><b>Acceso Private / Blob / Container</b></td><td>Nadie anónimo / leer con URL exacta / además listar.</td><td>Private por defecto.</td></tr>
+            <tr><td><b>Access key / SAS</b></td><td>Llave maestra / pase temporal y limitado.</td><td>SAS de corta duración.</td></tr>
+            <tr><td><b>Servidor lógico / base de datos</b></td><td>Administración y firewall / datos y rendimiento.</td><td>—</td></tr>
+            <tr><td><b>DTU / vCore</b></td><td>Unidad mezclada simple / núcleos y memoria elegidos.</td><td>DTU para empezar.</td></tr>
+            <tr><td><b>Azure SQL / Cosmos DB</b></td><td>Relacional con joins y transacciones / documental, escala por partición.</td><td>Catálogo / pedidos por cliente.</td></tr>
+            <tr><td><b>Point read / consulta cross-partition</b></td><td>1 RU / cientos de RU.</td><td>Point read si conoces id y partition key.</td></tr>
+            <tr><td><b>Session / Strong / Eventual</b></td><td>Lees lo tuyo / todo al día (caro) / puede ir atrasado.</td><td>Session.</td></tr>
+            <tr><td><b>Mensaje / evento</b></td><td>Orden que alguien debe cumplir / hecho que se anuncia.</td><td>—</td></tr>
+            <tr><td><b>Service Bus / Event Grid</b></td><td>Mensajería fiable con colas / enrutamiento de eventos push.</td><td>Pedidos / «se subió un blob».</td></tr>
+            <tr><td><b>Queue / topic</b></td><td>Un consumidor / una copia por suscripción.</td><td>—</td></tr>
+            <tr><td><b>Application Settings / Key Vault</b></td><td>Configuración de la app / secretos con auditoría y versiones.</td><td>Secretos en Key Vault.</td></tr>
+            <tr><td><b>Managed Identity / service principal con secreto</b></td><td>Identidad gestionada sin credenciales / credencial que hay que guardar y rotar.</td><td>Managed Identity siempre que se pueda.</td></tr>
+            <tr><td><b>Publish profile / OIDC</b></td><td>Secreto estático en GitHub / token federado temporal.</td><td>OIDC.</td></tr>
+            <tr><td><b>Continuous Delivery / Deployment</b></td><td>Con aprobación / sin ella.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>RG por proyecto y entorno + tags</b></td><td>Costes sin dueño y borrados peligrosos.</td><td><code>rg-nakashop-dev</code> (1)</td></tr>
+            <tr><td><b>RBAC a grupos con mínimo privilegio</b></td><td>Permisos personales que nadie limpia.</td><td>Contributor sobre el RG (2)</td></tr>
+            <tr><td><b>PaaS antes que IaaS</b></td><td>Parchear y mantener servidores.</td><td>App Service frente a VM (3–4)</td></tr>
+            <tr><td><b>Configuración fuera del código</b></td><td>Secretos en el repositorio.</td><td>Application Settings → Key Vault (4, 10)</td></tr>
+            <tr><td><b>Archivos en Blob, URL en la base</b></td><td>Disco efímero y bases gigantes.</td><td>Imágenes de productos (5–6)</td></tr>
+            <tr><td><b>Persistencia políglota</b></td><td>Forzar un único modelo de datos.</td><td>SQL + Cosmos (6–7)</td></tr>
+            <tr><td><b>Partition key diseñada por consultas</b></td><td>Consultas caras y particiones calientes.</td><td><code>/clienteId</code> (7)</td></tr>
+            <tr><td><b>Desacoplar con mensajes (202)</b></td><td>Una caída arrastra a todo.</td><td>Service Bus (9)</td></tr>
+            <tr><td><b>Dead-letter vigilada</b></td><td>Mensajes perdidos en silencio.</td><td>Service Bus (9)</td></tr>
+            <tr><td><b>Identidad sin credenciales</b></td><td>La paradoja del secreto para leer secretos.</td><td>Managed Identity + OIDC (10–11)</td></tr>
+            <tr><td><b>Gateway con políticas</b></td><td>Límites, claves y caché en cada API.</td><td>APIM (10)</td></tr>
+            <tr><td><b>Staging + slot swap</b></td><td>Despliegues sin vuelta atrás.</td><td>App Service Standard (4, 11)</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="clean">
+          <li><b>Presupuesto con alerta</b> el primer día; borra el RG al terminar.</li>
+          <li><b>Nombres <code>tipo-proyecto-entorno</code></b> y etiquetas desde el minuto uno.</li>
+          <li><b>Abre sólo los puertos necesarios</b> y restringe el origen.</li>
+          <li><b>Cero secretos</b> en código, Application Settings y pipelines.</li>
+          <li><b>Funciones y consumidores idempotentes.</b></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>No subscriptions found</code></td><td>Cuenta sin suscripción o en otro tenant. <code>az account set</code>.</td></tr>
+            <tr><td>«Le di permisos pero sigue sin poder»</td><td>Scope equivocado, propagación pendiente o rol de control sin rol de datos.</td></tr>
+            <tr><td>SSH: <code>Connection timed out</code></td><td>El NSG no permite el 22 desde tu IP, o la VM está desasignada.</td></tr>
+            <tr><td>Borré la VM y sigo pagando</td><td>Disco, IP pública o NIC quedaron vivos. Borra el RG o esos recursos.</td></tr>
+            <tr><td>«Application Error» en App Service</td><td>La app no escucha en <code>process.env.PORT</code> o falta una dependencia: log stream.</td></tr>
+            <tr><td><code>Website with given name already exists</code></td><td>El nombre es global. Añade un sufijo.</td></tr>
+            <tr><td>Los archivos subidos desaparecen</td><td>Disco efímero del App Service. Blob Storage.</td></tr>
+            <tr><td>El SAS da 403 al generarlo</td><td>Hora de inicio en el futuro por desfase de reloj o permisos insuficientes.</td></tr>
+            <tr><td>La Web App no conecta a SQL pero mi PC sí</td><td>Falta «Allow Azure services» en el firewall de SQL.</td></tr>
+            <tr><td>Error de TLS desde Node a SQL</td><td><code>encrypt: true</code> en la conexión.</td></tr>
+            <tr><td>Cosmos: 429 Too Many Requests</td><td>Throughput agotado: consultas cross-partition o throughput bajo.</td></tr>
+            <tr><td><code>PartitionKey extracted from document doesn't match</code></td><td>El documento no lleva la propiedad de la partition key o no coincide.</td></tr>
+            <tr><td>El Timer se ejecuta a horas raras</td><td>NCRONTAB tiene 6 campos y está en UTC.</td></tr>
+            <tr><td>Las funciones desaparecen</td><td>Se borró la Storage Account de la Function App.</td></tr>
+            <tr><td>Envío al topic y nadie recibe</td><td>No hay suscripciones creadas.</td></tr>
+            <tr><td>Soy Owner y no veo los secretos</td><td>Falta un rol de datos de Key Vault.</td></tr>
+            <tr><td>Llega <code>@Microsoft.KeyVault(...)</code> literal</td><td>La identidad no tiene permiso o la referencia está mal escrita.</td></tr>
+            <tr><td>No puedo reutilizar el nombre del Key Vault</td><td>Está en soft delete: <code>az keyvault purge</code>.</td></tr>
+            <tr><td><code>Unable to get ACTIONS_ID_TOKEN_REQUEST_URL</code></td><td>Falta <code>permissions: id-token: write</code>.</td></tr>
+            <tr><td><code>AADSTS70021: No matching federated identity record</code></td><td>El sujeto de la federated credential no coincide con la rama o el environment.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos, identidad y red</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué lo que creas con la CLI aparece en el Portal?</p>
+            <div class="q-ans">Porque Portal, CLI y plantillas son clientes de la misma API: Azure Resource Manager. ARM recibe las peticiones, aplica permisos y crea los recursos; todos consultan el mismo estado.</div></div>
+          <div class="q"><p class="q-text">2. Con App Service, ¿quién parchea el sistema operativo?</p>
+            <div class="q-ans">Microsoft: es PaaS. Tú eres responsable del código, la configuración, los datos y los accesos. En una VM (IaaS) el parcheo del SO sería tuyo. Responsabilidad compartida: cuanto más gestionado, menos te toca.</div></div>
+          <div class="q"><p class="q-text">3. Explica RBAC con un ejemplo.</p>
+            <div class="q-ans">Una asignación es quién (el grupo «devs-nakashop»), qué rol (Contributor) y dónde (el RG rg-nakashop-dev). Se hereda hacia abajo a todos sus recursos. A grupos, no a personas, y con el rol más pequeño en el scope más pequeño.</div></div>
+          <div class="q"><p class="q-text">4. Un Contributor quiere dar acceso a un compañero. ¿Puede?</p>
+            <div class="q-ans">No: Contributor puede hacerlo todo menos gestionar permisos. Hace falta Owner o User Access Administrator en ese scope.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué diferencia hay entre <code>az vm stop</code> y <code>az vm deallocate</code>?</p>
+            <div class="q-ans">stop apaga el sistema pero mantiene el hardware reservado y se sigue facturando el cómputo; deallocate lo libera y deja de facturar el cómputo (el disco sí sigue). Para no pagar, deallocate.</div></div>
+          <div class="q"><p class="q-text">6. Pides «una máquina virtual». ¿Qué recursos crea Azure?</p>
+            <div class="q-ans">La VM, su disco, la interfaz de red (NIC), la IP pública, el NSG y la red virtual/subred si no existían. Por eso borrar sólo la VM puede dejar costes, y por eso conviene borrar el RG.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Aplicación, almacenamiento y datos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Tienes tres APIs pequeñas. ¿Tres App Service Plans?</p>
+            <div class="q-ans">No necesariamente: un plan es la infraestructura y varias Web Apps pueden compartirlo y su coste. Se separan si necesitan escalar o aislarse de forma distinta.</div></div>
+          <div class="q"><p class="q-text">2. Tu app funciona en local y en Azure da «Application Error». ¿Qué revisas?</p>
+            <div class="q-ans">El log stream. Lo más habitual: la app no escucha en <code>process.env.PORT</code>, falta una dependencia o una Application Setting que en local estaba en un .env.</div></div>
+          <div class="q"><p class="q-text">3. Un socio necesita un informe durante 24 horas. ¿Le das la access key?</p>
+            <div class="q-ans">No: la access key da acceso total a toda la cuenta. Se genera un SAS sobre ese blob, sólo lectura y con caducidad de 24 horas.</div></div>
+          <div class="q"><p class="q-text">4. Alguien borra la tabla Productos a las 15:47. ¿Qué haces?</p>
+            <div class="q-ans">Point-in-Time Restore de la base a las 15:46 en una base nueva, y recuperar desde ella los datos (o repuntar la aplicación). Los backups automáticos lo permiten dentro de la retención.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué <code>/clienteId</code> como partition key de los pedidos y no <code>/estado</code>?</p>
+            <div class="q-ans"><code>clienteId</code> tiene alta cardinalidad, reparte bien y está en la consulta más frecuente (pedidos de un cliente), que así lee una sola partición. <code>estado</code> tiene pocos valores: particiones calientes y consultas cross-partition caras.</div></div>
+          <div class="q"><p class="q-text">6. Un usuario crea un pedido y no lo ve en la siguiente pantalla; un minuto después sí. ¿Qué pasa?</p>
+            <div class="q-ans">Consistencia eventual: la lectura llegó a una réplica que aún no tenía el dato. Con el nivel Session, cada sesión lee sus propias escrituras.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Serverless, integración, seguridad y entrega</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Tu API recibe 5.000 peticiones por minuto de forma constante. ¿Functions o App Service?</p>
+            <div class="q-ans">App Service: con carga constante pagar por tiempo encendido sale mejor que por ejecución y no hay cold start. Functions brilla con cargas esporádicas o dirigidas por eventos.</div></div>
+          <div class="q"><p class="q-text">2. Mensaje o evento: ¿cuál es la diferencia esencial?</p>
+            <div class="q-ans">Un mensaje es una orden que alguien debe cumplir y no puede perderse (Service Bus). Un evento anuncia un hecho y quien le interese reacciona (Event Grid). Publicas un mensaje en un topic con tres suscripciones: se procesan tres copias.</div></div>
+          <div class="q"><p class="q-text">3. Un mensaje falla cinco veces seguidas. ¿Dónde acaba?</p>
+            <div class="q-ans">En la dead-letter queue: queda apartado para inspeccionarlo y no se pierde en silencio ni bloquea la cola. Hay que vigilarla con una alerta.</div></div>
+          <div class="q"><p class="q-text">4. Enuncia la paradoja que resuelve la Managed Identity.</p>
+            <div class="q-ans">Para leer los secretos del Key Vault, la aplicación necesitaría autenticarse con otro secreto, que habría que guardar en algún sitio. La Managed Identity da a la app una identidad gestionada por Azure, sin credenciales que guardar ni rotar, a la que se asigna un rol sobre el vault.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué rol das a la identidad de la app sobre el Key Vault?</p>
+            <div class="q-ans">Key Vault Secrets User: sólo leer secretos. Secrets Officer es para quien los gestiona y Administrator para todo. Mínimo privilegio.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué OIDC es más seguro que un publish profile en GitHub Actions?</p>
+            <div class="q-ans">El publish profile es un secreto estático guardado en GitHub que da acceso hasta que alguien lo rote. Con OIDC, GitHub emite un token de corta duración para esa ejecución y Azure lo cambia por un acceso temporal según la federated credential: no hay secreto que robar.</div></div>
+          <div class="q"><p class="q-text">7. Borras <code>rg-nakashop-dev</code>. ¿Qué sobrevive?</p>
+            <div class="q-ans">Lo que vive fuera del RG: usuarios, grupos y aplicaciones registradas del tenant, asignaciones a otros scopes y los Key Vaults en soft delete (que reservan el nombre hasta purgarlos).</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Diseño de una solución en Azure</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Diseña la arquitectura de una tienda online pequeña en Azure.</p>
+            <div class="q-ans">App Service para la API (PaaS, slots), Azure SQL para el catálogo, Cosmos DB para pedidos por cliente, Blob Storage para imágenes, Service Bus para procesar pedidos en segundo plano con Functions, Key Vault con Managed Identity para secretos, APIM delante y GitHub Actions con OIDC para desplegar. Todo en un RG por entorno con presupuesto.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué la API devuelve 202 al crear un pedido?</p>
+            <div class="q-ans">Porque sólo lo acepta y lo deja en la cola; el procesamiento (facturación, inventario) ocurre después. Responde rápido y un fallo en un consumidor no tumba la API.</div></div>
+          <div class="q"><p class="q-text">3. ¿Qué haces antes de desplegar en producción?</p>
+            <div class="q-ans">Pasar por staging (slot), revisar con <code>what-if</code> los cambios de infraestructura, aprobar en un environment protegido y hacer swap, que permite volver atrás en segundos.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué le pides a APIM que no quieres programar en la API?</p>
+            <div class="q-ans">Autenticación por clave de suscripción, límites de frecuencia (429), caché de respuestas, validación y transformación de peticiones y documentación del portal, mediante políticas en inbound, backend, outbound y on-error.</div></div>
+          <div class="q"><p class="q-text">5. ¿Cómo controlas el coste mientras aprendes?</p>
+            <div class="q-ans">Presupuesto con alerta desde el primer día, tiers gratuitos o básicos, deallocate de las VM, borrar el RG al terminar cada sesión y purgar lo que queda en soft delete.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cuándo usarías Azure SQL en lugar de Cosmos DB?</p>
+            <div class="q-ans">Cuando hay relaciones, joins y transacciones entre entidades (catálogo, inventario) o el modelo es estable. Cosmos cuando el acceso es por una clave, el esquema varía y hace falta escalar por partición.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>0</b> · ARM es la puerta única; cuenta ≠ suscripción; <code>az account show</code> antes de nada.</li>
+          <li><b>1</b> · IaaS/PaaS/SaaS; región y zonas; RG con ciclo de vida; tags.</li>
+          <li><b>2</b> · Entra ID, tenant; RBAC = quién + rol + scope; grupos y mínimo privilegio.</li>
+          <li><b>3</b> · VNet y subnets; NSG; una VM son varios recursos; deallocate.</li>
+          <li><b>4</b> · App Service: plan + app; <code>PORT</code>; Application Settings; log stream; slots.</li>
+          <li><b>5</b> · Storage: LRS/ZRS/GRS, Hot/Cool/Archive, contenedores privados, SAS.</li>
+          <li><b>6</b> · Azure SQL: servidor lógico + base; DTU/vCore; firewall; PITR.</li>
+          <li><b>7</b> · Cosmos: partition key irreversible; RU; Session.</li>
+          <li><b>8</b> · Functions: trigger + bindings; Consumption y cold start; NCRONTAB en UTC.</li>
+          <li><b>9</b> · Service Bus (mensajes, queue/topic, dead-letter) y Event Grid (eventos).</li>
+          <li><b>10</b> · Key Vault + Managed Identity + references; APIM con políticas.</li>
+          <li><b>11</b> · GitHub Actions con OIDC, artifacts, environments, Bicep y limpieza.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Vuelve a desplegar NakaShop con el workflow y bórralo el mismo día: el ciclo completo se olvida rápido.</li>
+            <li>Antes de una entrevista, dibuja la arquitectura y explica dónde está cada control de identidad y de coste.</li>
+            <li>Practica decir en voz alta la paradoja de la Managed Identity y la diferencia mensaje/evento: son las dos preguntas más habituales.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

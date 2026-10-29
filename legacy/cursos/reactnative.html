@@ -20069,7 +20069,720 @@ npx eas channel:list</code></pre>
       </div>
     </details>
   </section>
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: React Native y NakaTrip de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Expo|FlatList|Expo Router|TanStack Query|SQLite|Permisos|Reanimated|Accesibilidad|EAS">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del primer QR escaneado con Expo
+      Go a NakaTrip publicada en las tiendas con actualizaciones por aire. Cada concepto aparece con lo mínimo para
+      recordarlo —qué es, para qué sirve y cómo se escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas al móvil tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  7 · ENTREGA        development build · EAS Build · tiendas · EAS Update · CI   (23–24)
+                ▲
+  6 · CALIDAD        Reanimated · accesibilidad y tema · rendimiento · tests     (19–22)
+                ▲
+  5 · DISPOSITIVO    permisos · cámara · ubicación y mapas · notificaciones       (16–18)
+                ▲
+  4 · DATOS          fetch · AsyncStorage · Context · TanStack Query · SQLite    (11–15)
+                ▲
+  3 · NAVEGACIÓN     Expo Router · pestañas · rutas dinámicas · modales          (8–10)
+                ▲
+  2 · INTERFAZ       props · Pressable · FlatList · formularios                  (4–7)
+                ▲
+  1 · FUNDAMENTOS    Expo · Metro y Hermes · View/Text/Image · StyleSheet        (0–3)</div>
+
+        <h3>El mapa de rutas de NakaTrip</h3>
+        <div class="diagram">  app/
+  ├─ _layout.tsx           Stack raíz + proveedores (QueryClient, Tema, Viajes)
+  ├─ (tabs)/
+  │   ├─ _layout.tsx       Tabs
+  │   ├─ index.tsx         /           lista de viajes (FlatList)
+  │   └─ ...               otras pestañas (favoritos, mapa, ajustes)
+  ├─ viaje/[id].tsx        /viaje/7    detalle (useLocalSearchParams)
+  ├─ nuevo.tsx             /nuevo      formulario (presentation: 'modal')
+  └─ +not-found.tsx        rutas desconocidas (enlaces profundos antiguos)</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos</b></td><td>React que ordena crear vistas nativas; dos hilos.</td><td>Todo texto dentro de <code>&lt;Text&gt;</code>.</td></tr>
+            <tr><td><b>Interfaz</b></td><td>Componentes de presentación, toques con Pressable, listas virtualizadas.</td><td>Si puede crecer, es FlatList.</td></tr>
+            <tr><td><b>Navegación</b></td><td>Una pila de pantallas vivas definida por archivos.</td><td>La pantalla de abajo no se desmonta.</td></tr>
+            <tr><td><b>Datos</b></td><td>La red falla: caché, estado del servidor y base local.</td><td><code>localhost</code> es el teléfono.</td></tr>
+            <tr><td><b>Dispositivo</b></td><td>Permisos en el momento justo y archivos fuera de la caché.</td><td>Denegado = sólo queda Ajustes.</td></tr>
+            <tr><td><b>Calidad</b></td><td>Fluidez en el hilo de UI, para todo el mundo, medida y probada.</td><td>Medir, cambiar, volver a medir.</td></tr>
+            <tr><td><b>Entrega</b></td><td>Tu propia app compilada en la nube y actualizable por aire.</td><td>OTA nunca cambia código nativo.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Ten NakaTrip abierta en el móvil mientras lees y, en cada bloque, localiza la pantalla o el comportamiento que lo
+        demuestra (el gesto de atrás, la lista sin red, el permiso denegado). En móvil, lo que se ve en el dispositivo se
+        recuerda mucho mejor que lo leído.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📱 Bloque 1 · Expo, arquitectura, componentes y estilos (cap. 0–3)</summary>
+      <div class="acc-body">
+
+        <h3>Qué es y cómo corre (0–1)</h3>
+        <ul class="clean">
+          <li><b>React Native no dibuja HTML</b>: ordena crear los mismos componentes nativos que una app en Kotlin o Swift.</li>
+          <li><b>Expo</b> = proyecto listo, módulos nativos escritos y compilación en la nube. <b>Expo Go</b> ejecuta tu proyecto sin compilar, limitado a los módulos que trae.</li>
+          <li>Bucle: editor → <b>Metro</b> (empaqueta en tu ordenador) → wifi → app. Misma red en los dos extremos. <code>console.log</code> sale en la terminal.</li>
+          <li><b>Hermes</b> ejecuta el JavaScript dentro de la app: tu código nunca se convierte en Kotlin ni Swift.</li>
+          <li>Dos hilos: <b>JavaScript</b> (tu código) y <b>UI</b> (pantalla y toques). Bloquear el de JS deja la pantalla viva pero sorda.</li>
+          <li><b>Nueva Arquitectura</b>: JSI (llamadas directas), Fabric (renderizado), TurboModules (carga perezosa) sustituyen al puente.</li>
+          <li><code>Platform.OS</code>, <code>useWindowDimensions()</code> (en puntos, se actualiza al girar), <code>__DEV__</code>. Metro no comprueba tipos: <code>npx tsc --noEmit</code>.</li>
+        </ul>
+
+        <h3>Componentes básicos (2)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>&lt;ScrollView contentContainerStyle={{ padding: 16 }}&gt;        {/* contenido corto y conocido */}
+  &lt;View style={{ flexDirection: 'row', gap: 12 }}&gt;           {/* View ya es flex en COLUMNA */}
+    &lt;Image source={{ uri: viaje.foto }}                       // remota: tamaño obligatorio
+           style={{ width: 80, height: 80, backgroundColor: '#ddd' }} resizeMode="cover" /&gt;
+    &lt;Text numberOfLines={1} style={{ flex: 1 }}&gt;{viaje.destino}&lt;/Text&gt;
+  &lt;/View&gt;
+&lt;/ScrollView&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>View</code> es la caja (flex en columna); <b>todo el texto dentro de
+        <code>Text</code></b>, que es el único que anida y hereda estilos. Imagen local con <code>require()</code>; remota con
+        <code>{{ uri }}</code> y tamaño siempre (sin él, no aparece y no hay error). <code>cover</code> llena sin deformar.
+        ScrollView monta todos sus hijos: sólo para contenido corto. <b>Área segura</b> con <code>useSafeAreaInsets()</code> o
+        <code>SafeAreaView</code>. <code>{lista.length &amp;&amp; …}</code> con lista vacía pinta un 0 suelto y peta.</p>
+
+        <h3>Estilos (3)</h3>
+        <ul class="clean">
+          <li>No hay CSS: objetos de JavaScript. Sin cascada ni selectores. <code>StyleSheet.create</code> para lo fijo; lo variable en línea; se combinan con un <b>array</b> (gana el último).</li>
+          <li>Todo es flex, eje por defecto la <b>columna</b>: <code>justifyContent</code> actúa en el principal, <code>alignItems</code> en el cruzado. <code>flex: 1</code> = «cómete lo que sobre».</li>
+          <li>Medidas en <b>puntos</b>, no píxeles. <code>StyleSheet.hairlineWidth</code>; 44 puntos de objetivo táctil.</li>
+          <li>Sombras: <code>shadow*</code> en iOS, <code>elevation</code> en Android, unidas con <code>Platform.select</code>.</li>
+          <li>Sin media queries: <code>useWindowDimensions()</code> + condicional. <b>Tokens</b> (<code>colores</code>, <code>espacio</code> en <code>src/theme/tokens.ts</code>) en vez de valores sueltos.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Bloque 2 · Props, toques, listas y formularios (cap. 4–7)</summary>
+      <div class="acc-body">
+
+        <h3>Componentes y props (4)</h3>
+        <div class="code-block" data-lang="TypeScript · src/components/TripCard.tsx">
+<pre><code>type Props = {
+  viaje: Viaje;
+  tono?: 'neutro' | 'marca';                 // unión de literales, mejor que string
+  onFavorito: (id: string) =&gt; void;
+  style?: StyleProp&lt;ViewStyle&gt;;
+};
+
+export function TripCard({ viaje, tono = 'neutro', onFavorito, style }: Props) {
+  return (
+    &lt;View style={[estilos.tarjeta, estilos[tono], style]}&gt;   {/* el de fuera, el último */}
+      …
+    &lt;/View&gt;
+  );
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un componente merece existir cuando tiene nombre o aparece la segunda copia.
+        Pasa el objeto (<code>viaje</code>), no seis props sueltas. Props para decidir cómo se pinta; <code>children</code>
+        para aportar sólo el marco. Muchas props booleanas = hacen falta dos componentes. Un archivo por componente con
+        exportación con nombre; las pantallas de <code>app/</code>, <code>export default</code>. Los componentes de presentación
+        no saben de dónde vienen los datos, y por eso sobreviven a la API y a SQLite.</p>
+
+        <h3>Estado y toques (5)</h3>
+        <ul class="clean">
+          <li>Ciclo de un toque: <code>onPressIn → (onLongPress) → onPressOut → onPress</code>. La acción, en <b><code>onPress</code></b> (sólo llega si sueltas dentro).</li>
+          <li><b><code>Pressable</code></b> con <code>style={({ pressed }) =&gt; …}</code>: no hay <code>:hover</code>, el feedback tiene que verse. <code>hitSlop</code> amplía la zona táctil sin cambiar el aspecto.</li>
+          <li>El estado vive en el <b>ancestro común</b>; los hijos son controlados (valor + <code>onCambiar</code>). Lo calculable no se guarda (contador de favoritos).</li>
+          <li>Actualizaciones <b>inmutables</b> con la forma funcional: <code>setViajes(prev =&gt; prev.map(v =&gt; v.id === id ? { ...v, favorito: !v.favorito } : v))</code>.</li>
+          <li>Feedback háptico con <code>expo-haptics</code>, como complemento del visual.</li>
+        </ul>
+
+        <h3>FlatList (6)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>const renderItem = useCallback(({ item }: { item: Viaje }) =&gt;
+  &lt;TripCard viaje={item} onFavorito={alternar} /&gt;, [alternar]);
+
+&lt;FlatList
+  data={viajes}
+  renderItem={renderItem}
+  keyExtractor={(v) =&gt; v.id}                      // el id, nunca el índice
+  ListHeaderComponent={&lt;Cabecera /&gt;}              // nunca envolver en un ScrollView
+  ListEmptyComponent={&lt;EstadoVacio /&gt;}
+  ItemSeparatorComponent={Separador}
+  refreshing={refrescando} onRefresh={refrescar}  // tirar para refrescar
+/&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> cada fila es una vista nativa real; FlatList <b>virtualiza</b> (monta lo
+        visible y recicla). Si la lista puede crecer, es FlatList. Con el índice como clave, el estado se pega a la posición.
+        Anidarla en un ScrollView da <code>VirtualizedLists should never be nested</code>. <code>renderItem</code> en
+        <code>useCallback</code>. Grupos con cabecera fija: <b>SectionList</b>.</p>
+
+        <h3>Formularios y teclado (7)</h3>
+        <ul class="clean">
+          <li><code>TextInput</code> controlado con <code>onChangeText</code> (recibe la cadena). Elige el teclado: <code>keyboardType</code>, <code>autoCapitalize</code>, <code>autoComplete</code>. El teclado <b>no valida</b>.</li>
+          <li><code>KeyboardAvoidingView</code> con <code>behavior</code> por plataforma. <b><code>keyboardShouldPersistTaps="handled"</code></b>: sin él, el primer toque sólo cierra el teclado.</li>
+          <li>Encadenar el foco: <code>useRef</code> + <code>returnKeyType="next"</code> + <code>onSubmitEditing</code>. Un componente propio necesita <code>forwardRef</code> para aceptar <code>ref</code>.</li>
+          <li>Validar al salir del campo y al enviar; mientras se escribe sólo se quitan errores. Error pegado al campo, con texto.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧭 Bloque 3 · Expo Router: pila, pestañas, rutas dinámicas y modales (cap. 8–10)</summary>
+      <div class="acc-body">
+
+        <h3>Navegación por archivos (8)</h3>
+        <div class="code-block" data-lang="TypeScript · app/_layout.tsx">
+<pre><code>export default function Layout() {
+  return (
+    &lt;Stack&gt;
+      &lt;Stack.Screen name="(tabs)" options={{ headerShown: false }} /&gt;
+      &lt;Stack.Screen name="nuevo" options={{ presentation: 'modal', title: 'Nuevo viaje' }} /&gt;
+    &lt;/Stack&gt;
+  );
+}
+
+&lt;Link href={`/viaje/${v.id}`} asChild&gt;&lt;Pressable&gt;…&lt;/Pressable&gt;&lt;/Link&gt;   // lo que se toca
+router.push('/nuevo');                     // navegar tras una operación
+router.replace('/');                       // tras login: la actual no queda en la pila</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> en móvil la navegación es una <b>pila</b> y la pantalla de debajo sigue viva
+        (estado y scroll). El gesto de atrás es obligatorio. La estructura de <code>app/</code> es el mapa de rutas (cada archivo
+        con <code>export default</code>); <code>_layout.tsx</code> declara el navegador. Cada ruta es un enlace profundo
+        (<code>nakatrip://viaje/7</code>). Para reaccionar al volver: <b><code>useFocusEffect</code> con
+        <code>useCallback</code></b> (un <code>useEffect([])</code> sólo corre al montar). Alias <code>@/</code>.</p>
+
+        <h3>Pestañas y detalle (9)</h3>
+        <ul class="clean">
+          <li><b>Tabs</b> para secciones hermanas; <b>Stack</b> para ir hacia dentro. Casi toda app combina ambas.</li>
+          <li><b>Grupos de rutas</b> <code>(tabs)</code>: agrupan bajo un layout sin aparecer en la URL. Los layouts se anidan.</li>
+          <li><b>Ruta dinámica</b> <code>app/viaje/[id].tsx</code> → <code>const { id } = useLocalSearchParams&lt;{ id: string }&gt;()</code>. Llega siempre como cadena; el genérico es una promesa tuya.</li>
+          <li>Pasa el <b>identificador</b>, no el objeto. Trata siempre el «no encontrado» (enlaces antiguos).</li>
+          <li>Cabecera que depende de los datos: <code>&lt;Stack.Screen options={{ title: viaje.destino }} /&gt;</code> desde la pantalla.</li>
+        </ul>
+
+        <h3>Modales y cabeceras (10)</h3>
+        <ul class="clean">
+          <li>Modal como <b>ruta</b> (<code>presentation: 'modal'</code>) para lo que merece dirección propia (alta); componente <b><code>Modal</code></b> para confirmaciones y hojas de acciones (con <code>onRequestClose</code> obligatorio por Android).</li>
+          <li><code>headerLeft</code>/<code>headerRight</code> son funciones; si dependen del estado, desde la pantalla o con <code>setOptions</code>.</li>
+          <li>Botón «Guardar» en la cabecera y estado en el formulario: <b><code>useImperativeHandle</code></b> expone órdenes de alto nivel al padre (con sus dependencias, o validará datos viejos).</li>
+          <li>Un modal se cierra también con gesto y botón atrás: intercepta si hay cambios sin guardar. <code>Share</code>: cancelar no es un error.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>💾 Bloque 4 · Red, almacenamiento, estado global, caché y offline (cap. 11–15)</summary>
+      <div class="acc-body">
+
+        <h3>fetch y estados de carga (11)</h3>
+        <ul class="clean">
+          <li>En móvil la red falla siempre: <b>cinco estados</b> (cargando, datos, vacío, error y «datos antiguos mientras recargo»), con botón de reintentar.</li>
+          <li><code>useEffect</code> pide y la limpieza cancela con <code>AbortController</code> (un <code>AbortError</code> no es un fallo).</li>
+          <li><code>fetch</code> no lanza con 404 (<code>response.ok</code>), no tiene timeout ni URL base: un <b>cliente propio</b> (<code>src/api/cliente.ts</code>) lo concentra y traduce errores («Sin conexión», no «500»).</li>
+          <li><b><code>localhost</code> es el teléfono</b>: usa la IP del ordenador en la red local (o <code>10.0.2.2</code> en el emulador Android).</li>
+        </ul>
+
+        <h3>AsyncStorage (12)</h3>
+        <ul class="clean">
+          <li>El sistema mata las apps en segundo plano: lo que esté en <code>useState</code> se pierde.</li>
+          <li><b>AsyncStorage</b> (preferencias, cachés; no cifrado, sólo cadenas) · <b>SecureStore</b> (secretos y tokens) · <b>FileSystem</b> (archivos) · <b>SQLite</b> (muchos registros).</li>
+          <li><code>JSON.parse</code> dentro de <code>try</code> (y borrar la clave corrupta). Bandera <code>listo</code> para no pintar el valor por defecto y parpadear (hook <code>useAlmacen</code>).</li>
+          <li>La interfaz no espera al disco: memoria primero, escritura después con debounce. Claves versionadas (<code>.v1</code>) en un solo archivo. Nunca <code>clear()</code>.</li>
+        </ul>
+
+        <h3>Context + useReducer (13)</h3>
+        <ul class="clean">
+          <li>Con navegación, las pantallas no son hijas: hace falta un contexto. Es <b>transporte</b>, no gestor: el estado sigue en <code>useReducer</code>.</li>
+          <li><b>Datos y acciones en dos contextos</b> (acciones memorizadas con <code>useMemo</code>): consumir sólo acciones no repinta al cambiar los datos.</li>
+          <li>Reducer <b>puro</b> (sin fetch ni temporizadores; eso en el proveedor), acciones en pasado (<code>viaje-anadido</code>), hook de acceso que lanza si falta el proveedor (<code>useViajes</code>, <code>ViajesProvider</code>).</li>
+        </ul>
+
+        <h3>TanStack Query (14)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>const { data: viajes = [], isPending, isFetching } = useQuery({
+  queryKey: clavesViajes.lista(),          // fábrica de claves; invalidación por prefijo
+  queryFn: ({ signal }) =&gt; obtenerViajes(signal),
+  staleTime: 60_000,
+});
+
+// móvil: los eventos del navegador no existen
+focusManager.setEventListener(… AppState …);
+onlineManager.setEventListener(… NetInfo …);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> dos clases de estado: <b>del servidor</b> (una copia que envejece) y <b>de la
+        interfaz</b> (eres el dueño). La <code>queryKey</code> es la identidad del dato: todo lo que cambie el resultado, dentro.
+        <code>isPending</code> = no hay datos; <code>isFetching</code> = petición en marcha. Reintentos selectivos (nunca un 404).
+        <b>Mutación optimista</b>: <code>onMutate</code> (cancelQueries, copia y cambio) → <code>onError</code> (restaurar) →
+        <code>onSettled</code> (invalidar). Nunca optimista en pagos ni borrados definitivos.</p>
+
+        <h3>SQLite y offline-first (15)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>await db.withTransactionAsync(async () =&gt; {          // muchas escrituras: una transacción
+  for (const v of viajes) {
+    await db.runAsync('INSERT INTO viajes (id, destino) VALUES (?, ?) ' +
+      'ON CONFLICT(id) DO UPDATE SET destino = excluded.destino', v.id, v.destino);
+  }
+});
+const lista = await db.getAllAsync&lt;Viaje&gt;('SELECT * FROM viajes ORDER BY fecha DESC');</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> una caché lee sin red; una base local además escribe y consulta.
+        <b>Offline-first</b>: la base local es la verdad de la interfaz y la red es sincronización. Siempre parámetros
+        (<code>?</code>), nunca concatenar. Esquema versionado con <code>user_version</code> y migraciones acumulativas que no se
+        editan. La tabla <code>pendientes</code> es la <b>cola de sincronización</b>: en orden, con reintentos, sustituyendo ids
+        locales por los del servidor. Actualiza con cambios parciales (PATCH) para no pisar ediciones ajenas.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📸 Bloque 5 · Permisos, cámara, ubicación, mapas y notificaciones (cap. 16–18)</summary>
+      <div class="acc-body">
+
+        <h3>Permisos y fotos (16)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>const actual = await ImagePicker.getCameraPermissionsAsync();
+if (!actual.granted &amp;&amp; !actual.canAskAgain) {
+  return ofrecerAjustes();                        // denegado para siempre: Linking.openSettings()
+}
+const { granted } = await ImagePicker.requestCameraPermissionsAsync();   // en el momento justo
+if (!granted) return;
+const r = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+if (r.canceled) return;                            // cancelar no es un error
+const destino = FileSystem.documentDirectory + `fotos/${id}.jpg`;
+await FileSystem.moveAsync({ from: r.assets[0].uri, to: destino });   // la ruta original caduca</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un permiso tiene tres estados y, denegado, el sistema no vuelve a preguntar.
+        Pídelo cuando hace falta, nunca al arrancar, y declara el texto de uso en <code>app.json</code> (lo leen el usuario y
+        Apple). <code>expo-image-picker</code> resuelve el 90 %; <code>expo-camera</code> para interfaz propia. La ruta del
+        selector es <b>temporal</b>: mueve a <code>documentDirectory</code>. Archivo en disco, ruta en la base. Comprime y
+        redimensiona; borra los archivos al borrar el viaje.</p>
+
+        <h3>Ubicación y mapas (17)</h3>
+        <ul class="clean">
+          <li>Precisión, tiempo y batería son la misma decisión: <code>Accuracy.Balanced</code> (~100 m, sin GPS) basta casi siempre.</li>
+          <li>Dos permisos: <b>primer plano</b> y <b>segundo plano</b> (delicado, hay que justificarlo ante las tiendas). Permiso concedido ≠ servicio de ubicación activado.</li>
+          <li><code>watchPositionAsync</code> deja el GPS encendido: cancela la suscripción.</li>
+          <li>Geocodificación inversa: necesita red y puede fallar; guarda las coordenadas como dato verdadero. Columnas que admiten <b>NULL</b> (0, 0 está en el Atlántico).</li>
+          <li><code>react-native-maps</code>: <code>initialRegion</code> y órdenes imperativas, no <code>region</code> controlada. <code>tracksViewChanges={false}</code> en marcadores estáticos. En Android compilado necesita clave de API (si no, mapa en blanco).</li>
+        </ul>
+
+        <h3>Notificaciones (18)</h3>
+        <ul class="clean">
+          <li><b>Local</b> (la programa la app, sin red) frente a <b>push</b> (la manda un servidor; necesita token y development build).</li>
+          <li>Con la app abierta no se muestra nada salvo <code>setNotificationHandler</code>, fuera de todo componente.</li>
+          <li>Con la app <b>cerrada</b>, el toque se recupera con <code>getLastNotificationResponseAsync</code>; abierta, con el escuchador. Navegar con el <code>data</code> de la notificación.</li>
+          <li><b>Canales</b> de Android: el usuario silencia una categoría, no la app. Android 13+ exige pedir permiso.</li>
+          <li>Guarda el identificador de cada programada para poder cancelarla. Fechas pasadas se descartan; iOS limita a 64 pendientes.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>✨ Bloque 6 · Animaciones, accesibilidad, rendimiento y tests (cap. 19–22)</summary>
+      <div class="acc-body">
+
+        <h3>Reanimated y gestos (19)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>const x = useSharedValue(0);                       // vive en el hilo de UI; no provoca render
+const estilo = useAnimatedStyle(() =&gt; ({ transform: [{ translateX: x.value }] }));
+
+const deslizar = Gesture.Pan()
+  .activeOffsetX([-10, 10]).failOffsetY([-10, 10])  // no robarle el gesto a la lista
+  .onUpdate((e) =&gt; { x.value = e.translationX; })
+  .onEnd(() =&gt; {
+    if (x.value &lt; -120) runOnJS(borrar)(id);        // volver al hilo de JS
+    x.value = withSpring(0);
+  });
+
+&lt;GestureDetector gesture={deslizar}&gt;&lt;Animated.View style={estilo}&gt;…&lt;/Animated.View&gt;&lt;/GestureDetector&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> anima para dar continuidad, causalidad o velocidad percibida (150–400 ms).
+        Reanimated corre en el <b>hilo de UI</b> con worklets: fluido aunque el de JS esté ocupado. El puente son los valores
+        compartidos; para volver, <code>runOnJS</code>. Sólo sobre <code>Animated.View</code>. Anima <code>transform</code> y
+        <code>opacity</code>. <code>entering</code>/<code>exiting</code>/<code>layout</code> con una prop.
+        <code>GestureHandlerRootView</code> en la raíz. Respeta «reducir movimiento».</p>
+
+        <h3>Accesibilidad, tema y plataformas (20)</h3>
+        <ul class="clean">
+          <li>Cuatro props: <code>accessibilityLabel</code>, <code>accessibilityRole</code>, <code>accessibilityState</code>, <code>accessibilityHint</code>. <code>accessible</code> agrupa una tarjeta en una sola parada del lector.</li>
+          <li>Todo gesto necesita alternativa (<code>accessibilityActions</code>, botón o pulsación larga).</li>
+          <li>Tamaño de letra: <code>minHeight</code>, nunca <code>height</code>; <code>allowFontScaling={false}</code> casi nunca. Contraste 4,5:1; el color no es el único canal.</li>
+          <li><code>useColorScheme()</code> + preferencia guardada (auto, claro, oscuro) en un <code>TemaProvider</code>; esperar a leerla para no destellar. El oscuro no es invertir: grises y colores menos saturados.</li>
+        </ul>
+
+        <h3>Rendimiento (21)</h3>
+        <ul class="clean">
+          <li><b>Medir, cambiar, volver a medir</b>, en modo producción. Presupuestos: 16 ms por fotograma, &lt; 2 s hasta ver algo, memoria constante.</li>
+          <li>Monitor de rendimiento: UI baja = nativo; JS baja = tuyo.</li>
+          <li><code>React.memo</code> sólo sirve con props estables (<code>useCallback</code>/<code>useMemo</code>); funciona gracias a la inmutabilidad.</li>
+          <li>Listas: <b><code>getItemLayout</code></b> (filas de altura conocida), <code>initialNumToRender</code>, <code>windowSize</code>.</li>
+          <li>Imágenes: ancho × alto × 4 bytes en memoria; pídelas reducidas. <code>expo-image</code> con caché, placeholder y <code>recyclingKey</code>.</li>
+        </ul>
+
+        <h3>Tests con Jest y Testing Library (22)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>jest.mock('expo-sqlite');                            // los módulos nativos no existen en Node
+
+test('marca un viaje como favorito', async () =&gt; {
+  render(&lt;TripCard viaje={viajeDePrueba} onFavorito={alternar} /&gt;);
+  fireEvent.press(screen.getByRole('button', { name: /favorito/i }));
+  expect(alternar).toHaveBeenCalledWith(viajeDePrueba.id);
+});</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> prueba lo que no se ve al romperse (validaciones, reducer, cola). Funciones
+        puras primero. Busca como una persona: rol, texto, etiqueta accesible; <code>testID</code> el último recurso.
+        <code>getBy</code> / <code>queryBy</code> (ausencias) / <code>findBy</code> (espera). El aviso de <code>act</code>
+        significa que el test acabó antes de tiempo: espera bien, no lo silencies. La cobertura no es calidad.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · Development builds, EAS, tiendas y actualizaciones (cap. 23–24)</summary>
+      <div class="acc-body">
+
+        <h3>Salir de Expo Go (23)</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>eas build --profile development --platform android   # tu app con el cliente de desarrollo
+npx expo start --dev-client                          # Metro sirve el JS a ese build
+eas build --profile preview --platform android       # APK autónomo para enseñar
+eas build --profile production --platform all        # AAB / IPA para las tiendas</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un <b>development build</b> es tu app con el modo desarrollo dentro: mismo Fast
+        Refresh, pero con tus módulos nativos, icono y permisos. Recompilar sólo cuando cambia lo nativo (librería nativa,
+        <code>app.json</code>, icono, SDK); el JS sigue llegando por Metro. <code>prebuild</code> genera <code>android/</code> e
+        <code>ios/</code> desde <code>app.json</code> y los <b>config plugins</b>: no se editan ni se versionan. EAS compila en la
+        nube (iOS desde Windows) y guarda las credenciales; descarga una copia del <b>keystore</b>. <code>bundleIdentifier</code> y
+        <code>package</code> no cambian tras publicar. <code>EXPO_PUBLIC_*</code> se incrustan: no son secretas.</p>
+
+        <h3>Publicar y actualizar (24)</h3>
+        <ul class="clean">
+          <li>Coste: 25 $ una vez (Google Play) y 99 $ al año (Apple). Política de privacidad obligatoria y coherente con los permisos.</li>
+          <li>Primero canales de prueba: <b>prueba interna</b> y <b>TestFlight</b>. Prueba el instalable de producción (<code>__DEV__</code> en false).</li>
+          <li><code>eas submit</code> sube; subir no es publicar. El número de compilación sube en cada envío.</li>
+          <li><b>EAS Update</b> (OTA): cambia JavaScript y recursos, <b>nunca</b> código nativo, permisos ni <code>app.json</code>. Un <b>canal</b> apunta a una rama: volver atrás es mover el apuntador.</li>
+          <li>CI: <code>npm run verificar</code> (tipos, lint, tests) bloquea la publicación si falla; el token de Expo en secretos.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+    <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista técnica de React Native"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|ScrollView vs FlatList|Stack vs Tabs|AsyncStorage vs SecureStore|Local vs push|OTA vs build|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> del desarrollo móvil con React Native: las
+      parejas de conceptos que parecen iguales, los patrones que aplicaste en NakaTrip, los errores que todo el mundo se
+      encuentra y las preguntas típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después despliega
+      la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Plataforma e interfaz</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>React Native / web en una app / nativo puro</b></td><td>Componentes nativos dirigidos desde JS / HTML en un WebView / Kotlin y Swift por separado.</td><td>RN: un equipo, dos plataformas, sensación nativa.</td></tr>
+            <tr><td><b>Expo Go / development build</b></td><td>Cliente genérico con módulos fijos / tu app con tus módulos y el modo desarrollo.</td><td>Expo Go para empezar; dev build en cuanto necesitas algo nativo.</td></tr>
+            <tr><td><b>Metro / Hermes</b></td><td>Empaqueta en el ordenador / ejecuta el JS en la app.</td><td>—</td></tr>
+            <tr><td><b>Hilo de JS / hilo de UI</b></td><td>Tu lógica y renders / dibujo y toques.</td><td>JS bloqueado = pantalla viva pero sorda.</td></tr>
+            <tr><td><b>Puente / JSI</b></td><td>Mensajes serializados asíncronos / llamadas directas (Nueva Arquitectura).</td><td>—</td></tr>
+            <tr><td><b>Puntos / píxeles</b></td><td>Unidad lógica / píxel físico (densidad).</td><td>Estilos en puntos; <code>hairlineWidth</code> para 1 px.</td></tr>
+            <tr><td><b>CSS / StyleSheet</b></td><td>Cascada y selectores / objetos por componente, sin herencia salvo en <code>Text</code>.</td><td>Array de estilos: gana el último.</td></tr>
+            <tr><td><b>Flexbox web / RN</b></td><td>Fila por defecto / <b>columna</b> por defecto y todo es flex.</td><td>—</td></tr>
+            <tr><td><b><code>shadow*</code> / <code>elevation</code></b></td><td>Sombra en iOS / en Android.</td><td>Ambas con <code>Platform.select</code>.</td></tr>
+            <tr><td><b>Imagen local / remota</b></td><td><code>require()</code>, tamaño implícito / <code>{{ uri }}</code>, tamaño obligatorio.</td><td>—</td></tr>
+            <tr><td><b>ScrollView / FlatList / SectionList</b></td><td>Monta todo / virtualiza / virtualiza con grupos y cabeceras fijas.</td><td>Si puede crecer, FlatList.</td></tr>
+            <tr><td><b><code>onPress</code> / <code>onPressIn</code></b></td><td>Al soltar dentro / al tocar.</td><td>Acciones en onPress.</td></tr>
+            <tr><td><b>Pressable / TouchableOpacity</b></td><td>API moderna con estado <code>pressed</code> / heredado.</td><td>Pressable.</td></tr>
+            <tr><td><b>Props / children</b></td><td>El componente decide cómo pintar / sólo aporta el marco.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Navegación y datos</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Stack / Tabs</b></td><td>Ir hacia dentro / secciones hermanas.</td><td>Casi siempre ambas, anidadas.</td></tr>
+            <tr><td><b><code>Link</code> / <code>router.push</code> / <code>router.replace</code></b></td><td>Lo que se toca / navegar tras una operación / sustituir sin dejar rastro en la pila.</td><td>replace tras login.</td></tr>
+            <tr><td><b><code>useEffect</code> / <code>useFocusEffect</code></b></td><td>Al montar o cambiar dependencias / cada vez que la pantalla gana el foco.</td><td>Reaccionar al volver a una pantalla apilada o pestaña.</td></tr>
+            <tr><td><b>Modal como ruta / componente <code>Modal</code></b></td><td>Pantalla con dirección propia / superposición local.</td><td>Alta de viaje / confirmación.</td></tr>
+            <tr><td><b>Parámetro con id / con el objeto</b></td><td>Se busca el dato fresco / se congela y engorda la ruta.</td><td>Siempre el id.</td></tr>
+            <tr><td><b><code>localhost</code> en web / en el móvil</b></td><td>Tu ordenador / el propio teléfono.</td><td>IP local o <code>10.0.2.2</code>.</td></tr>
+            <tr><td><b>AsyncStorage / SecureStore / FileSystem / SQLite</b></td><td>Preferencias sin cifrar / secretos cifrados / archivos / muchos registros consultables.</td><td>Tokens en SecureStore.</td></tr>
+            <tr><td><b>Estado de interfaz / del servidor</b></td><td>Eres el dueño / copia que envejece.</td><td>Context o local / TanStack Query.</td></tr>
+            <tr><td><b>Context / TanStack Query</b></td><td>Transporte de estado propio / caché con reintentos e invalidación.</td><td>Tema y borradores / datos de la API.</td></tr>
+            <tr><td><b><code>isPending</code> / <code>isFetching</code></b></td><td>No hay datos / petición en marcha.</td><td>Esqueleto / indicador discreto.</td></tr>
+            <tr><td><b>Caché persistida / offline-first</b></td><td>Leer sin red / leer y escribir sin red con cola de sincronización.</td><td>Offline-first si se crea contenido sin red.</td></tr>
+            <tr><td><b>PUT / PATCH al sincronizar</b></td><td>Pisa el objeto entero / cambia sólo lo editado.</td><td>PATCH para no perder ediciones ajenas.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Dispositivo, calidad y entrega</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Permiso no pedido / denegado / denegado para siempre</b></td><td>Se puede pedir / se puede volver a pedir / sólo desde Ajustes.</td><td>Comprueba <code>canAskAgain</code>.</td></tr>
+            <tr><td><b>image-picker / expo-camera</b></td><td>Interfaz del sistema / interfaz propia.</td><td>image-picker salvo necesidad.</td></tr>
+            <tr><td><b>Ubicación en primer plano / segundo plano</b></td><td>Normal / delicado, se justifica ante las tiendas.</td><td>Segundo plano sólo si es imprescindible.</td></tr>
+            <tr><td><b><code>getCurrentPositionAsync</code> / <code>watchPositionAsync</code></b></td><td>Una lectura / seguimiento continuo (cancelar).</td><td>—</td></tr>
+            <tr><td><b>Notificación local / push</b></td><td>La programa la app, sin red / la manda un servidor con token.</td><td>Recordatorios / avisos remotos.</td></tr>
+            <tr><td><b>Animated / Reanimated</b></td><td>Por defecto en el hilo de JS / worklets en el hilo de UI.</td><td>Reanimated para gestos y fluidez.</td></tr>
+            <tr><td><b><code>useState</code> / <code>useSharedValue</code></b></td><td>Provoca render / no lo provoca, vive en UI.</td><td>Valores animados en sharedValue.</td></tr>
+            <tr><td><b><code>height</code> / <code>minHeight</code></b></td><td>Fija / crece con el texto grande.</td><td>minHeight con texto.</td></tr>
+            <tr><td><b><code>getBy</code> / <code>queryBy</code> / <code>findBy</code></b></td><td>Lanza / devuelve null / espera.</td><td>—</td></tr>
+            <tr><td><b>Perfil development / preview / production</b></td><td>Con Metro / autónomo para enseñar / tiendas.</td><td>—</td></tr>
+            <tr><td><b>APK / AAB</b></td><td>Instalable directo / formato de Google Play.</td><td>—</td></tr>
+            <tr><td><b>Nuevo build / actualización OTA</b></td><td>Cambia lo nativo / sólo JS y recursos.</td><td>OTA para arreglos de JS en minutos.</td></tr>
+            <tr><td><b>Subir / publicar</b></td><td>El binario llega a la tienda / la versión sale a los usuarios.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en NakaTrip</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Tokens de diseño</b></td><td>Valores repetidos y tema imposible.</td><td><code>src/theme/tokens.ts</code> (3)</td></tr>
+            <tr><td><b>Componente de presentación</b></td><td>Pantallas que crecen sin control.</td><td><code>TripCard</code> (4)</td></tr>
+            <tr><td><b>Estado elevado + derivado</b></td><td>Datos duplicados que se desincronizan.</td><td>Favoritos (5)</td></tr>
+            <tr><td><b>Lista virtualizada con estados</b></td><td>Memoria y pantallas vacías sin diseñar.</td><td>FlatList + <code>ListEmptyComponent</code> (6)</td></tr>
+            <tr><td><b>Navegación por archivos</b></td><td>Rutas, atrás y enlaces profundos a mano.</td><td>Expo Router (8–10)</td></tr>
+            <tr><td><b>Mando imperativo acotado</b></td><td>Botón de cabecera fuera del formulario.</td><td><code>useImperativeHandle</code> (10)</td></tr>
+            <tr><td><b>Cliente HTTP propio</b></td><td>fetch sin timeout, sin base y sin errores claros.</td><td><code>src/api/cliente.ts</code> (11)</td></tr>
+            <tr><td><b>Hook de almacenamiento con bandera «listo»</b></td><td>Parpadeos y datos corruptos.</td><td><code>useAlmacen</code> (12)</td></tr>
+            <tr><td><b>Contextos separados de datos y acciones</b></td><td>Renders de toda la app.</td><td><code>ViajesProvider</code> (13)</td></tr>
+            <tr><td><b>Fábrica de claves + mutación optimista</b></td><td>Invalidaciones a ciegas y lentitud percibida.</td><td><code>clavesViajes</code>, favorito (14)</td></tr>
+            <tr><td><b>Offline-first con cola</b></td><td>Crear y editar sin red.</td><td>SQLite + <code>pendientes</code> (15)</td></tr>
+            <tr><td><b>Permiso justo a tiempo</b></td><td>Denegaciones irrecuperables.</td><td>Cámara, ubicación, avisos (16–18)</td></tr>
+            <tr><td><b>Animación en el hilo de UI</b></td><td>Tirones al llegar datos.</td><td>Reanimated (19)</td></tr>
+            <tr><td><b>Canal + rama (OTA)</b></td><td>Arreglos lentos y sin vuelta atrás.</td><td>EAS Update (24)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>Diseña para la red que falla</b>: cinco estados, reintentar, datos antiguos visibles.</li>
+          <li><b>El id viaja, el objeto no</b>: rutas, notificaciones y enlaces profundos.</li>
+          <li><b>Inmutabilidad + identidades estables</b>: es lo que hace funcionar memo y las listas.</li>
+          <li><b>Pide permisos en el momento</b> y ten siempre el camino de Ajustes.</li>
+          <li><b>Mide en producción</b>: modo desarrollo miente sobre el rendimiento.</li>
+          <li><b>Accesible desde el principio</b>: etiquetas, roles, alternativa a los gestos, texto grande.</li>
+          <li><b>Secretos fuera del paquete</b>: lo que va en <code>EXPO_PUBLIC_*</code> es público.</li>
+          <li><b>Prueba en dispositivos reales y en el instalable de producción</b> antes de publicar.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td>«Downloading JavaScript bundle 0%» para siempre</td><td>Móvil y ordenador en redes distintas, cortafuegos o VPN. Misma wifi o <code>--tunnel</code>.</td></tr>
+            <tr><td><code>Text strings must be rendered within a &lt;Text&gt;</code></td><td>Texto suelto, o <code>{lista.length &amp;&amp; …}</code> con lista vacía. Usa <code>&gt; 0</code> o un ternario.</td></tr>
+            <tr><td>La imagen remota no aparece y no hay error</td><td>Falta <code>width</code>/<code>height</code>.</td></tr>
+            <tr><td>Un <code>justifyContent</code> no hace nada</td><td>Eje equivocado (columna por defecto) o el contenedor no tiene espacio sobrante.</td></tr>
+            <tr><td>La sombra no se ve en Android</td><td>Falta <code>elevation</code> o el fondo.</td></tr>
+            <tr><td><code>VirtualizedLists should never be nested…</code></td><td>FlatList dentro de un ScrollView. Usa <code>ListHeaderComponent</code>.</td></tr>
+            <tr><td>Los favoritos se «olvidan» al desplazar</td><td>Estado dentro de la fila (reciclada) o clave por índice. Eleva el estado.</td></tr>
+            <tr><td>Hay que pulsar dos veces con el teclado abierto</td><td>Falta <code>keyboardShouldPersistTaps="handled"</code>.</td></tr>
+            <tr><td><code>ref.current</code> siempre null en un componente propio</td><td>Falta <code>forwardRef</code>.</td></tr>
+            <tr><td><code>Unmatched Route</code></td><td>Falta <code>export default</code>, nombre de archivo o carpeta equivocado.</td></tr>
+            <tr><td>Al volver, la lista no tiene el viaje nuevo</td><td>La pantalla de abajo no se desmonta: <code>useFocusEffect</code> o invalidar la consulta.</td></tr>
+            <tr><td><code>Network request failed</code> en el móvil y la API va en el ordenador</td><td><code>localhost</code>. Usa la IP local y abre el puerto.</td></tr>
+            <tr><td>Interruptores que parpadean al abrir Ajustes</td><td>Lectura asíncrona sin bandera «listo».</td></tr>
+            <tr><td>La app se cierra al arrancar tras una actualización</td><td>Datos guardados con forma antigua o JSON corrupto sin <code>try</code>. Versiona claves y migra.</td></tr>
+            <tr><td>Toda la app se repinta al escribir</td><td>Contexto con datos y acciones juntos, o <code>value</code> sin memorizar.</td></tr>
+            <tr><td><code>No QueryClient set</code></td><td>Falta <code>QueryClientProvider</code> en el layout raíz.</td></tr>
+            <tr><td>Viajes duplicados al sincronizar</td><td>La cola no sustituye el id local por el del servidor, o reintento no idempotente.</td></tr>
+            <tr><td>Las fotos desaparecen a los días</td><td>Se guardó la ruta temporal del selector. Mover a <code>documentDirectory</code>.</td></tr>
+            <tr><td>«Hacer una foto» no hace nada</td><td>Permiso denegado para siempre sin comprobar <code>canAskAgain</code>.</td></tr>
+            <tr><td>Mapa en blanco en el instalable de Android</td><td>Falta la clave de la API de mapas en la configuración nativa.</td></tr>
+            <tr><td>Tocar la notificación con la app cerrada no navega</td><td>Falta <code>getLastNotificationResponseAsync</code>.</td></tr>
+            <tr><td><code>Tried to synchronously call a non-worklet function</code></td><td>Llamada a JS desde un worklet. <code>runOnJS(fn)(args)</code>.</td></tr>
+            <tr><td>Los gestos no responden en Android</td><td>Falta <code>GestureHandlerRootView</code> en la raíz.</td></tr>
+            <tr><td><code>Native module cannot be null</code> en tests</td><td>Módulo nativo sin simular: <code>jest.mock</code>.</td></tr>
+            <tr><td>La OTA no llega a nadie</td><td>El build escucha otro canal, o el cambio tocaba algo nativo y requería un build nuevo.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos e interfaz</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es React Native y en qué se diferencia de una web metida en una app?</p>
+            <div class="q-ans">Es React dirigiendo componentes nativos reales: un <code>&lt;View&gt;</code> se convierte en una vista nativa de Android o iOS, no en un div dentro de un navegador. Por eso tiene gestos, desplazamiento y accesibilidad nativos. El JavaScript corre en Hermes y se comunica con lo nativo mediante JSI.</div></div>
+          <div class="q"><p class="q-text">2. La lista se desliza bien pero tocar un elemento tarda un segundo. ¿Qué pasa?</p>
+            <div class="q-ans">El desplazamiento lo gestiona el hilo de UI, que va bien; el toque necesita al hilo de JavaScript, que está ocupado (renders grandes, cálculos, JSON enorme). Se confirma con el monitor de rendimiento: los fps de JS caen. Se arregla quitando trabajo del hilo de JS (memo, listas optimizadas, trocear cálculos).</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué una View con fondo ocupa todo el ancho aunque su contenido sea corto?</p>
+            <div class="q-ans">Porque el contenedor es flex en columna con <code>alignItems: 'stretch'</code> por defecto: los hijos se estiran en el eje cruzado (horizontal). Se arregla con <code>alignSelf: 'flex-start'</code> en el hijo o cambiando <code>alignItems</code> del padre.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué FlatList y no ScrollView con un <code>map</code>?</p>
+            <div class="q-ans">ScrollView monta todos los hijos como vistas nativas: con cientos de elementos, memoria y segundos de bloqueo. FlatList virtualiza: monta lo visible más un margen y recicla. Además trae estado vacío, cabecera, separadores y tirar para refrescar.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué la clave de una lista no debe ser el índice?</p>
+            <div class="q-ans">Porque al insertar, borrar o reordenar, el índice deja de corresponder al mismo dato: React reutiliza la fila equivocada y el estado interno (o la animación) aparece en otro elemento. Con el id del dato, la identidad viaja con él.</div></div>
+          <div class="q"><p class="q-text">6. Un icono táctil de 20 × 20 que los usuarios no aciertan. ¿Qué haces sin cambiar el diseño?</p>
+            <div class="q-ans"><code>hitSlop</code>: amplía la zona sensible alrededor sin cambiar el aspecto hasta llegar a unos 44 puntos. Y feedback visible al pulsar, porque en móvil no hay hover.</div></div>
+          <div class="q"><p class="q-text">7. Los usuarios dicen que «guardar a veces no funciona», sólo viniendo del último campo. ¿Qué es?</p>
+            <div class="q-ans">Con el teclado abierto, el primer toque fuera sólo lo cierra y se pierde. <code>keyboardShouldPersistTaps="handled"</code> en el ScrollView del formulario deja que el toque llegue al botón.</div></div>
+          <div class="q"><p class="q-text">8. ¿Basta con <code>keyboardType="number-pad"</code> para validar un campo numérico?</p>
+            <div class="q-ans">No: el teclado es una ayuda de entrada, no una validación. Se puede pegar texto, usar un teclado externo o recibir datos de otra vía. Hay que filtrar en el manejador y validar siempre en código.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Navegación y datos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Guardas un viaje en <code>/nuevo</code>, vuelves y no aparece. Al reabrir la app, sí. ¿Por qué?</p>
+            <div class="q-ans">La pantalla de la lista no se desmontó al apilar el formulario, así que su <code>useEffect</code> no vuelve a ejecutarse. Hay que reaccionar al foco con <code>useFocusEffect</code> o, mejor, invalidar la consulta de TanStack Query tras crear el viaje para que se refresque sola.</div></div>
+          <div class="q"><p class="q-text">2. Tras iniciar sesión, ¿push, replace o back?</p>
+            <div class="q-ans"><code>replace</code>: la pantalla de login no debe quedar en la pila, o el gesto de atrás llevaría al usuario de vuelta a ella. push la apilaría y back volvería a donde estaba antes del login.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué pasar el id por la ruta y no el viaje entero?</p>
+            <div class="q-ans">El objeto serializado se congela (si el viaje cambia, la pantalla muestra datos viejos), engorda la URL y no funciona desde un enlace profundo o una notificación, que sólo traen el id. Con el id, la pantalla busca el dato actual y trata el «no encontrado».</div></div>
+          <div class="q"><p class="q-text">4. La API va en el navegador del ordenador pero en el móvil da <code>Network request failed</code>. ¿Qué compruebas?</p>
+            <div class="q-ans">Que la URL no use <code>localhost</code> (en el móvil es el propio teléfono): hay que usar la IP del ordenador en la red local (o <code>10.0.2.2</code> en el emulador Android), que estén en la misma red y que el cortafuegos permita el puerto.</div></div>
+          <div class="q"><p class="q-text">5. ¿Dónde guardarías el token de sesión?</p>
+            <div class="q-ans">En <b>SecureStore</b>, que usa el llavero de iOS y el almacén cifrado de Android. AsyncStorage no está cifrado: cualquiera con acceso al dispositivo o a una copia podría leerlo.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué separar el estado del servidor del estado de la interfaz?</p>
+            <div class="q-ans">Porque el del servidor es una copia que envejece y necesita caché, revalidación, reintentos, deduplicación y gestión de conexión; el de la interfaz es tuyo y sólo cambia cuando tú lo cambias. Mezclarlos obliga a reimplementar a mano lo que TanStack Query ya resuelve.</div></div>
+          <div class="q"><p class="q-text">7. Explica una mutación optimista y cuándo no la harías.</p>
+            <div class="q-ans">Se aplica el cambio en la caché antes de que responda el servidor: <code>onMutate</code> cancela consultas en vuelo, guarda una copia y cambia el dato; <code>onError</code> restaura la copia; <code>onSettled</code> invalida para sincronizar. No la haría donde fallar tiene consecuencias (pagos, borrados definitivos).</div></div>
+          <div class="q"><p class="q-text">8. ¿Qué aporta SQLite frente a una caché persistida?</p>
+            <div class="q-ans">La caché permite leer sin red. SQLite permite además crear y editar sin red, consultar y filtrar localmente: la base local pasa a ser la verdad de la interfaz y la red sólo sincroniza mediante una cola de cambios pendientes, que sustituye los ids locales por los del servidor.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Dispositivo y rendimiento</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Cuándo y cómo pides un permiso?</p>
+            <div class="q-ans">En el momento en que el usuario intenta hacer lo que lo necesita (pulsa «Hacer una foto»), nunca todos al arrancar, y con un texto de uso claro en <code>app.json</code>. Antes de pedir, compruebo el estado: si está denegado y <code>canAskAgain</code> es false, explico y ofrezco abrir los Ajustes.</div></div>
+          <div class="q"><p class="q-text">2. Las fotos se ven unos días y luego aparecen huecos grises. ¿Qué pasa?</p>
+            <div class="q-ans">Se guardó la URI que devuelve el selector, que apunta a una caché temporal que el sistema limpia. Hay que mover el archivo a <code>documentDirectory</code> y guardar esa ruta en la base.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué no pedir siempre la máxima precisión de ubicación?</p>
+            <div class="q-ans">Porque enciende el GPS, tarda más en dar una posición y gasta batería. La precisión es una decisión de producto: para saber en qué ciudad se tomó un viaje, <code>Balanced</code> (~100 m) basta y responde en un segundo.</div></div>
+          <div class="q"><p class="q-text">4. La notificación navega bien al probar, pero a veces sólo abre la portada. ¿Qué falta?</p>
+            <div class="q-ans">Cuando la app estaba cerrada, el toque no llega al escuchador porque aún no estaba registrado. Hay que consultar al arrancar <code>getLastNotificationResponseAsync</code> y navegar con su <code>data</code>.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué Reanimated mantiene fluida una animación cuando llegan datos?</p>
+            <div class="q-ans">Porque la animación se ejecuta en el hilo de UI mediante worklets y valores compartidos, sin pasar por el hilo de JavaScript. Aunque JS esté ocupado pintando cien tarjetas, el hilo de UI sigue a 60 fps.</div></div>
+          <div class="q"><p class="q-text">6. Envuelves la fila en <code>React.memo</code> y sigue repintándose. ¿Qué revisas?</p>
+            <div class="q-ans">Las props: funciones creadas en cada render del padre, objetos o estilos literales, o un viaje que se recrea aunque no cambie. Hay que estabilizarlas con <code>useCallback</code>/<code>useMemo</code> y mantener la inmutabilidad, de modo que los viajes que no cambian conserven su referencia.</div></div>
+          <div class="q"><p class="q-text">7. La app se cierra sola en móviles modestos al desplazar la lista. ¿Por dónde empiezas?</p>
+            <div class="q-ans">Por la memoria de las imágenes: una foto de 4000 × 3000 ocupa unos 48 MB descomprimida aunque se pinte en 80 puntos. Pedirlas reducidas al servidor, usar <code>expo-image</code> con caché y ajustar <code>windowSize</code>. Medido en producción.</div></div>
+          <div class="q"><p class="q-text">8. ¿Qué hace accesible una tarjeta de viaje para un lector de pantalla?</p>
+            <div class="q-ans">Agruparla con <code>accessible</code> para que sea una sola parada, darle un <code>accessibilityLabel</code> que resuma lo importante y un rol, exponer el estado (favorito) con <code>accessibilityState</code> y ofrecer alternativa a cualquier gesto (acciones de accesibilidad).</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Calidad y entrega</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué buscar por rol y texto en los tests y no por <code>testID</code>?</p>
+            <div class="q-ans">Porque así el test interactúa como una persona (y como un lector de pantalla): sobrevive a cambios de implementación y, de paso, falla si se pierde la accesibilidad. El <code>testID</code> es el último recurso para lo que no tiene nombre accesible.</div></div>
+          <div class="q"><p class="q-text">2. Un test avisa de <code>not wrapped in act(...)</code>. ¿Lo envuelves en act hasta que calle?</p>
+            <div class="q-ans">No: el aviso dice que el test terminó antes de que acabara una actualización asíncrona. Lo correcto es esperar a lo que el usuario vería (<code>findBy</code>, <code>waitFor</code>). Silenciarlo esconde tests que comprueban un estado intermedio.</div></div>
+          <div class="q"><p class="q-text">3. ¿Qué es un development build y cuándo hay que recompilarlo?</p>
+            <div class="q-ans">Es tu propia app con el cliente de desarrollo dentro: tus módulos nativos, permisos e icono, con Fast Refresh. Sólo se recompila cuando cambia la parte nativa (librería con código nativo, <code>app.json</code>, icono, versión del SDK); el JavaScript sigue llegando por Metro.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué puede y qué no puede cambiar una actualización OTA?</p>
+            <div class="q-ans">Puede cambiar JavaScript y recursos (imágenes, textos). No puede cambiar código nativo, permisos, <code>app.json</code> ni librerías nativas: eso exige un build nuevo y pasar por la tienda. Publicar por OTA algo que depende de nativo nuevo cierra la app.</div></div>
+          <div class="q"><p class="q-text">5. Una OTA sale peor que la anterior. ¿Cómo la deshaces?</p>
+            <div class="q-ans">Apuntando el canal de producción a la rama o actualización anterior (o republicándola): los usuarios la reciben en el siguiente arranque. Es una vuelta atrás de segundos, y conviene haberla ensayado antes.</div></div>
+          <div class="q"><p class="q-text">6. ¿Es seguro poner una clave en <code>EXPO_PUBLIC_MAPS_KEY</code>?</p>
+            <div class="q-ans">Queda incrustada en el paquete y cualquiera puede extraerla, así que no es secreta. Para claves de cliente como la de mapas se aceptan restringiéndolas en el proveedor (por paquete o firma de la app); los verdaderos secretos van en un servidor.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué pasa si pierdes el keystore de Android?</p>
+            <div class="q-ans">No puedes firmar actualizaciones de la misma app con esa identidad: Google Play exige la misma firma. Se evita dejando que EAS lo guarde y descargando una copia de seguridad.</div></div>
+          <div class="q"><p class="q-text">8. ¿Por qué probar el instalable de producción si el development build funciona?</p>
+            <div class="q-ans">Porque en producción <code>__DEV__</code> es false, el código va minificado y sin Metro, y hay configuraciones nativas (claves, permisos) que sólo aplica el build final. Muchos fallos sólo existen ahí; por eso se pasa por prueba interna y TestFlight antes de publicar.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · RN crea vistas nativas; Expo Go sin compilar; Metro por wifi.</li>
+          <li><b>1</b> · Metro empaqueta, Hermes ejecuta; hilo de JS y de UI; JSI.</li>
+          <li><b>2</b> · View, Text (todo texto), Image (tamaño en remotas), ScrollView corto, área segura.</li>
+          <li><b>3</b> · StyleSheet, flex en columna, puntos, sombras por plataforma, tokens.</li>
+          <li><b>4</b> · Props tipadas, children, presentación separada de los datos.</li>
+          <li><b>5</b> · Pressable con onPress, hitSlop, estado elevado e inmutable.</li>
+          <li><b>6</b> · FlatList virtualiza; keyExtractor con id; nunca dentro de ScrollView.</li>
+          <li><b>7</b> · onChangeText, teclado adecuado, keyboardShouldPersistTaps, foco encadenado.</li>
+          <li><b>8</b> · Expo Router: archivos = rutas; pila viva; useFocusEffect.</li>
+          <li><b>9</b> · Tabs + Stack; grupos; <code>[id].tsx</code>; pasa el id.</li>
+          <li><b>10</b> · Modal como ruta o componente; useImperativeHandle.</li>
+          <li><b>11</b> · Cinco estados; AbortController; cliente propio; localhost no es tu PC.</li>
+          <li><b>12</b> · AsyncStorage para preferencias, SecureStore para secretos; bandera listo.</li>
+          <li><b>13</b> · Context transporta; datos y acciones separados; reducer puro.</li>
+          <li><b>14</b> · TanStack Query: queryKey, staleTime, AppState/NetInfo, optimista.</li>
+          <li><b>15</b> · SQLite offline-first, migraciones, cola de pendientes, PATCH.</li>
+          <li><b>16</b> · Permiso justo a tiempo; canAskAgain; mover la foto a documentos.</li>
+          <li><b>17</b> · Precisión = batería; primer y segundo plano; mapa no controlado.</li>
+          <li><b>18</b> · Local vs push; handler; app cerrada; canales.</li>
+          <li><b>19</b> · Reanimated en el hilo de UI; runOnJS; gestos que no compiten.</li>
+          <li><b>20</b> · Cuatro props de accesibilidad; texto grande; tema oscuro bien hecho.</li>
+          <li><b>21</b> · Medir; memo con props estables; getItemLayout; imágenes reducidas.</li>
+          <li><b>22</b> · Jest + Testing Library por rol; jest.mock de lo nativo; esperar bien.</li>
+          <li><b>23</b> · Development build; prebuild; EAS Build; perfiles; keystore.</li>
+          <li><b>24</b> · Canales de prueba; eas submit; OTA sólo JS; CI que bloquea.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Una vez por semana, añade algo pequeño a NakaTrip en un dispositivo real: una animación, un filtro, un test.</li>
+            <li>Antes de una entrevista, rehaz de memoria una lista con FlatList, tirar para refrescar, estado vacío y navegación al detalle por id.</li>
+            <li>Prueba NakaTrip en modo avión y con el texto al máximo: son las dos pruebas que más fallos destapan.</li>
+            <li>Practica explicar la diferencia entre hilo de JS y de UI con un ejemplo: es la pregunta de fondo de casi todo lo móvil.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de comandos</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

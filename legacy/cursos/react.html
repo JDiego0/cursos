@@ -21169,6 +21169,812 @@ npm run dev</code></pre>
     </details>
   </section>
 
+  <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: React de cero a producción en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|JSX|Props|useState|useEffect|Custom hooks|Router|Context|TanStack Query|Testing">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del primer componente de
+      CineNaka a los Server Components. Cada concepto aparece con lo mínimo para recordarlo —qué es, para qué sirve y
+      cómo se escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a React tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver si algo no te suena. El capítulo
+      siguiente reúne las diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  7 · NIVEL PROFESIONAL     features · composición · Error Boundary · RSC   (23–24)
+                ▲
+  6 · PRODUCCIÓN            tests · autenticación · build y despliegue      (20–22)
+                ▲
+  5 · CALIDAD               TypeScript · estilos · accesibilidad · RHF+Zod  (16–19)
+                ▲
+  4 · ARQUITECTURA          Router · URL como estado · Context · Query      (12–15)
+                ▲
+  3 · DATOS REALES          useEffect · fetch · custom hooks · rendimiento   (8–11)
+                ▲
+  2 · CATÁLOGO VIVO         listas · condicional · formularios · elevar      (4–7)
+                ▲
+  1 · PRIMEROS COMPONENTES  JSX · props · useState                          (0–3)</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Primeros componentes</b></td><td>UI = función de los datos. Componentes puros que reciben props.</td><td>El estado no se muta: se reemplaza.</td></tr>
+            <tr><td><b>Catálogo vivo</b></td><td>Listas, estados de pantalla y formularios controlados.</td><td>Si se puede calcular, no es estado.</td></tr>
+            <tr><td><b>Datos reales</b></td><td>Efectos para sincronizar con el exterior y hooks para reutilizar lógica.</td><td>Casi nunca necesitas un efecto.</td></tr>
+            <tr><td><b>Arquitectura</b></td><td>Cada tipo de estado tiene su sitio: local, URL, Context o caché de servidor.</td><td>Los datos del servidor no son estado global.</td></tr>
+            <tr><td><b>Calidad</b></td><td>Tipos, estilos con tokens, accesibilidad y validación por esquema.</td><td>El elemento HTML correcto ya es accesibilidad.</td></tr>
+            <tr><td><b>Producción</b></td><td>Probar comportamiento, proteger en el servidor y desplegar automático.</td><td>El frontend no protege datos.</td></tr>
+            <tr><td><b>Nivel profesional</b></td><td>Estructura por features y empezar por el servidor cuando hay framework.</td><td>¿Qué problema medible resuelve?</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Dónde vive cada tipo de estado</h3>
+        <p>La decisión que vertebra el curso. Recórrela en este orden y quédate en la primera que encaje:</p>
+        <div class="diagram">  ¿Se puede calcular de otro dato?  ──sí──▶  derivado (variable en el render)
+           │ no
+  ¿Lo usa un solo componente?       ──sí──▶  useState local
+           │ no
+  ¿Lo usan dos hermanos?            ──sí──▶  elevar al padre común
+           │ no
+  ¿Debe sobrevivir a recargar / compartirse por enlace? ──sí──▶  URL (useSearchParams)
+           │ no
+  ¿Viene del servidor?              ──sí──▶  TanStack Query (caché)
+           │ no
+  ¿Lo necesita media aplicación?    ──sí──▶  Context (+ useReducer)</div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Antes de abrir cada bloque, intenta escribir de memoria el código de su idea principal (un <code>useState</code>
+        con array, un efecto con limpieza, un <code>useQuery</code>). Después compara. Recuperar fija más que releer.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚛ Bloque 1 · JSX, componentes y props (cap. 0–2)</summary>
+      <div class="acc-body">
+
+        <h3>Qué es React (0)</h3>
+        <ul class="clean">
+          <li><b>Declarativo</b>: describes cómo se ve la pantalla para unos datos y React actualiza el DOM. Nunca más <code>querySelector</code> para pintar.</li>
+          <li><b>Biblioteca, no framework</b>: sólo la vista; rutas, datos y tests se añaden aparte.</li>
+          <li><b>SPA</b>: el HTML llega con un <code>div#root</code> vacío y JavaScript lo llena.</li>
+          <li>React corre en el navegador; <b>Node, npm y Vite</b> sólo en tu máquina mientras desarrollas. Vite traduce JSX y da <b>HMR</b> (cambios sin recargar).</li>
+        </ul>
+
+        <h3>JSX (1)</h3>
+        <div class="code-block" data-lang="JSX">
+<pre><code>function Ficha({ pelicula }) {
+  const nota = pelicula.puntuacion.toFixed(1);        // calcula fuera…
+  return (
+    &lt;&gt;                                                 {/* Fragment: sin div extra */}
+      &lt;h2 className="titulo"&gt;{pelicula.titulo}&lt;/h2&gt;   {/* className, no class */}
+      &lt;img src={pelicula.poster} alt={pelicula.titulo} /&gt;
+      {pelicula.premios.length &gt; 0 &amp;&amp; &lt;span&gt;🏆&lt;/span&gt;}  {/* booleano antes del &amp;&amp; */}
+      &lt;p&gt;{nota}&lt;/p&gt;                                    {/* …pinta dentro */}
+    &lt;/&gt;
+  );
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> JSX es JavaScript (se traduce a llamadas de función). Un elemento raíz;
+        todo se cierra; atributos en camelCase (<code>className</code>, <code>htmlFor</code>, <code>onClick</code>).
+        Llaves = expresión; comillas = literal (<code>src="{x}"</code> envía el texto literal). React no pinta
+        <code>null</code>, <code>undefined</code> ni <code>false</code>, <b>pero sí el 0</b>: <code>lista.length &amp;&amp; …</code>
+        pinta «0». Un objeto no se puede pintar.</p>
+        <p><b>Kit de JavaScript imprescindible:</b> desestructuración, spread (<code>...</code>), plantillas literales,
+        funciones flecha, <code>map</code>/<code>filter</code>, <code>?.</code> y <code>??</code>. <code>Intl</code> formatea
+        números y fechas sin librerías.</p>
+
+        <h3>Componentes y props (2)</h3>
+        <div class="code-block" data-lang="JSX · src/components/Section.jsx">
+<pre><code>export default function Section({ titulo, tono = 'neutro', children }) {
+  return (
+    &lt;section className={`seccion seccion-${tono}`}&gt;
+      &lt;h2&gt;{titulo}&lt;/h2&gt;
+      {children}
+    &lt;/section&gt;
+  );
+}
+
+// uso: &lt;Section titulo="Estrenos"&gt;&lt;MovieGrid peliculas={estrenos} /&gt;&lt;/Section&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un componente es una función en <b>PascalCase</b> que devuelve JSX (en
+        minúscula, React lo trata como etiqueta HTML). Las props llegan en un objeto que se desestructura; los valores por
+        defecto van en la desestructuración (<code>defaultProps</code> está obsoleto). <code>children</code> es lo que va entre
+        etiquetas: la base de la <b>composición</b>, que sustituye a la herencia.</p>
+        <ul class="clean">
+          <li><b>Props de sólo lectura.</b> Flujo unidireccional: los datos bajan, los avisos suben (props <code>onAlgo</code>).</li>
+          <li><b>Componente puro</b>: mismas props, mismo resultado, sin efectos durante el render.</li>
+          <li>Un componente por archivo, <code>export default</code>. Extrae cuando se repite, no cabe en pantalla o tiene un nombre natural.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎛 Bloque 2 · Estado, listas, formularios y elevar estado (cap. 3–7)</summary>
+      <div class="acc-body">
+
+        <h3>useState (3)</h3>
+        <div class="code-block" data-lang="JSX">
+<pre><code>const [favoritas, setFavoritas] = useState([]);
+const [n, setN] = useState(0);
+
+setN(prev =&gt; prev + 1);                                   // depende del anterior
+setFavoritas(prev =&gt; [...prev, id]);                      // añadir: copia nueva
+setFavoritas(prev =&gt; prev.filter(f =&gt; f !== id));         // quitar
+setPeli(prev =&gt; ({ ...prev, titulo: 'Dune' }));           // objeto: copia nueva
+
+&lt;button onClick={() =&gt; borrar(id)}&gt;Borrar&lt;/button&gt;         {/* función, no llamada */}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> estado = dato que el componente recuerda y que, al cambiar, provoca un
+        re-render. Dentro de un render es una <b>foto fija</b>: tras <code>setN(n + 1)</code>, <code>n</code> sigue valiendo lo
+        mismo hasta el siguiente render. React agrupa (<b>batching</b>) los cambios de un evento; por eso
+        <code>setN(n+1)</code> tres veces suma 1 y <code>prev =&gt;</code> suma 3. <b>Nunca mutes</b>: <code>push</code> +
+        <code>set</code> con el mismo array no re-renderiza.</p>
+        <ul class="clean">
+          <li><b>Reglas de los hooks</b>: siempre en el nivel superior, mismo orden, sólo en componentes o hooks propios. Nada de hooks en <code>if</code> ni en bucles.</li>
+          <li>Cada instancia tiene su propio estado, ligado a su <b>posición en el árbol</b>.</li>
+          <li><code>onClick={borrar(id)}</code> se ejecuta al renderizar; si cambia estado → «Too many re-renders».</li>
+        </ul>
+
+        <h3>Listas y keys (4)</h3>
+        <div class="code-block" data-lang="JSX">
+<pre><code>const ordenadas = peliculas.toSorted((a, b) =&gt; a.titulo.localeCompare(b.titulo, 'es'));
+return ordenadas.map(p =&gt; &lt;MovieCard key={p.id} pelicula={p} /&gt;);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> la <code>key</code> identifica cada elemento entre renders para la
+        <b>reconciliación</b> (qué reutilizar, crear o destruir). Única entre hermanos y <b>estable</b>: el id del dato.
+        <code>key={index}</code> pega el estado a la posición (al reordenar, el estado salta de elemento);
+        <code>Math.random()</code> remonta todo en cada render. La key va en el elemento raíz del <code>map</code>. Ordena con
+        <code>toSorted</code> o <code>[...arr].sort()</code>, nunca <code>sort</code> sobre el original.</p>
+
+        <h3>Renderizado condicional (5)</h3>
+        <ul class="clean">
+          <li>Cuatro herramientas: <b>return anticipado</b>, <b>ternario</b> (dos opciones), <b><code>&amp;&amp;</code></b> (algo o nada), <b>objeto de mapeo</b> (3+ casos). Devolver <code>null</code> = no mostrar nada.</li>
+          <li>Toda pantalla con datos tiene <b>cuatro estados</b>, comprobados en este orden: <b>error → cargando → vacío → datos</b>.</li>
+          <li><b>Skeleton</b> si conoces la forma del contenido; <b>spinner</b> si no. <code>role="status"</code> para cargar, <code>role="alert"</code> para errores.</li>
+        </ul>
+
+        <h3>Formularios controlados (6)</h3>
+        <div class="code-block" data-lang="JSX">
+<pre><code>const [form, setForm] = useState({ titulo: '', anio: '', vista: false });
+
+function cambiar(e) {
+  const { name, value, type, checked } = e.target;
+  setForm(prev =&gt; ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+}
+
+function enviar(e) {
+  e.preventDefault();                                   // sin esto, recarga la página
+  const errores = validar(form);                        // función pura en otro archivo
+  if (Object.keys(errores).length) return setErrores(errores);
+  onCrear({ ...form, anio: Number(form.anio) });        // convertir al enviar
+}
+
+&lt;form onSubmit={enviar}&gt;&lt;input name="titulo" value={form.titulo} onChange={cambiar} /&gt;&lt;/form&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> controlado = <code>value</code> + <code>onChange</code>; el estado es la única
+        fuente de verdad. Clave computada <code>[name]</code> para un manejador único. <code>onSubmit</code> en el
+        <code>&lt;form&gt;</code> (así funciona Enter). Checkbox usa <code>checked</code>; <code>type="number"</code> devuelve
+        texto. Estado <code>enviando</code> para bloquear el botón. Cada campo con <code>id</code> + <code>label htmlFor</code>.
+        Alternativa no controlada: <code>new FormData(e.currentTarget)</code>.</p>
+
+        <h3>Elevar el estado y estado derivado (7)</h3>
+        <ul class="clean">
+          <li><b>Elevar</b>: si dos componentes necesitan un dato, súbelo al <b>ancestro común más cercano</b>, ni más arriba. El hijo pasa a ser controlado (<code>valor</code> + <code>onCambio</code>).</li>
+          <li><b>Estado derivado</b>: si se puede calcular, no se guarda. Guardar <code>peliculasFiltradas</code> en estado es el antipatrón más frecuente: se desincroniza al añadir datos.</li>
+          <li><code>useState(props.x)</code> sólo copia el valor <b>inicial</b>; no se actualiza si la prop cambia.</li>
+          <li><b>Prop drilling</b> de 2–3 niveles es aceptable y explícito; más allá, Context (14).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔌 Bloque 3 · Efectos, datos remotos y custom hooks (cap. 8–10)</summary>
+      <div class="acc-body">
+
+        <h3>useEffect (8)</h3>
+        <div class="code-block" data-lang="JSX">
+<pre><code>useEffect(() =&gt; {
+  const avisar = () =&gt; setOnline(navigator.onLine);
+  window.addEventListener('online', avisar);              // efecto
+  return () =&gt; window.removeEventListener('online', avisar); // limpieza
+}, []);                                                   // dependencias
+
+const [termino, setTermino] = useState('');
+const [diferido, setDiferido] = useState('');
+useEffect(() =&gt; {                                         // debounce
+  const t = setTimeout(() =&gt; setDiferido(termino), 300);
+  return () =&gt; clearTimeout(t);
+}, [termino]);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un efecto <b>sincroniza con un sistema externo</b> (red, DOM, suscripciones,
+        temporizadores, <code>localStorage</code>). <code>[]</code> = al montar; <code>[a]</code> = cuando <code>a</code> cambia;
+        sin array = tras cada render (casi siempre un error). La limpieza corre antes de repetir y al desmontar. En
+        desarrollo, <b>StrictMode</b> ejecuta efecto → limpieza → efecto para destapar efectos sin limpieza.</p>
+        <ul class="clean">
+          <li>Las dependencias deben incluir <b>todo lo reactivo que usa</b>. Nunca silencies <code>exhaustive-deps</code>. Objetos y arrays se comparan por identidad: causa nº 1 de bucles infinitos.</li>
+          <li><b>No necesitas efecto</b> para derivar datos, reaccionar a un clic (va en el manejador) ni reiniciar estado al cambiar una prop (usa <code>key</code>).</li>
+          <li><b>localStorage</b>: leer con inicializador diferido <code>useState(() =&gt; leer('favs', []))</code>; escribir con un efecto; siempre con <code>try/catch</code>.</li>
+        </ul>
+
+        <h3>fetch sin dispararte en el pie (9)</h3>
+        <div class="code-block" data-lang="JSX">
+<pre><code>useEffect(() =&gt; {
+  const control = new AbortController();
+  async function cargar() {                             // el efecto no puede ser async
+    try {
+      setCargando(true); setError(null);
+      const r = await fetch(`${API}/peliculas?q=${termino}`, { signal: control.signal });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);    // fetch NO lanza con 404/500
+      setDatos(adaptar(await r.json()));
+    } catch (e) {
+      if (e.name !== 'AbortError') setError(e);
+    } finally { setCargando(false); }
+  }
+  cargar();
+  return () =&gt; control.abort();                         // evita la race condition
+}, [termino]);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>race condition</b> = una respuesta lenta llega tras una rápida y la
+        sobrescribe; se evita cancelando. El fetch vive en una <b>capa de API</b> (<code>src/api/</code>) que adapta los datos;
+        los componentes no saben de HTTP. Las variables <code>VITE_*</code> acaban en el navegador: <b>nunca secretos</b>.
+        <code>cargando</code> empieza en <code>true</code>.</p>
+
+        <h3>Custom hooks (10)</h3>
+        <div class="code-block" data-lang="JavaScript · src/hooks/useDebounce.js">
+<pre><code>export function useDebounce(valor, ms = 300) {
+  const [diferido, setDiferido] = useState(valor);
+  useEffect(() =&gt; {
+    const t = setTimeout(() =&gt; setDiferido(valor), ms);
+    return () =&gt; clearTimeout(t);
+  }, [valor, ms]);
+  return diferido;
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un custom hook es una función que empieza por <code>use</code> y llama a otros
+        hooks. <b>Comparten lógica, no estado</b>: cada llamada tiene su propia memoria (dos <code>useLocalStorage('favs')</code>
+        no se sincronizan). Devuelve un valor, un par <code>[valor, set]</code> o un objeto si son tres o más. Las funciones
+        que devuelve, estables con <code>useCallback</code>. Funciones puras a <code>lib/</code>; hooks a <code>hooks/</code>.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧭 Bloque 4 · Rendimiento, rutas y la URL como estado (cap. 11–13)</summary>
+      <div class="acc-body">
+
+        <h3>Rendimiento (11)</h3>
+        <ul class="clean">
+          <li>Un componente se renderiza si cambia <b>su estado</b>, se renderiza <b>su padre</b> o cambia un <b>contexto</b> que consume.</li>
+          <li><b>Render ≠ commit</b>: ejecutar la función es barato; tocar el DOM es lo caro. <b>Mide con el Profiler</b> antes de optimizar.</li>
+          <li><code>memo(Componente)</code>: salta el render si las props son iguales (comparación superficial). Una sola prop inestable lo anula.</li>
+          <li><code>useMemo</code>: valor memorizado (cálculo caro o <b>identidad estable</b>). <code>useCallback</code>: lo mismo para funciones.</li>
+          <li><code>useRef</code>: valor mutable que <b>no provoca render</b> o acceso a un nodo del DOM. Si se muestra en pantalla, es estado.</li>
+          <li>El <b>React Compiler</b> memoriza automáticamente. Listas de miles de elementos: virtualizar, no <code>memo</code>.</li>
+        </ul>
+        <div class="code-block" data-lang="JSX">
+<pre><code>const alternar = useCallback(id =&gt; setFavs(prev =&gt; /* … */), []);   // identidad estable
+const total = useMemo(() =&gt; calcularTotal(peliculas), [peliculas]);
+const inputRef = useRef(null);  /* … */  inputRef.current.focus();
+export default memo(MovieCard);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> <code>MovieCard</code> memorizado sólo se salta renders si <code>alternar</code>
+        conserva su identidad; por eso el padre la envuelve en <code>useCallback</code> y usa <code>prev =&gt;</code> para no
+        depender de <code>favs</code>.</p>
+
+        <h3>React Router (12)</h3>
+        <div class="code-block" data-lang="JSX · src/App.jsx">
+<pre><code>&lt;Routes&gt;
+  &lt;Route element={&lt;RootLayout /&gt;}&gt;                       {/* layout sin path */}
+    &lt;Route index element={&lt;CatalogoPage /&gt;} /&gt;
+    &lt;Route path="peliculas/:id" element={&lt;DetallePage /&gt;} /&gt;
+    &lt;Route path="*" element={&lt;NoEncontradaPage /&gt;} /&gt;   {/* 404 */}
+  &lt;/Route&gt;
+&lt;/Routes&gt;
+
+const { id } = useParams();                             // siempre string
+const navegar = useNavigate();  navegar('/', { replace: true });  navegar(-1);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>BrowserRouter</code> envuelve la app en <code>main.jsx</code>.
+        <b><code>Link</code>, nunca <code>&lt;a&gt;</code></b>, para rutas internas (evita recargar y mantiene Ctrl+clic y
+        accesibilidad). <code>useNavigate</code> cuando no hay enlace que pulsar (tras enviar, tras login). Carpeta
+        <code>pages/</code> por URL. En producción el servidor debe devolver <code>index.html</code> en todas las rutas.</p>
+
+        <h3>Layouts y la URL como estado (13)</h3>
+        <ul class="clean">
+          <li>El layout pinta a la hija en <b><code>&lt;Outlet /&gt;</code></b> y no se desmonta al navegar. <code>index</code> = hija por defecto; rutas hijas sin barra inicial.</li>
+          <li><b><code>NavLink</code></b> sabe si está activo; <code>end</code> evita que <code>/</code> lo esté siempre.</li>
+          <li><b>La URL guarda el estado de la vista</b> (búsqueda, filtros, orden, página): se comparte, sobrevive a recargar y funciona con «atrás».</li>
+          <li><code>useSearchParams</code>: copia con <code>new URLSearchParams(params)</code> antes de modificar; sólo texto (serializa booleanos y números); omite los valores por defecto; <code>replace: true</code> para cambios continuos como teclear.</li>
+          <li>El scroll no se restaura solo: efecto que depende de <code>pathname</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌐 Bloque 5 · Estado global y estado de servidor (cap. 14–15)</summary>
+      <div class="acc-body">
+
+        <h3>Context + useReducer (14)</h3>
+        <div class="code-block" data-lang="JSX · src/context/WatchlistContext.jsx">
+<pre><code>function reducer(estado, accion) {                    // puro: sin mutar, sin Date ni azar
+  switch (accion.tipo) {
+    case 'alternar':
+      return estado.includes(accion.id)
+        ? estado.filter(id =&gt; id !== accion.id)
+        : [...estado, accion.id];
+    default: return estado;
+  }
+}
+
+const WatchlistContext = createContext(null);
+
+export function WatchlistProvider({ children }) {
+  const [ids, despachar] = useReducer(reducer, []);
+  const value = useMemo(() =&gt; ({
+    ids, alternar: id =&gt; despachar({ tipo: 'alternar', id }),
+  }), [ids]);
+  return &lt;WatchlistContext.Provider value={value}&gt;{children}&lt;/WatchlistContext.Provider&gt;;
+}
+
+export function useWatchlist() {
+  const ctx = useContext(WatchlistContext);
+  if (!ctx) throw new Error('useWatchlist debe usarse dentro de un WatchlistProvider');
+  return ctx;
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>Context es transporte, no gestión de estado</b>: el estado sigue en
+        <code>useState</code>/<code>useReducer</code>. Patrón profesional: Provider + hook de acceso que lanza si falta el
+        Provider; exporta esos dos, no el contexto. <b>Memoriza el <code>value</code></b>: si no, todos los consumidores se
+        renderizan con cada render del Provider. <code>useReducer</code> concentra las transiciones; los componentes
+        despachan <em>qué pasó</em>. <code>despachar</code> es estable. Un contexto por dominio.</p>
+
+        <h3>TanStack Query (15)</h3>
+        <div class="code-block" data-lang="JSX">
+<pre><code>const { data = [], isPending, isFetching, error } = useQuery({
+  queryKey: ['peliculas', { termino }],                 // todo lo que usa la queryFn
+  queryFn: ({ signal }) =&gt; api.listar(termino, signal),
+  staleTime: 60_000,
+});
+
+const qc = useQueryClient();
+const crear = useMutation({
+  mutationFn: api.crear,
+  onSuccess: () =&gt; qc.invalidateQueries({ queryKey: ['peliculas'] }),  // mutar → invalidar
+});</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el <b>estado de servidor</b> es una copia en caché de datos ajenos: necesita
+        caché, revalidación, reintentos y deduplicación, no un <code>useState</code>. La <b>queryKey</b> identifica los datos:
+        si cambia, se piden de nuevo; si dos componentes la comparten, comparten datos. <code>isPending</code> = aún no hay
+        datos (skeleton); <code>isFetching</code> = petición en curso aunque haya datos (indicador discreto).
+        <code>staleTime</code> = cuánto confías; <code>gcTime</code> = cuánto guardas sin usar. Optimista:
+        <code>onMutate</code> (guardar y pintar) + <code>onError</code> (revertir) + <code>onSettled</code> (sincronizar).
+        Centraliza las claves en un archivo y envuelve en hooks (<code>usePeliculas</code>).</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>✅ Bloque 6 · TypeScript, estilos, accesibilidad, formularios y tests (cap. 16–20)</summary>
+      <div class="acc-body">
+
+        <h3>TypeScript en React (16)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>type Genero = 'drama' | 'comedia' | 'terror';            // unión de texto
+type Estado =                                            // unión discriminada
+  | { fase: 'cargando' }
+  | { fase: 'error'; mensaje: string }
+  | { fase: 'listo'; peliculas: Pelicula[] };
+
+type Props = { pelicula: Pelicula; onFav?: (id: string) =&gt; void };
+export function MovieCard({ pelicula, onFav }: Props) { /* … */ }
+
+const datos: unknown = await r.json();                   // unknown + validar, no any</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> TS desaparece al compilar. Anota las <b>fronteras</b> (props, parámetros,
+        API) y deja inferir el resto. <code>strict: true</code> siempre. Las uniones discriminadas hacen imposibles los estados
+        imposibles; <code>const x: never = accion</code> en el <code>default</code> obliga a tratar todos los casos. Tipos
+        derivados: <code>Omit</code>, <code>Partial</code>, <code>Record</code>, <code>keyof</code>, <code>as const</code>.
+        Un tipo <b>no valida en ejecución</b>. Migración incremental con <code>allowJs</code>; <code>tsc --noEmit</code> en el build.</p>
+
+        <h3>Estilos que escalan (17)</h3>
+        <ul class="clean">
+          <li><b>CSS Modules</b> (<code>Button.module.css</code> → <code>styles.primario</code>): renombra clases, colisiones imposibles. Incluido en Vite.</li>
+          <li><b>Design tokens en dos capas</b>: primitivos (paleta) y semánticos (significado: <code>--color-fondo</code>). Los componentes sólo usan semánticos.</li>
+          <li><b>Tema</b>: redefinir los semánticos en <code>[data-tema="claro"]</code> sobre el <code>&lt;html&gt;</code>, con un script bloqueante en <code>index.html</code> para evitar el destello. <code>color-scheme</code> para controles nativos.</li>
+          <li>Variantes tipadas + una utilidad <code>cx</code> para combinar clases. Nunca colores literales fuera de los tokens.</li>
+        </ul>
+
+        <h3>Accesibilidad (18)</h3>
+        <ul class="clean">
+          <li>El 80 % es <b>HTML semántico</b>: un <code>&lt;button&gt;</code> trae foco, teclado y rol. Un <code>div</code> con <code>role="button"</code> no.</li>
+          <li>ARIA útil: <code>aria-label</code> (nombre), <code>aria-pressed/expanded/invalid</code> (estado), <code>aria-hidden</code> (decoración), <code>aria-live</code> (cambios). Mal usado, es peor que nada.</li>
+          <li><code>role="status"</code> espera turno; <code>role="alert"</code> interrumpe.</li>
+          <li>Una SPA debe mover <b>scroll y foco</b> y <b>anunciar</b> el cambio de página.</li>
+          <li><b>Modal accesible</b>: portal (<code>createPortal</code>), rol y nombre, foco dentro, foco atrapado, Escape y foco devuelto.</li>
+          <li><code>useId()</code> para conectar etiquetas y errores. Contraste 4,5:1; el color nunca es el único mensaje. Lighthouse no basta: prueba con teclado.</li>
+        </ul>
+
+        <h3>React Hook Form + Zod (19)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>const esquema = z.object({
+  titulo: z.string().min(1, 'Escribe un título'),
+  anio: z.coerce.number().int().min(1888).max(2030),     // coerce: el input da texto
+});
+type PeliculaForm = z.infer&lt;typeof esquema&gt;;              // tipo derivado del esquema
+
+const { register, handleSubmit, formState: { errors, isSubmitting } } =
+  useForm&lt;PeliculaForm&gt;({ resolver: zodResolver(esquema), mode: 'onTouched' });
+
+&lt;input {...register('titulo')} aria-invalid={!!errors.titulo} /&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> Zod describe los datos <b>una vez</b> y <code>z.infer</code> saca el tipo:
+        validación y tipos no se desincronizan. El mismo esquema valida el formulario y la respuesta de la API.
+        <code>parse</code> lanza, <code>safeParse</code> devuelve resultado. RHF usa campos <b>no controlados</b>: escribir no
+        provoca renders. <code>Controller</code> para componentes sin <code>ref</code>. Para un campo suelto, a mano.</p>
+
+        <h3>Tests con Vitest y Testing Library (20)</h3>
+        <div class="code-block" data-lang="TypeScript · MovieCard.test.tsx">
+<pre><code>test('añade la película a mi lista', async () =&gt; {
+  const usuario = userEvent.setup();
+  renderizar(&lt;MovieCard pelicula={crearPelicula({ titulo: 'Dune' })} /&gt;);
+  await usuario.click(screen.getByRole('button', { name: /añadir dune/i }));
+  expect(screen.getByRole('button', { name: /quitar dune/i })).toBeInTheDocument();
+});</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>prueba comportamiento, no implementación</b> (nunca clases CSS ni estado
+        interno). Queries por preferencia: <code>getByRole</code> → <code>getByLabelText</code> → <code>getByText</code> →
+        <code>getByTestId</code>. <code>getBy</code> (está), <code>queryBy</code> (comprobar ausencia), <code>await findBy</code>
+        (asíncrono). <code>userEvent</code> mejor que <code>fireEvent</code>. <b>MSW</b> intercepta la red sin tocar tu código.
+        La capa más rentable en React es la de integración; Playwright para unos pocos E2E.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · Autenticación, despliegue y nivel profesional (cap. 21–24)</summary>
+      <div class="acc-body">
+
+        <h3>Autenticación en el frontend (21)</h3>
+        <ul class="clean">
+          <li><b>El frontend no protege datos</b>: gestiona la experiencia. La autorización real la hace el servidor en cada petición.</li>
+          <li><b>JWT</b>: cabecera, payload (legible) y firma (sólo la genera el servidor). Guardarlo: <code>localStorage</code> es lo común; cookie <b>HttpOnly</b> + SameSite, lo recomendable frente a XSS.</li>
+          <li><b>Ruta protegida</b> con tres estados: <b>comprobando</b> (no decidir aún), sin sesión (<code>&lt;Navigate to="/login" replace state={{ desde }} /&gt;</code>) y con sesión (<code>&lt;Outlet /&gt;</code>). Olvidar «comprobando» expulsa a usuarios válidos al recargar.</li>
+          <li>Pregunta por <b>permisos</b> (<code>puede('borrar_pelicula')</code>), no por roles; tabla rol → permisos.</li>
+          <li><b>401</b> → cerrar sesión; <b>403</b> → aviso. Un <b>interceptor</b> en la capa de API adjunta el token y reacciona al 401.</li>
+        </ul>
+
+        <h3>Build, code splitting y despliegue (22)</h3>
+        <div class="code-block" data-lang="TypeScript · src/App.tsx">
+<pre><code>const DetallePage = lazy(() =&gt; import('./pages/DetallePage'));
+
+&lt;Route path="peliculas/:id" element={
+  &lt;Suspense fallback={&lt;CargandoPagina /&gt;}&gt;&lt;DetallePage /&gt;&lt;/Suspense&gt;   {/* uno por ruta */}
+} /&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> parte por <b>rutas</b> y piezas pesadas, nunca por botones. Un
+        <code>Suspense</code> por ruta para que el layout no parpadee; el fallback reserva altura.</p>
+        <ul class="clean">
+          <li><code>npm run build</code> empaqueta, minifica y elimina lo no usado. El <b>hash</b> del nombre permite cachear los assets un año; <code>index.html</code> no se cachea.</li>
+          <li>Las <code>VITE_*</code> se <b>hornean en el build</b>: son públicas y cambiarlas exige reconstruir.</li>
+          <li>Fallback de SPA: el servidor devuelve <code>index.html</code> para cualquier ruta (<code>_redirects</code>, <code>vercel.json</code>, <code>try_files</code> en nginx). <code>base</code> y <code>basename</code> deben coincidir en un subdirectorio.</li>
+          <li>Vite <b>no comprueba tipos</b>: <code>typecheck</code> es un paso propio de la CI. CI = «¿rompe algo?»; CD = publicar si no. <code>npm run preview</code> antes de desplegar.</li>
+        </ul>
+
+        <h3>Arquitectura por features y Error Boundaries (23)</h3>
+        <div class="diagram">  src/app/        conoce todo (rutas, providers)
+  src/features/   catalogo/ · watchlist/ · auth/   ✗ no se importan entre sí
+  src/shared/     ui/ · lib/ · hooks/              ✗ no conoce ninguna feature</div>
+        <ul class="clean">
+          <li>Por feature: lo que cambia junto vive junto. En proyectos pequeños, por tipo está bien.</li>
+          <li><b>Barrel</b> (<code>index.ts</code>) = superficie pública. <b>Alias</b> en <code>vite.config.ts</code> <b>y</b> en <code>tsconfig.json</code>. Las reglas se vigilan con <code>no-restricted-imports</code> en la CI.</li>
+          <li>Muchas props booleanas = toca <b>componer</b>: componentes compuestos (<code>&lt;Panel.Cabecera&gt;</code>) con contexto interno.</li>
+          <li><b>Error Boundary</b> (sigue siendo una clase o <code>react-error-boundary</code>): captura errores de <b>render</b>, no de eventos ni de código asíncrono. Uno por ruta, que se reinicie al navegar.</li>
+          <li><b>Regla de tres</b>: duplicar es más barato que la abstracción equivocada.</li>
+        </ul>
+
+        <h3>Server Components y Next.js (24)</h3>
+        <ul class="clean">
+          <li>Límites de una SPA: cascada de datos, bundle grande y ningún sitio para un secreto.</li>
+          <li><b>CSR / SSR / SSG / RSC</b>. <b>SSR ≠ RSC</b>: el SSR envía HTML <em>y</em> el código; un Server Component nunca envía su código.</li>
+          <li>En el App Router todo es servidor por defecto. Un Server Component puede ser <code>async</code> y leer datos directamente; no tiene estado, efectos, eventos ni <code>window</code>.</li>
+          <li><code>'use client'</code> marca la frontera y es contagioso hacia abajo: lo más abajo posible.</li>
+          <li><b>Server Action</b> = función en el servidor llamada desde un formulario; es un endpoint público: <b>comprueba permisos dentro</b>.</li>
+          <li>React 19 en Vite: <code>useActionState</code>, <code>useOptimistic</code>, <code>use</code>, <code>ref</code> como prop.</li>
+          <li>Next.js resuelve SEO, primera carga y datos privados; sin esos problemas, sólo añade complejidad.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista técnica de React"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Estado vs derivado|key|useEffect|memo|Context vs Query|SSR vs RSC|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> de React: las parejas de conceptos que
+      parecen iguales, los patrones que aplicaste en CineNaka, los errores que todo desarrollador React ha visto y las
+      preguntas típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después
+      despliega la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Fundamentos</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>React / Node / Vite</b></td><td>Biblioteca de UI en el navegador / entorno JS en tu máquina / herramienta que sirve y empaqueta.</td><td>El servidor de producción no necesita Node para una SPA.</td></tr>
+            <tr><td><b>Props / estado</b></td><td>Entrada de solo lectura que da el padre / memoria propia que provoca re-render.</td><td>Si lo decide el padre, prop; si lo decide el componente, estado.</td></tr>
+            <tr><td><b>Estado / estado derivado</b></td><td>Se guarda / se calcula en cada render.</td><td>Si se puede calcular, no se guarda.</td></tr>
+            <tr><td><b>Variable / <code>useState</code> / <code>useRef</code></b></td><td>Se pierde en cada render / persiste y re-renderiza / persiste sin re-renderizar.</td><td>Ref para timers, nodos del DOM o contadores invisibles.</td></tr>
+            <tr><td><b><code>&lt;div&gt;</code> / <code>&lt;&gt;</code></b></td><td>Añade un nodo al DOM / agrupa sin nodo.</td><td>Fragment por defecto; div si necesitas estilarlo.</td></tr>
+            <tr><td><b><code>key</code> id / índice / random</b></td><td>Estable / ligada a la posición / cambia en cada render.</td><td>Siempre el id del dato.</td></tr>
+            <tr><td><b><code>onClick={f}</code> / <code>onClick={f()}</code></b></td><td>Pasa la función / la ejecuta al renderizar.</td><td>Con argumentos: <code>() =&gt; f(id)</code>.</td></tr>
+            <tr><td><b><code>setX(x+1)</code> / <code>setX(p =&gt; p+1)</code></b></td><td>Usa la foto del render / usa el valor más reciente.</td><td>Funcional si depende del anterior.</td></tr>
+            <tr><td><b>Controlado / no controlado</b></td><td>El estado manda (<code>value</code>+<code>onChange</code>) / manda el DOM (<code>FormData</code>, <code>ref</code>).</td><td>Controlado por defecto; no controlado en formularios grandes o con RHF.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Hooks y rendimiento</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b><code>useEffect</code> sin array / <code>[]</code> / <code>[a]</code></b></td><td>Tras cada render / al montar / cuando cambia <code>a</code>.</td><td>Sin array casi nunca.</td></tr>
+            <tr><td><b>Efecto / manejador de evento</b></td><td>Sincroniza con algo externo / reacciona a una acción del usuario.</td><td>Un clic va en el manejador, nunca en un efecto.</td></tr>
+            <tr><td><b>Custom hook / función de <code>lib/</code></b></td><td>Usa hooks y tiene memoria / función pura.</td><td>Filtrar, ordenar y validar van en <code>lib/</code>.</td></tr>
+            <tr><td><b><code>memo</code> / <code>useMemo</code> / <code>useCallback</code></b></td><td>Componente / valor / función memorizados.</td><td>Sólo tras medir; los dos últimos para dar identidad estable a lo que recibe un <code>memo</code>.</td></tr>
+            <tr><td><b>Render / commit</b></td><td>Ejecutar la función / modificar el DOM.</td><td>Lo caro es el commit y el trabajo pesado en el render.</td></tr>
+            <tr><td><b><code>useState</code> / <code>useReducer</code></b></td><td>Valor simple / transiciones con reglas en una función pura.</td><td>Reducer con varios campos relacionados o reglas.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Arquitectura, calidad y producción</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Elevar estado / Context</b></td><td>Al ancestro común / transporte a todo un subárbol.</td><td>Dos hermanos → elevar; media app → Context.</td></tr>
+            <tr><td><b>Context / TanStack Query</b></td><td>Transporte de estado propio / caché de datos del servidor.</td><td>Sesión, tema, watchlist local → Context; datos de la API → Query.</td></tr>
+            <tr><td><b>Estado / URL</b></td><td>Se pierde al recargar / se comparte y sobrevive.</td><td>Filtros, búsqueda, orden y página → URL.</td></tr>
+            <tr><td><b><code>Link</code> / <code>&lt;a&gt;</code> / <code>useNavigate</code></b></td><td>Navega sin recargar / recarga la app / navega por código.</td><td>Link siempre; navigate tras enviar o iniciar sesión.</td></tr>
+            <tr><td><b><code>isPending</code> / <code>isFetching</code></b></td><td>No hay datos / hay petición en curso.</td><td>Skeleton / indicador discreto.</td></tr>
+            <tr><td><b><code>staleTime</code> / <code>gcTime</code></b></td><td>Cuánto se consideran frescos / cuánto se guardan sin uso.</td><td>Por tipo de dato.</td></tr>
+            <tr><td><b><code>type</code> / <code>interface</code></b></td><td>Casi equivalentes; <code>type</code> cubre uniones y tipos derivados.</td><td><code>type</code> por defecto.</td></tr>
+            <tr><td><b><code>any</code> / <code>unknown</code></b></td><td>Desactiva la comprobación / obliga a validar antes de usar.</td><td><code>unknown</code> en respuestas de API.</td></tr>
+            <tr><td><b>Tipo TS / esquema Zod</b></td><td>Comprobación al compilar / validación en ejecución.</td><td>Zod en las fronteras, <code>z.infer</code> para el tipo.</td></tr>
+            <tr><td><b><code>getBy</code> / <code>queryBy</code> / <code>findBy</code></b></td><td>Lanza si no está / devuelve null / espera (async).</td><td>Presente / ausencia / asíncrono.</td></tr>
+            <tr><td><b><code>role="status"</code> / <code>role="alert"</code></b></td><td>Anuncio educado / interrumpe.</td><td>Cargas y resultados / errores.</td></tr>
+            <tr><td><b>401 / 403</b></td><td>Sin sesión o caducada / sin permiso.</td><td>Cerrar sesión / mostrar aviso.</td></tr>
+            <tr><td><b>CSR / SSR / SSG / RSC</b></td><td>Pinta el navegador / HTML por petición + JS / HTML en el build / componente que sólo corre en el servidor y no envía su código.</td><td>SPA interna → CSR; SEO y primera carga → SSR/RSC.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en CineNaka</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Composición con <code>children</code></b></td><td>Componentes rígidos o herencia.</td><td><code>Section</code>, <code>Panel</code> (2, 23)</td></tr>
+            <tr><td><b>Presentación tonta</b></td><td>Componentes acoplados a un caso de uso.</td><td><code>MovieGrid</code> recibe la lista ya filtrada (4)</td></tr>
+            <tr><td><b>Cuatro estados de pantalla</b></td><td>Mensajes falsos y pantallas en blanco.</td><td><code>EmptyState</code>, <code>ErrorState</code>, skeleton (5)</td></tr>
+            <tr><td><b>Elevar estado + componente controlado</b></td><td>Datos duplicados que se desincronizan.</td><td><code>SearchBar</code>, <code>FilterBar</code> (7)</td></tr>
+            <tr><td><b>Capa de API con adaptador</b></td><td>HTTP disperso y campos que cambian.</td><td><code>src/api/movies</code> (9)</td></tr>
+            <tr><td><b>Custom hook</b></td><td>Lógica de efectos repetida.</td><td><code>useDebounce</code>, <code>useLocalStorage</code>, <code>useMovies</code> (10)</td></tr>
+            <tr><td><b>URL como estado</b></td><td>Filtros que se pierden.</td><td><code>useFiltrosURL</code> (13)</td></tr>
+            <tr><td><b>Provider + hook de acceso</b></td><td>Prop drilling y contextos mal usados.</td><td><code>WatchlistProvider</code> (14)</td></tr>
+            <tr><td><b>Reducer puro</b></td><td>Reglas de estado repartidas por componentes.</td><td><code>watchlistReducer</code> (14)</td></tr>
+            <tr><td><b>Mutar → invalidar / optimista</b></td><td>Listas obsoletas tras escribir.</td><td><code>useMutation</code> (15)</td></tr>
+            <tr><td><b>Esquema único</b></td><td>Tipos y validación desincronizados.</td><td><code>schemas/pelicula.ts</code> (19)</td></tr>
+            <tr><td><b>Ruta protegida + interceptor</b></td><td>Lógica de sesión repetida.</td><td><code>RutaProtegida</code>, <code>cliente.ts</code> (21)</td></tr>
+            <tr><td><b>Componentes compuestos</b></td><td>Componentes con diez props booleanas.</td><td><code>Panel.Cabecera</code> (23)</td></tr>
+            <tr><td><b>Error Boundary por zona</b></td><td>Un fallo que tumba toda la app.</td><td><code>ErrorBoundary</code> (23)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>Calcula fuera, pinta dentro</b>: lógica en variables antes del <code>return</code> o en <code>lib/</code>.</li>
+          <li><b>Estado mínimo y lo más abajo posible</b>; lo derivado, calculado.</li>
+          <li><b>Antes de un efecto, pregunta si hay un sistema externo</b>. Si no, no hay efecto.</li>
+          <li><b>Mide antes de memorizar</b> con el Profiler.</li>
+          <li><b>Cada estado en su sitio</b>: local → elevar → URL → servidor → global.</li>
+          <li><b>HTML semántico primero</b>; ARIA sólo para lo que el HTML no expresa.</li>
+          <li><b>Valida en las fronteras</b> (formularios, API, localStorage) con un esquema.</li>
+          <li><b>Prueba lo que ve el usuario</b> y, ante un bug, primero el test que lo reproduce.</li>
+          <li><b>Nunca un secreto en el frontend</b>: todo lo de <code>VITE_*</code> es público.</li>
+          <li><b>Regla de tres</b> antes de abstraer; la estructura sigue al tamaño del proyecto.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>Adjacent JSX elements must be wrapped…</code></td><td>Dos raíces. Envuelve en <code>&lt;&gt;…&lt;/&gt;</code>.</td></tr>
+            <tr><td><code>Objects are not valid as a React child</code></td><td>Pintas un objeto. Pinta una propiedad (<code>{p.titulo}</code>).</td></tr>
+            <tr><td>Un «0» suelto en pantalla</td><td><code>lista.length &amp;&amp; …</code>. Usa <code>lista.length &gt; 0 &amp;&amp; …</code>.</td></tr>
+            <tr><td><code>Element type is invalid… got: undefined</code></td><td>Import mal: <code>default</code> frente a nombrado, o ruta errónea.</td></tr>
+            <tr><td><code>Too many re-renders</code></td><td><code>onClick={f()}</code> o un <code>set</code> en el cuerpo del render. Pasa <code>() =&gt; f()</code>.</td></tr>
+            <tr><td>Añado al array y la pantalla no cambia</td><td>Mutaste (<code>push</code>) y pasaste la misma referencia. Copia: <code>[...prev, x]</code>.</td></tr>
+            <tr><td><code>Each child in a list should have a unique "key"</code></td><td>Falta la key o no es única. Usa el id del dato en el elemento raíz del <code>map</code>.</td></tr>
+            <tr><td><code>React Hook is called conditionally</code></td><td>Hook dentro de un <code>if</code>, bucle o tras un <code>return</code>. Súbelo al nivel superior.</td></tr>
+            <tr><td><code>You provided a 'value' prop … without an 'onChange'</code></td><td>Campo controlado sin manejador. Añade <code>onChange</code> o usa <code>defaultValue</code>.</td></tr>
+            <tr><td>La pestaña se congela (bucle de renders)</td><td>Efecto que actualiza una dependencia propia, u objeto/array como dependencia recreado en cada render.</td></tr>
+            <tr><td>El efecto ve un valor viejo</td><td><em>Stale closure</em>: falta una dependencia. Añádela o usa la forma funcional del setter.</td></tr>
+            <tr><td><code>Unexpected token '&lt;', "&lt;!DOCTYPE"… is not valid JSON</code></td><td>La API devolvió HTML (404/500 o ruta mal). Comprueba <code>r.ok</code> antes de <code>r.json()</code>.</td></tr>
+            <tr><td>Se ve el resultado de una búsqueda antigua</td><td>Race condition. Cancela con <code>AbortController</code> en la limpieza.</td></tr>
+            <tr><td><code>useNavigate() may be used only in the context of a &lt;Router&gt;</code></td><td>Falta <code>BrowserRouter</code> (o el router en el test).</td></tr>
+            <tr><td>Recargar <code>/mi-lista</code> en producción da 404</td><td>Falta el fallback de SPA en el servidor.</td></tr>
+            <tr><td>Cannot destructure … of null al usar el contexto</td><td>Componente fuera del Provider. Por eso el hook de acceso lanza un error claro.</td></tr>
+            <tr><td><code>Hydration failed</code> (Next.js)</td><td>El HTML del servidor no coincide con el del cliente: <code>Date.now()</code>, <code>Math.random()</code> o <code>window</code> en el render.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos y estado</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué significa que React sea declarativo?</p>
+            <div class="q-ans">Describes cómo debe verse la interfaz para un estado dado y React calcula qué cambiar en el DOM. No escribes los pasos («busca este nodo, cámbiale el texto»). Cambias los datos y la pantalla se deriva de ellos.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué un cambio de estado no se ve en la línea siguiente al <code>setState</code>?</p>
+            <div class="q-ans">Porque dentro de un render el estado es una constante: el setter programa un nuevo render, y el valor nuevo sólo existe en ese render siguiente. Además React agrupa (batching) las actualizaciones de un mismo evento. Si el nuevo valor depende del anterior, usa <code>setX(prev =&gt; …)</code>.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué no se puede mutar el estado?</p>
+            <div class="q-ans">React decide si re-renderizar comparando referencias. Si haces <code>push</code> y pasas el mismo array, la referencia no cambia y React no hace nada; además rompes <code>memo</code>, <code>useMemo</code> y las dependencias de los efectos. Siempre se crea una copia nueva.</div></div>
+          <div class="q"><p class="q-text">4. ¿Para qué sirve la <code>key</code> y qué pasa si usas el índice?</p>
+            <div class="q-ans">Identifica cada elemento entre renders para que la reconciliación sepa cuál reutilizar, mover o destruir. Con el índice, el estado se asocia a la posición: si borras el primero de una lista con inputs, el texto del primero «pasa» al segundo. Con un id estable, el estado viaja con el dato.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué existen las reglas de los hooks?</p>
+            <div class="q-ans">React no sabe el nombre de tus <code>useState</code>: los identifica por el <b>orden</b> de llamada en cada render. Si un hook se llama condicionalmente, el orden cambia y los valores se asignan al hook equivocado. Por eso van siempre en el nivel superior.</div></div>
+          <div class="q"><p class="q-text">6. Un compañero guarda <code>peliculas</code> y <code>peliculasFiltradas</code> en estado. ¿Qué le dices?</p>
+            <div class="q-ans">Que la filtrada es derivada: se calcula de <code>peliculas</code> y del término en cada render. Guardarla obliga a sincronizarla a mano y, al añadir una película, la lista filtrada queda obsoleta. Una sola fuente de verdad; si el cálculo es caro, <code>useMemo</code>.</div></div>
+          <div class="q"><p class="q-text">7. ¿Hasta dónde subes un estado compartido?</p>
+            <div class="q-ans">Al ancestro común más cercano de los componentes que lo usan. Más arriba provoca renders innecesarios y acopla. Si lo usan muchas ramas alejadas, ya no es elevar: es Context. Y si son filtros de la vista, quizá su sitio es la URL.</div></div>
+          <div class="q"><p class="q-text">8. ¿Controlado o no controlado para un formulario?</p>
+            <div class="q-ans">Controlado por defecto: el estado es la fuente de verdad y permite validar en vivo, deshabilitar y transformar. No controlado (FormData o React Hook Form) cuando el formulario es grande y no necesitas reaccionar a cada tecla: evita un render por pulsación.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Efectos, datos y rendimiento</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Para qué sirve <code>useEffect</code> y cuándo NO lo usarías?</p>
+            <div class="q-ans">Para sincronizar un componente con algo externo a React: red, suscripciones, temporizadores, el DOM, <code>localStorage</code>. No para calcular datos derivados, ni para reaccionar a un clic (eso va en el manejador), ni para reiniciar estado cuando cambia una prop (se usa <code>key</code>).</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué en desarrollo un efecto se ejecuta dos veces?</p>
+            <div class="q-ans">StrictMode monta, desmonta y vuelve a montar a propósito para destapar efectos sin limpieza. Si algo se duplica (una suscripción, un elemento añadido), el bug es la falta de limpieza, no StrictMode. En producción no ocurre.</div></div>
+          <div class="q"><p class="q-text">3. Explica la race condition del buscador y cómo se resuelve.</p>
+            <div class="q-ans">Escribes «du» y luego «dune»: si la respuesta de «du» llega después, sobrescribe la correcta. El debounce reduce peticiones pero no lo evita. Se resuelve cancelando la petición anterior con <code>AbortController</code> en la limpieza del efecto (o con una bandera de descarte), ignorando el <code>AbortError</code>.</div></div>
+          <div class="q"><p class="q-text">4. <code>fetch</code> devuelve 500 y tu código lo trata como éxito. ¿Por qué?</p>
+            <div class="q-ans"><code>fetch</code> sólo rechaza la promesa por fallos de red. Un 404 o un 500 son respuestas válidas: hay que comprobar <code>respuesta.ok</code> y lanzar tú el error. Si no, intentas parsear HTML como JSON y ves <code>Unexpected token '&lt;'</code>.</div></div>
+          <div class="q"><p class="q-text">5. Dos componentes usan <code>useLocalStorage('favs')</code>. ¿Comparten datos?</p>
+            <div class="q-ans">No. Un custom hook comparte <b>lógica</b>, no estado: cada llamada tiene su propio <code>useState</code>. Para un estado común hay que elevarlo o ponerlo en un Context.</div></div>
+          <div class="q"><p class="q-text">6. Envuelves una tarjeta en <code>memo</code> y sigue renderizándose. ¿Qué revisas?</p>
+            <div class="q-ans">Las props: una función creada en cada render del padre (<code>() =&gt; …</code>), un objeto o array literal, o un <code>children</code> JSX rompen la comparación superficial. Estabilízalas con <code>useCallback</code>/<code>useMemo</code> o pasa primitivos. Y mide antes: quizá esos renders no importan.</div></div>
+          <div class="q"><p class="q-text">7. ¿Cuándo usas <code>useRef</code> en vez de <code>useState</code>?</p>
+            <div class="q-ans">Cuando necesitas recordar un valor entre renders pero cambiarlo no debe actualizar la pantalla (id de un timer, valor anterior, contador de renders) o necesitas un nodo del DOM (enfocar un input). Si el valor se muestra, es estado.</div></div>
+          <div class="q"><p class="q-text">8. Con el React Compiler, ¿sigue mereciendo la pena entender <code>memo</code>?</p>
+            <div class="q-ans">Sí. El compilador escribe la memorización, pero entender identidad, comparación superficial y qué provoca un render sigue siendo necesario para diagnosticar problemas, trabajar en proyectos sin compilador y saber por qué algo es lento.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Arquitectura, rutas y estado global</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué Context no es un gestor de estado?</p>
+            <div class="q-ans">Porque sólo transporta un valor por el árbol sin pasar props. El estado sigue en un <code>useState</code> o <code>useReducer</code> del Provider. Además, todos los consumidores se renderizan cuando cambia el <code>value</code>, así que no sustituye a soluciones con suscripción selectiva como Zustand.</div></div>
+          <div class="q"><p class="q-text">2. Tu app va lenta desde que añadiste un Context. ¿Qué miras primero?</p>
+            <div class="q-ans">Si el <code>value</code> es un objeto nuevo en cada render del Provider. Si no está memorizado con <code>useMemo</code>, cada render del Provider renderiza a todos los consumidores. Después, si el contexto mezcla datos que cambian a ritmos distintos: conviene partirlo por dominio.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué el estado de servidor no es estado global?</p>
+            <div class="q-ans">Porque no es tuyo: es una copia de datos que viven en el servidor y pueden cambiar sin que lo sepas. Necesita caché, invalidación, revalidación, reintentos y deduplicación. Meterlo en Context obliga a reimplementar todo eso a mano; TanStack Query lo resuelve.</div></div>
+          <div class="q"><p class="q-text">4. Cambias el término de búsqueda y <code>useQuery</code> no vuelve a pedir datos. ¿Qué falta?</p>
+            <div class="q-ans">Incluir el término en la <code>queryKey</code>. La clave identifica los datos en la caché: todo lo que use la <code>queryFn</code> debe estar en ella. Si no cambia la clave, la consulta es la misma.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué estado pondrías en la URL y qué no?</p>
+            <div class="q-ans">En la URL, lo que el usuario esperaría recuperar al abrir el enlace mañana o compartirlo: búsqueda, filtros, orden, página, pestaña. No, lo efímero (un menú abierto) ni lo sensible: la URL se ve, se comparte y queda en el historial.</div></div>
+          <div class="q"><p class="q-text">6. Recargar <code>/peliculas/3</code> en producción da 404, pero navegando funciona. ¿Por qué?</p>
+            <div class="q-ans">Navegando, el router cambia la URL en el navegador sin pedir nada al servidor. Al recargar, el servidor busca un archivo <code>/peliculas/3</code> que no existe. Hay que configurar el fallback para que devuelva <code>index.html</code> en cualquier ruta.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué hace un Error Boundary y qué no captura?</p>
+            <div class="q-ans">Captura los errores lanzados durante el render de sus hijos y muestra un fallback en lugar de dejar la pantalla en blanco. No captura errores en manejadores de eventos, en código asíncrono ni en el propio boundary: esos se tratan con <code>try/catch</code> o con el estado de error de la consulta.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cuándo organizarías el proyecto por features?</p>
+            <div class="q-ans">Cuando un cambio típico obliga a abrir muchas carpetas por tipo (components, hooks, api…). Las reglas: <code>shared</code> no conoce features, las features no se importan entre sí y sólo <code>app</code> lo conoce todo, vigiladas con ESLint. En un proyecto de cinco pantallas, por tipo es suficiente.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Calidad, seguridad y el React moderno</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué tipar la respuesta de la API como <code>unknown</code> y no como <code>Pelicula[]</code>?</p>
+            <div class="q-ans">Porque TypeScript no valida en ejecución: anotar <code>Pelicula[]</code> es una promesa que nadie comprueba, y si el servidor manda <code>null</code> revienta lejos del origen. Con <code>unknown</code> el compilador obliga a validar, por ejemplo con un esquema de Zod que además genera el tipo.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué ventaja tiene una unión discriminada frente a varios booleanos?</p>
+            <div class="q-ans">Con <code>{ cargando: boolean; error: string | null; datos?: … }</code> puedes estar «cargando y con error» a la vez. Con <code>{ fase: 'cargando' } | { fase: 'error'; mensaje } | { fase: 'listo'; datos }</code> los estados imposibles no se pueden escribir y el compilador te obliga a tratar cada fase.</div></div>
+          <div class="q"><p class="q-text">3. ¿Basta con <code>role="button"</code> en un <code>div</code>?</p>
+            <div class="q-ans">No. El rol sólo anuncia que es un botón; no lo hace enfocable ni activable con Enter y Espacio. Habría que añadir <code>tabIndex</code> y manejar el teclado. Un <code>&lt;button&gt;</code> trae todo eso gratis: la primera regla de la accesibilidad es usar el elemento correcto.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué Testing Library desaconseja buscar por clase CSS?</p>
+            <div class="q-ans">Porque prueba la implementación, no lo que ve el usuario: el test se rompe al cambiar estilos sin que nada falle de verdad, y pasa aunque el botón sea inaccesible. Buscar por rol y nombre accesible prueba comportamiento y protege la accesibilidad de paso.</div></div>
+          <div class="q"><p class="q-text">5. Ocultas el botón «Borrar» a usuarios normales. ¿Está protegida la acción?</p>
+            <div class="q-ans">No. Cualquiera puede llamar al endpoint con las herramientas del navegador o con curl. Ocultarlo es experiencia de usuario; la protección es que el servidor compruebe el permiso en cada petición y responda 403.</div></div>
+          <div class="q"><p class="q-text">6. Cambias una variable en <code>.env.production</code> y la web publicada no cambia. ¿Por qué?</p>
+            <div class="q-ans">Las variables <code>VITE_*</code> se sustituyen por su valor dentro del JavaScript durante el build. Hay que reconstruir y desplegar. Por lo mismo, son públicas: cualquier secreto ahí queda expuesto.</div></div>
+          <div class="q"><p class="q-text">7. ¿SSR y Server Components son lo mismo?</p>
+            <div class="q-ans">No. El SSR genera el HTML en el servidor pero envía también el código del componente para hidratarlo en el navegador. Un Server Component se ejecuta sólo en el servidor y su código nunca llega al cliente: puede leer la base de datos directamente y no aumenta el bundle, pero no tiene estado ni eventos.</div></div>
+          <div class="q"><p class="q-text">8. Panel interno de 50 pantallas tras un login, sin interés en SEO. ¿Vite o Next.js?</p>
+            <div class="q-ans">Vite. Next.js resuelve SEO, primera carga rápida y datos privados en el servidor; un panel autenticado e interactivo no tiene esos problemas y sólo heredaría la complejidad de la frontera servidor/cliente y la caché. La pregunta clave: qué problema medible resuelve.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Declarativo; biblioteca de vista; componentes en PascalCase; Node y Vite sólo en desarrollo.</li>
+          <li><b>1</b> · JSX es JavaScript: <code>className</code>, llaves = expresión, el 0 sí se pinta.</li>
+          <li><b>2</b> · Props de sólo lectura; <code>children</code> para componer; componentes puros.</li>
+          <li><b>3</b> · <code>useState</code>: foto por render, batching, <code>prev =&gt;</code>, nunca mutar.</li>
+          <li><b>4</b> · <code>map</code> + <code>key</code> estable; <code>toSorted</code>.</li>
+          <li><b>5</b> · Error → cargando → vacío → datos.</li>
+          <li><b>6</b> · <code>value</code> + <code>onChange</code>, <code>onSubmit</code> con <code>preventDefault</code>, convertir al enviar.</li>
+          <li><b>7</b> · Elevar al ancestro común; lo derivado no es estado.</li>
+          <li><b>8</b> · Efectos para sistemas externos, con dependencias completas y limpieza.</li>
+          <li><b>9</b> · <code>r.ok</code>, <code>AbortController</code>, capa de API, sin secretos en <code>VITE_</code>.</li>
+          <li><b>10</b> · Custom hooks: lógica compartida, estado no.</li>
+          <li><b>11</b> · Mide; <code>memo</code> + identidades estables; <code>useRef</code> no re-renderiza.</li>
+          <li><b>12</b> · <code>Routes</code>, <code>Link</code>, <code>useParams</code>, <code>useNavigate</code>, fallback en el servidor.</li>
+          <li><b>13</b> · <code>Outlet</code>, <code>NavLink</code>, filtros en <code>useSearchParams</code>.</li>
+          <li><b>14</b> · Context transporta; Provider + hook; <code>value</code> memorizado; reducer puro.</li>
+          <li><b>15</b> · Estado de servidor en TanStack Query; la <code>queryKey</code> lo es todo.</li>
+          <li><b>16</b> · Tipa fronteras, <code>strict</code>, uniones discriminadas, <code>unknown</code>.</li>
+          <li><b>17</b> · CSS Modules, tokens en dos capas, tema sin destello.</li>
+          <li><b>18</b> · HTML semántico, foco, anuncios, modal con seis requisitos.</li>
+          <li><b>19</b> · Zod + <code>z.infer</code> + React Hook Form.</li>
+          <li><b>20</b> · Comportamiento, queries por rol, <code>userEvent</code>, MSW.</li>
+          <li><b>21</b> · El servidor protege; ruta protegida con «comprobando»; 401 ≠ 403.</li>
+          <li><b>22</b> · Build con hash, <code>VITE_</code> horneadas, <code>lazy</code> por ruta, CI con typecheck.</li>
+          <li><b>23</b> · Features con reglas de dependencia, composición, Error Boundaries.</li>
+          <li><b>24</b> · RSC ≠ SSR; <code>'use client'</code> abajo; Server Actions con permisos.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Una vez por semana, añade algo pequeño a CineNaka: un filtro en la URL, un test, una mutación optimista.</li>
+            <li>Antes de una entrevista, rehaz de memoria un buscador con debounce, cancelación y los cuatro estados de pantalla.</li>
+            <li>Practica dibujar el árbol «dónde vive cada estado» para una aplicación inventada: es la pregunta de diseño más habitual.</li>
+            <li>Lee de vez en cuando «You Might Not Need an Effect» en la documentación oficial.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

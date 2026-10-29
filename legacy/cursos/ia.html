@@ -19656,6 +19656,659 @@ docker compose logs --tail 40 trabajador</code></pre>
     </details>
   </section>
 
+  <section class="view chapter" id="cap-22"
+    data-num="22"
+    data-title="Repaso exprés: IA aplicada y NakaDesk de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|LLM|Tokens|Prompting|Salidas estructuradas|Embeddings|RAG|Evaluación|Agentes|MCP|Seguridad">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: de la primera llamada a la API a
+      NakaDesk en producción con RAG, agente, MCP, automatizaciones, seguridad y observabilidad. Cada concepto aparece con lo
+      mínimo para recordarlo —qué es, para qué sirve y cómo se escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a construir con LLM tras semanas sin practicar, o
+      salta al bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  6 · PRODUCCIÓN        programar con IA · seguridad · observabilidad · despliegue (18–21)
+                ▲
+  5 · AUTOMATIZACIÓN    FastAPI + webhooks + cola · n8n · Power Automate · criterio (14–17)
+                ▲
+  4 · AGENTES           herramientas · bucle del agente · MCP · skills             (10–13)
+                ▲
+  3 · CONOCIMIENTO      embeddings · RAG · evaluación                               (7–9)
+                ▲
+  2 · HABLAR CON ÉL     prompting · salidas estructuradas · ML clásico             (4–6)
+                ▲
+  1 · FUNDAMENTOS       qué es un LLM · cuándo no usar IA · tokens · cliente API   (0–3)</div>
+
+        <h3>NakaDesk: el recorrido de una petición</h3>
+        <div class="diagram">  correo / Teams / API ──▶ n8n o Power Automate ──▶ API FastAPI (202 + cola)
+                                                           │
+                                                      trabajador
+                                                           │
+   reglas ──▶ modelo clásico (prioridad) ──▶ LLM: clasificación estructurada
+                                                           │
+                                  RAG (híbrido + reordenación + citas) · agente con herramientas
+                                                           │
+                       acción irreversible ──▶ aprobación humana (Teams) ──▶ ejecutar
+   Transversal: ClienteLLM único · permisos por origen · anonimización · trazas · caché · evaluación en CI</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos</b></td><td>Un LLM predice texto: alucina y no recuerda.</td><td>Reglas → ML clásico → LLM → no IA.</td></tr>
+            <tr><td><b>Hablar con el modelo</b></td><td>Prompts como código y salidas como datos.</td><td>Valida lo que devuelve.</td></tr>
+            <tr><td><b>Modelos pequeños</b></td><td>Un clasificador propio gana en tareas cerradas.</td><td>Precisión y recall por clase.</td></tr>
+            <tr><td><b>Conocimiento</b></td><td>Recuperar, aumentar, generar, citar y medir.</td><td>Sin evaluación, cada cambio es una apuesta.</td></tr>
+            <tr><td><b>Agentes</b></td><td>El modelo decide, tu código ejecuta, con límites.</td><td>Lo irreversible, con humano.</td></tr>
+            <tr><td><b>Automatización</b></td><td>Responder rápido, encolar, idempotencia.</td><td>La IA vive en el código.</td></tr>
+            <tr><td><b>Producción</b></td><td>La inyección no tiene solución: limita el daño.</td><td>Mide calidad, coste, latencia y fiabilidad.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Lanza el banco de evaluación de NakaDesk antes de leer y vuelve a mirarlo al terminar cada bloque: cada métrica del
+        informe corresponde a una decisión del curso. Si sabes explicar por qué está ahí, lo recuerdas.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧠 Bloque 1 · LLM, cuándo usar IA, tokens y el cliente de la API (cap. 0–3)</summary>
+      <div class="acc-body">
+
+        <h3>Qué es un LLM (0)</h3>
+        <ul class="clean">
+          <li>IA ⊃ machine learning ⊃ deep learning ⊃ LLM. Un <b>LLM predice el texto siguiente</b>: por eso <b>alucina</b> cuando no sabe y <b>no recuerda</b> nada entre llamadas (la memoria la aporta tu código reenviando el historial).</li>
+          <li>API (modelos grandes sin hardware) frente a local (privacidad total). Groq por su plan gratuito y su API de chat completions, el estándar que hablan casi todos.</li>
+          <li>Clave en <code>.env</code>, <code>.gitignore</code> antes del primer commit. Una clave subida a un repositorio se <b>rota</b>: borrarla no basta (queda en el historial).</li>
+          <li>Mira siempre <code>usage</code> (tokens) y <code>finish_reason</code> (<code>stop</code>, <code>length</code>, <code>tool_calls</code>). El texto puede venir a <code>None</code>.</li>
+        </ul>
+
+        <h3>Cómo aprenden y cuándo NO usar IA (1)</h3>
+        <ul class="clean">
+          <li>ML invierte la programación: das ejemplos y el modelo deduce las reglas. Supervisado, no supervisado y por refuerzo.</li>
+          <li><b>Entrenar</b> es caro y una vez; <b>inferir</b> es lo que pagas millones de veces. Fine-tuning, último recurso (antes: prompt, contexto, herramientas).</li>
+          <li>Los datos pesan más que el algoritmo: etiquetas inconsistentes, desbalance, fuga de datos, deriva.</li>
+          <li><b>Marco de decisión</b>: reglas → ML clásico → LLM → no usar IA. Sistemas <b>híbridos</b>: cada capa filtra y el LLM ve sólo lo que las baratas no resolvieron.</li>
+          <li>No uses IA generativa si el error es inaceptable sin revisión, si hay que explicar la decisión, si necesitas reproducibilidad exacta o si el cálculo es determinista (validar un IBAN).</li>
+        </ul>
+
+        <h3>Tokens, contexto y coste (2)</h3>
+        <ul class="clean">
+          <li>El <b>token</b> es la unidad de precio, límite y velocidad (~3 caracteres en español, ~4 en inglés).</li>
+          <li>La <b>ventana de contexto</b> incluye entrada y salida. Que quepa no significa que convenga: cuesta, tarda y diluye la instrucción.</li>
+          <li>La <b>atención</b> crece de forma cuadrática con la longitud: por eso el contexto largo es caro.</li>
+          <li><code>temperature=0</code> reduce la variación pero no garantiza determinismo: se consigue validando la salida. <code>reasoning_effort</code> controla cuánto piensa (sólo algunos modelos; en otros, 400).</li>
+          <li>Cuatro palancas de ahorro: modelo adecuado, menos entrada, menos salida y caché. Presupuesta con el peor caso (<code>max_tokens</code> completo) y registra <code>usage</code> desde el día uno.</li>
+        </ul>
+
+        <h3>La API y un cliente que no se cae (3)</h3>
+        <div class="code-block" data-lang="Python · nakadesk · ClienteLLM (idea)">
+<pre><code>respuesta = cliente.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[
+        {"role": "system", "content": PROMPT_SISTEMA},   # tuyo, de confianza
+        {"role": "user", "content": texto_del_usuario},   # de fuera: sospechoso
+    ],
+    max_tokens=400,                                       # tope, no objetivo
+)
+eleccion = respuesta.choices[0]
+if eleccion.finish_reason == "length":                    # truncada: no la des por buena
+    raise RespuestaTruncada(...)
+texto = eleccion.message.content
+registrar_uso(respuesta.usage)</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> cuatro roles: <code>system</code>, <code>user</code>, <code>assistant</code> y
+        <code>tool</code>; el system es el primer mensaje (no un parámetro <code>system=</code>) y nunca lleva datos externos.
+        <b>Streaming</b> adelanta el primer token, no acelera el total (pide <code>include_usage</code>). Reintenta 429, 5xx y red
+        con espera exponencial + azar (respetando <code>retry-after</code>); <b>nunca los 4xx</b>. Una sola puerta
+        (<code>ClienteLLM</code>) con excepciones propias encadenadas (<code>raise … from e</code>): cambiar de proveedor es un archivo.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>💬 Bloque 2 · Prompting y salidas estructuradas (cap. 4–5)</summary>
+      <div class="acc-body">
+
+        <h3>Prompting (4)</h3>
+        <ul class="clean">
+          <li>Un prompt es <b>código</b> en lenguaje natural: módulo propio, versiones (nunca se edita una versión: se crea la siguiente), pruebas y un cambio por iteración.</li>
+          <li>Seis componentes: <b>rol, tarea, contexto, reglas, formato y ejemplos</b>. Cuando algo falla, casi siempre falta uno.</li>
+          <li><b>Ejemplos</b> (few-shot): la técnica que más rinde; el modelo imita su forma, así que varía longitud y complejidad.</li>
+          <li><b>Delimitadores</b> separan órdenes de datos ajenos: reducen la inyección, no la eliminan.</li>
+          <li>Ya no funcionan: «piensa paso a paso», MAYÚSCULAS, amenazas, listas larguísimas de prohibiciones (provocan sobreactuación). Sí: ser específico, contexto cerrado, explicar el porqué y una salida honesta para el «no sé».</li>
+          <li>Un prompt mejor suele ser más barato (respuestas más cortas). Los prompts son específicos de cada modelo.</li>
+        </ul>
+
+        <h3>Salidas estructuradas (5)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>class Intencion(str, Enum):
+    INCIDENTE = "incidente"
+    DUDA = "duda"
+    OTRO = "otro"                                   # valor de escape: sin él, obligas a mentir
+
+class Clasificacion(BaseModel):
+    razonamiento: str = Field(max_length=300)       # antes del veredicto: decide tras pensar
+    intencion: Intencion = Field(description="Qué quiere el usuario")
+    confianza: float = Field(ge=0.0, le=1.0)
+
+datos = Clasificacion.model_validate_json(texto)   # valida forma y valores</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> «responde sólo con JSON» falla de vez en cuando; las salidas estructuradas lo
+        garantizan. Dos niveles: <code>json_schema</code> estricto (forma y valores) y <code>json_object</code> (sólo que sea
+        JSON); valida con Pydantic en ambos. Enums con valor de escape. El esquema garantiza la forma, <b>no el acierto</b>:
+        reglas de negocio en código y <b>reintento correctivo</b> devolviendo su respuesta como turno <code>assistant</code> con
+        los errores. La confianza declarada no es una probabilidad: calíbrala. Ni un campo de más.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📐 Bloque 3 · Machine learning clásico y embeddings (cap. 6–7)</summary>
+      <div class="acc-body">
+
+        <h3>Cuando un modelo pequeño gana (6)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>modelo = Pipeline([
+    ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=2)),
+    ("clf", LogisticRegression(max_iter=1000, class_weight="balanced")),
+])
+X_tr, X_te, y_tr, y_te = train_test_split(textos, etiquetas, test_size=0.2,
+                                          stratify=etiquetas, random_state=42)
+modelo.fit(X_tr, y_tr)
+print(classification_report(y_te, modelo.predict(X_te)))   # por clase, no global</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> para tareas cerradas con datos etiquetados, un modelo propio gana al LLM en
+        latencia, coste, privacidad e interpretabilidad (pierde en casos nunca vistos). <b>TF-IDF</b> no entiende sinónimos.
+        Entrenar y probar con datos distintos: la brecha mide el <b>sobreajuste</b>. La precisión global engaña con desbalance:
+        <b>precisión, recall y F1 por clase</b> y matriz de confusión. Elegir entre precisión y recall es decidir qué error duele
+        más (para P1, recall). Línea base: regresión logística sobre TF-IDF. Siempre <code>Pipeline</code>. Datos sintéticos
+        nunca en el conjunto de prueba.</p>
+
+        <h3>Embeddings (7)</h3>
+        <ul class="clean">
+          <li>Un <b>embedding</b> es un vector que representa el significado: textos parecidos, vectores cercanos.</li>
+          <li><b>Similitud coseno</b>: mide el ángulo, no la distancia (la longitud del texto no influye). Los valores no son porcentajes ni comparables entre modelos: <b>calibra el umbral</b> con datos propios.</li>
+          <li>Embeddings entienden sinónimos y paráfrasis; TF-IDF gana en coincidencias literales (códigos como <code>ERR_POOL_TIMEOUT</code>). Los sistemas serios combinan ambos.</li>
+          <li>Modelo local multilingüe (<code>sentence-transformers</code>): coste cero y la documentación no sale de tu red.</li>
+          <li><b>Chunking</b> por estructura, con solape y metadatos; añadir título y sección al fragmento antes de vectorizar es el arreglo de una línea que más mejora la recuperación.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📚 Bloque 4 · RAG y evaluación (cap. 8–9)</summary>
+      <div class="acc-body">
+
+        <h3>RAG (8)</h3>
+        <div class="diagram">  pregunta ──▶ búsqueda semántica ─┐
+           └▶ búsqueda literal ───┴─▶ fusión RRF (por posición) ──▶ 20 candidatos
+                                                                       │
+                                    reordenación (CrossEncoder) ──▶ 3–5 fragmentos
+                                                                       │
+                     ¿superan el umbral? ── no ──▶ NO_TENGO_DOCUMENTACION (sin llamar al modelo)
+                                                                       │ sí
+                                    prompt con fragmentos numerados ──▶ respuesta con citas [n]
+                                                                       │
+                                    validar citas en código (¿existe [7] si sólo hay 4?)</div>
+        <ul class="clean">
+          <li>RAG = <b>recuperar</b>, <b>aumentar</b> el prompt y <b>generar</b>: barato, actualizable al instante y citable (frente a reentrenar).</li>
+          <li><b>Búsqueda híbrida</b> con RRF, que fusiona por posición porque las puntuaciones de dos buscadores no son comparables.</li>
+          <li><b>Reordenación</b>: recuperar muchos y baratos, reordenar pocos y caros (lee pregunta y fragmento juntos).</li>
+          <li>Fórmula de «no lo sé» como constante literal. Más contexto no es mejor contexto (3–5 fragmentos).</li>
+          <li>Cinco puntos de fallo: falta contenido, no se recupera, no se usa, se extrae mal, mal formato. Primero: ¿el fragmento correcto estaba entre los recuperados?</li>
+        </ul>
+
+        <h3>Evaluación (9)</h3>
+        <ul class="clean">
+          <li>Sin evaluación, cada cambio es una apuesta. Banco con habituales, difíciles, fuera de dominio, adversarios y <b>regresiones</b> (cada fallo real entra para siempre). Con 40–60 casos ya se detectan regresiones.</li>
+          <li>Mide <b>por categoría y por campo</b> (el promedio esconde lo importante), además de latencia P95 y coste.</li>
+          <li><b>LLM como juez</b> con criterios objetivos y rúbrica; sesgos de posición, verbosidad, autoafinidad e indulgencia. Valídalo contra humanos (&lt; 80 % de acuerdo = ruido).</li>
+          <li>Umbrales calibrados con datos (coste de revisar frente a coste de equivocarse). Evaluación en <b>CI con código de salida 1</b> si empeora. Nunca edites el banco porque no gustan los resultados.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🤖 Bloque 5 · Herramientas, agentes, MCP y skills (cap. 10–13)</summary>
+      <div class="acc-body">
+
+        <h3>Herramientas (10)</h3>
+        <div class="code-block" data-lang="Python · el ciclo de una herramienta">
+<pre><code>r = cliente.chat.completions.create(model=MODELO, messages=mensajes, tools=HERRAMIENTAS)
+msg = r.choices[0].message
+if r.choices[0].finish_reason == "tool_calls":
+    mensajes.append(msg)                                    # el assistant, tal cual
+    for llamada in msg.tool_calls:
+        args = json.loads(llamada.function.arguments)       # ¡es una cadena! y no es de fiar
+        resultado = ejecutar(llamada.function.name, args)   # valida, aplica permisos
+        mensajes.append({"role": "tool", "tool_call_id": llamada.id,
+                         "content": json.dumps(resultado)}) # uno por llamada, seguidos</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>el modelo decide, tu código ejecuta</b>. La descripción de la herramienta es
+        un prompt (qué hace, cuándo usarla, cuándo no, qué devuelve). Clasifica por efecto: <b>lectura</b> (directa),
+        <b>escritura reversible</b> (directa y auditada), <b>irreversible</b> (siempre confirmación humana). Enums y modo estricto.
+        Devuelve errores explicativos (el modelo se corrige). Cada herramienta cuesta 150–250 tokens por llamada: pocas y bien
+        delimitadas. Idempotencia y auditoría.</p>
+
+        <h3>El bucle del agente (11)</h3>
+        <ul class="clean">
+          <li>Empieza por un <b>flujo fijo</b>; sube a agente sólo si los pasos varían de verdad según el caso.</li>
+          <li>Bucle: llamar → mirar <code>finish_reason</code> → ejecutar herramientas → devolver resultados → comprobar límites → repetir.</li>
+          <li><b>Cuatro límites</b>: vueltas, tiempo, coste y escrituras. El coste crece más que linealmente (cada vuelta reenvía todo).</li>
+          <li>Distingue <code>COMPLETADO</code> de <code>LIMITE_VUELTAS</code>/<code>LIMITE_COSTE</code>: lo segundo es un fallo aunque devuelva texto. Traza por vuelta como parte del producto.</li>
+          <li>Lo irreversible: parada dura (<code>ESPERA_CONFIRMACION</code>) y reanudación con la decisión humana, que se devuelve al modelo como resultado de herramienta para que proponga alternativas.</li>
+        </ul>
+
+        <h3>MCP (12)</h3>
+        <ul class="clean">
+          <li>Convierte N clientes × M sistemas en N + M: protocolo estándar entre la IA y tus herramientas. El <b>descubrimiento</b> es lo que compra.</li>
+          <li>Tres primitivas: <b>herramientas</b> (las elige el modelo), <b>recursos</b> (los aporta la aplicación) y <b>prompts</b> (los elige el usuario). Transportes: <b>stdio</b> (local) y <b>HTTP</b> (remoto).</li>
+          <li>Con FastMCP (<code>@mcp.tool</code>), el docstring es la descripción que lee el modelo.</li>
+          <li>Nativa si sólo la usa tu agente; MCP si la usan varios clientes o la mantiene otro equipo.</li>
+          <li>Riesgos: servidores de terceros con tus permisos, resultados no confiables, leer interno + enviar fuera = exfiltración, credenciales con mínimo alcance.</li>
+        </ul>
+
+        <h3>Skills (13)</h3>
+        <ul class="clean">
+          <li>Una <b>skill</b> es una carpeta con <code>SKILL.md</code> que enseña a hacer una tarea como la hace tu equipo.</li>
+          <li><b>Divulgación progresiva</b>: la descripción siempre en contexto; el contenido si aplica; los archivos auxiliares si se necesitan. La <code>description</code> decide si se activa: debe decir <b>cuándo</b> usarla.</li>
+          <li>Criterio: <b>prompt</b> para reglas universales, <b>RAG</b> para hechos cambiantes, <b>herramienta</b> para actuar, <b>skill</b> para procedimientos.</li>
+          <li>Una skill, una tarea; libertad según fragilidad; nada volátil ni arqueología; cuidado con llenarla de advertencias de casos aislados.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚙ Bloque 6 · Webhooks, colas, n8n y Power Automate (cap. 14–17)</summary>
+      <div class="acc-body">
+
+        <h3>FastAPI, webhooks y cola (14)</h3>
+        <div class="code-block" data-lang="Python">
+<pre><code>@app.post("/webhook/{origen}", status_code=202)
+async def webhook(origen: str, request: Request, tareas: BackgroundTasks,
+                  x_signature: str = Header(default="")):
+    cuerpo = await request.body()
+    verificar_firma(cuerpo, x_signature)            # HMAC con hmac.compare_digest, nunca ==
+    datos = await request.json()
+    p = Peticion(texto=datos.get("texto", ""), origen=origen,
+                 id_externo=str(datos.get("id", "")))
+    r = cola.encolar(clave_idempotencia(p), "peticion", p.model_dump())   # clave única
+    if not r["duplicado"]:
+        tareas.add_task(procesar_uno)
+    return {"recibido": True, "duplicado": r["duplicado"]}   # 202 SIEMPRE, también duplicados</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> webhook (estándar), sondeo (si no hay otra) y programado (recurrente).
+        <b>Responde rápido</b>: valida, encola y 202; el trabajo pesado va en un <b>trabajador</b> en otro proceso. Los webhooks
+        llegan duplicados, desordenados y desde cualquier origen: firma HMAC con <code>compare_digest</code> e
+        <b>idempotencia en el esquema</b> (clave única). Una cola en base de datos resuelve el 90 %; los trabajos fallidos quedan
+        en <code>fallido</code> y los huérfanos se recuperan con una tarea periódica.</p>
+
+        <h3>n8n (15)</h3>
+        <ul class="clean">
+          <li>400 integraciones resueltas, historial visual y flujos modificables por quien no programa.</li>
+          <li>Los datos viajan como <b>lista de items</b> y cada nodo se ejecuta una vez por item. Expresiones <code>{{ }}</code>.</li>
+          <li>Credenciales cifradas y aparte (nunca una clave en un campo). Desde un contenedor, <code>localhost</code> no es tu máquina.</li>
+          <li>Cuatro mecanismos de error: reintentos, continuar con error, salida de error y <b>flujo de errores</b> que clasifica por tipo.</li>
+          <li>Reparto: <b>n8n conecta y enruta; Python contiene la lógica de IA</b> (un prompt en una cajita no se versiona ni se evalúa).</li>
+        </ul>
+
+        <h3>Power Automate (16)</h3>
+        <ul class="clean">
+          <li>Gana en lo corporativo: ya está pagado, integra con Microsoft 365 y trae <b>aprobaciones</b> (esperan sin consumir, recuerdan, delegan, auditan).</li>
+          <li>El conector HTTP genérico es <b>premium</b>: compruébalo antes. Políticas DLP, cuentas de servicio, entornos separados.</li>
+          <li><b>Tarjeta adaptable</b> que permita decidir sin preguntar: qué, quién, qué averiguó el agente y qué hace cada botón. Idempotencia ante doble clic; el comentario de quien deniega vuelve al agente.</li>
+        </ul>
+
+        <h3>Elegir la herramienta (17)</h3>
+        <ul class="clean">
+          <li>Cinco preguntas en orden: ¿contiene IA? → ¿decide una persona? → ¿tiene conector? → ¿lo modifica alguien que no programa? → ¿necesita tests?</li>
+          <li><b>La IA vive en el código</b>. Contrato entre capas con un <code>destino</code> de enum cerrado. Los automatizadores nunca acceden a los datos directamente: siempre por la API.</li>
+          <li>El <b>identificador de correlación</b> atraviesa todas las capas. El coste lo domina el mantenimiento, no el montaje.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🛡 Bloque 7 · Programar con IA, seguridad, observabilidad y despliegue (cap. 18–21)</summary>
+      <div class="acc-body">
+
+        <h3>Programar con IA (18)</h3>
+        <ul class="clean">
+          <li>Autocompletado, chat y <b>agente</b> (el que cambia el trabajo y exige disciplina). El contexto lo es todo: un archivo de instrucciones del proyecto y archivos a imitar.</li>
+          <li>Rinde en explicar, testear, transformar y repetir; falla en arquitectura, optimización y seguridad crítica.</li>
+          <li>Riesgo real: <b>deuda técnica acelerada</b>. No aceptes código que no sabrías escribir ni depurar. Comprueba que existe lo que usa; revisa el <code>git diff</code> entero.</li>
+          <li>La instrucción que más mejora la calidad: un criterio de éxito ejecutable («haz que pasen los tests»).</li>
+        </ul>
+
+        <h3>Seguridad (19)</h3>
+        <ul class="clean">
+          <li>En un LLM, instrucciones y datos comparten canal: <b>la inyección de prompts no tiene solución completa</b>. Diseña asumiendo que el atacante controla lo que el modelo decide.</li>
+          <li><b>Indirecta</b> (dentro de un correo, ticket o documento): la peligrosa, porque la víctima es otra persona.</li>
+          <li><b>Trifecta letal</b>: datos privados + contenido no confiable + comunicar fuera. Quitar una pata rompe la cadena.</li>
+          <li>Defensas por eficacia: <b>mínimo privilegio, confirmación humana, validar salidas</b> (no dependen de detectar), anonimizar, delimitar, detectar. <b>Permisos por origen</b> (correo con menos herramientas que la API).</li>
+          <li>Credenciales detectadas se bloquean (no se anonimizan) y una credencial que circuló se <b>rota</b>. Datos personales anonimizados de forma consistente y restaurados al responder.</li>
+        </ul>
+
+        <h3>Observabilidad (20)</h3>
+        <ul class="clean">
+          <li>Tres fallos sin excepción: degradación silenciosa, fuga de coste y fallo parcial. Sólo se detectan midiendo; en IA, la <b>traza</b> es lo más valioso.</li>
+          <li>Cuatro métricas: <b>calidad, coste, latencia y fiabilidad</b>, por origen y por capacidad (P95, no la media).</li>
+          <li><b>Caché de respuestas</b>: la llamada más barata es la que no se hace. Clave con modelo, prompt, mensajes, parámetros y usuario si aplica; nunca para lo que consulta sistemas vivos o tiene efectos (herramientas). Cambiar un prompt vacía la caché.</li>
+          <li><b>Degradación por escalones</b>: modelo de respaldo → sin agente → sólo reglas → encolar. Una respuesta truncada no activa el respaldo.</li>
+        </ul>
+
+        <h3>Desplegar, mantener y apagar (21)</h3>
+        <ul class="clean">
+          <li>Diferencias con otro servicio: cuesta por petición, depende de un tercero, no es determinista y se degrada sin fallar.</li>
+          <li>Docker: dependencias antes que código, modelos descargados en la imagen, usuario sin privilegios, <code>HEALTHCHECK</code>; secretos por variables de entorno, rotables sin desplegar.</li>
+          <li><b>Lanzamiento por fases</b> controladas por configuración: sombra → piloto → sólo lectura → acciones con aprobación → autonomía acotada. En sombra decide la tasa de <b>discrepancias peligrosas</b>, no el acuerdo global.</li>
+          <li>Ritual de mantenimiento diario, semanal y mensual; al cambiar de modelo, reevaluar todo.</li>
+          <li><b>Apagar</b>: cerrar la entrada, vaciar la cola, respaldar, parar y revocar las claves (si no, sigue llegando factura).</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-23"
+    data-num="23"
+    data-title="Diferencias clave y preparación de entrevista técnica de IA aplicada"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|RAG vs fine-tuning|Embeddings vs TF-IDF|Agente vs flujo fijo|Herramienta vs skill|Inyección de prompts|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> al construir sistemas con LLM: las parejas de
+      conceptos que parecen iguales, los patrones que aplicaste en NakaDesk, los errores que todo el mundo se encuentra y las
+      preguntas típicas de una entrevista técnica o de diseño, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después despliega
+      la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Modelos y llamadas</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>IA / ML / deep learning / LLM</b></td><td>Cada uno dentro del anterior.</td><td>Elige el más barato que resuelva el problema.</td></tr>
+            <tr><td><b>Entrenar / inferir</b></td><td>Una vez y carísimo / millones de veces, lo que pagas.</td><td>—</td></tr>
+            <tr><td><b>Reglas / ML clásico / LLM</b></td><td>Determinista / patrón aprendido de ejemplos / lenguaje abierto.</td><td>En ese orden, bajando sólo si el anterior no llega.</td></tr>
+            <tr><td><b>Supervisado / no supervisado / refuerzo</b></td><td>Con respuestas / busca estructura / aprende por recompensa.</td><td>—</td></tr>
+            <tr><td><b>Prompt / RAG / herramienta / fine-tuning</b></td><td>Instrucciones / conocimiento recuperado / acción o dato vivo / cambiar los pesos.</td><td>Fine-tuning, último recurso.</td></tr>
+            <tr><td><b>Token / palabra</b></td><td>Unidad del tokenizador (~3 caracteres en español) / unidad del idioma.</td><td>Presupuesta en tokens.</td></tr>
+            <tr><td><b>Ventana de contexto / memoria</b></td><td>Lo que cabe en una llamada / no existe: la reenvía tu código.</td><td>—</td></tr>
+            <tr><td><b><code>temperature</code> / <code>reasoning_effort</code></b></td><td>Variación del muestreo / cuánto piensa el modelo.</td><td>Baja para datos; esfuerzo alto para tareas de varios pasos.</td></tr>
+            <tr><td><b><code>system</code> / <code>user</code> / <code>assistant</code> / <code>tool</code></b></td><td>Tus reglas / entrada externa / lo que dijo el modelo / lo que devolvió tu código.</td><td>Nunca datos externos en system.</td></tr>
+            <tr><td><b><code>stop</code> / <code>length</code> / <code>tool_calls</code></b></td><td>Terminó / se truncó / pide herramientas (content None).</td><td>Comprueba antes de leer.</td></tr>
+            <tr><td><b>Streaming / sin streaming</b></td><td>Primer token antes / todo al final.</td><td>Streaming para respuestas largas de cara al usuario.</td></tr>
+            <tr><td><b>4xx / 429 / 5xx</b></td><td>Culpa tuya / límite / del servidor.</td><td>Reintenta 429 y 5xx con backoff; nunca 4xx.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Datos, conocimiento y evaluación</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>«Responde en JSON» / salida estructurada</b></td><td>Suele funcionar / garantizado por esquema.</td><td>Esquema + Pydantic siempre.</td></tr>
+            <tr><td><b><code>json_schema</code> / <code>json_object</code></b></td><td>Forma y valores garantizados / sólo que sea JSON.</td><td>El estricto si el modelo lo ofrece; validar igualmente.</td></tr>
+            <tr><td><b>Confianza declarada / probabilidad</b></td><td>Número que dice el modelo / medida calibrada.</td><td>Calibra con datos antes de usarla.</td></tr>
+            <tr><td><b>Precisión / recall / F1</b></td><td>De lo que marcó, cuánto acertó / de lo que había, cuánto encontró / equilibrio.</td><td>Recall para no perder P1.</td></tr>
+            <tr><td><b>Acierto en entrenamiento / en prueba</b></td><td>Memoriza / generaliza. La brecha es el sobreajuste.</td><td>—</td></tr>
+            <tr><td><b>TF-IDF / embeddings</b></td><td>Coincidencia literal / significado (sinónimos, idiomas).</td><td>Ambos: búsqueda híbrida.</td></tr>
+            <tr><td><b>Similitud coseno / distancia euclídea</b></td><td>Ángulo / distancia (afectada por la longitud).</td><td>Coseno para texto.</td></tr>
+            <tr><td><b>Recuperar / reordenar</b></td><td>Muchos candidatos baratos / pocos con un modelo caro que lee los dos textos.</td><td>Recuperar 20, reordenar a 4.</td></tr>
+            <tr><td><b>RAG / contexto gigante</b></td><td>Fragmentos relevantes y citables / todo dentro (caro, lento, diluido).</td><td>RAG.</td></tr>
+            <tr><td><b>Métrica global / por categoría</b></td><td>Un número / dónde falla.</td><td>Por categoría y por campo.</td></tr>
+            <tr><td><b>Evaluación humana / LLM como juez</b></td><td>Fiable y cara / escalable con sesgos.</td><td>Juez validado contra humanos.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Agentes, automatización y producción</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Flujo fijo / agente</b></td><td>Pasos decididos por ti / el modelo decide los pasos.</td><td>Agente sólo si los pasos varían de verdad.</td></tr>
+            <tr><td><b>Lectura / escritura reversible / irreversible</b></td><td>Directa / directa y auditada / confirmación humana.</td><td>—</td></tr>
+            <tr><td><b>Herramienta nativa / servidor MCP</b></td><td>Sólo tu agente / varios clientes o otro equipo.</td><td>—</td></tr>
+            <tr><td><b>Herramienta / recurso / prompt (MCP)</b></td><td>La elige el modelo / la aporta la app / la elige el usuario.</td><td>—</td></tr>
+            <tr><td><b>Prompt / RAG / herramienta / skill</b></td><td>Regla universal / hecho cambiante / actuar / procedimiento.</td><td>«Límite del pool» → RAG; «cómo gestionar un P1» → skill.</td></tr>
+            <tr><td><b>Webhook / sondeo / programado</b></td><td>Te avisan / preguntas tú / a una hora.</td><td>Webhook si existe.</td></tr>
+            <tr><td><b>Python / n8n / Power Automate</b></td><td>Lógica e IA / conectar y enrutar / aprobaciones y Microsoft 365.</td><td>La IA vive en el código.</td></tr>
+            <tr><td><b>Inyección directa / indirecta</b></td><td>La escribe el usuario / va dentro de un contenido ajeno.</td><td>La indirecta es la peligrosa.</td></tr>
+            <tr><td><b>Prevenir / detectar</b></td><td>Mínimo privilegio, humano, validar salidas / filtros que reducen probabilidad.</td><td>Prevenir primero.</td></tr>
+            <tr><td><b>Anonimizar / bloquear</b></td><td>Sustituir datos personales y restaurar / no dejar pasar credenciales.</td><td>Credenciales: bloquear y rotar.</td></tr>
+            <tr><td><b>Caché / respaldo</b></td><td>No llamar / llamar a otro modelo si falla el principal.</td><td>Caché sin efectos; respaldo por escalones.</td></tr>
+            <tr><td><b>Media / P95</b></td><td>Lo típico / lo que sufre el usuario lento.</td><td>Alertas sobre P95.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en NakaDesk</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Sistema híbrido en capas</b></td><td>Pagar LLM por lo que resuelve una regla.</td><td>Reglas → modelo clásico → LLM (1, 6)</td></tr>
+            <tr><td><b>Una sola puerta al modelo</b></td><td>Reintentos, costes y proveedor repartidos.</td><td><code>ClienteLLM</code> (3)</td></tr>
+            <tr><td><b>Prompts versionados</b></td><td>Cambios que no se pueden comparar ni deshacer.</td><td>Módulo de prompts V1, V2, V3 (4)</td></tr>
+            <tr><td><b>Esquema + reintento correctivo</b></td><td>Salidas mal formadas o incoherentes.</td><td><code>Clasificacion</code> (5)</td></tr>
+            <tr><td><b>Valor de escape en enums</b></td><td>Obligar al modelo a mentir.</td><td><code>otro</code>, <code>desconocido</code> (5)</td></tr>
+            <tr><td><b>Recuperar mucho, reordenar poco</b></td><td>Precisión frente a coste.</td><td>RAG híbrido + CrossEncoder (8)</td></tr>
+            <tr><td><b>Umbral antes del modelo</b></td><td>Respuestas inventadas sin base.</td><td><code>NO_TENGO_DOCUMENTACION</code> (8)</td></tr>
+            <tr><td><b>Banco de evaluación en CI</b></td><td>Regresiones silenciosas.</td><td>Evaluación con código de salida (9)</td></tr>
+            <tr><td><b>Errores devueltos como resultado</b></td><td>El modelo no puede corregirse.</td><td>Herramientas (10)</td></tr>
+            <tr><td><b>Límites y estados finales</b></td><td>Agentes que no paran o se comen la cuota.</td><td><code>Final.LIMITE_*</code> (11)</td></tr>
+            <tr><td><b>Parada dura y reanudación</b></td><td>Acciones irreversibles sin control.</td><td><code>ESPERA_CONFIRMACION</code> + Teams (11, 16)</td></tr>
+            <tr><td><b>Responder 202 y encolar</b></td><td>Webhooks lentos y reintentos del emisor.</td><td><code>/webhook/{origen}</code> (14)</td></tr>
+            <tr><td><b>Idempotencia en el esquema</b></td><td>Tickets duplicados.</td><td>Clave única de la cola (14)</td></tr>
+            <tr><td><b>Permisos por origen</b></td><td>Inyección indirecta con demasiado poder.</td><td>Correo frente a API (19)</td></tr>
+            <tr><td><b>Degradación por escalones</b></td><td>Caídas sin explicación.</td><td>Respaldo → sin agente → reglas → encolar (20)</td></tr>
+            <tr><td><b>Lanzamiento por fases</b></td><td>Encender para todos el primer día.</td><td>Sombra → … → autonomía acotada (21)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>¿Esto necesita IA?</b> antes de escribir una línea.</li>
+          <li><b>Mide siempre</b> <code>usage</code> y <code>finish_reason</code>; sin datos no hay coste ni calidad.</li>
+          <li><b>Valida todo lo que sale del modelo</b>: forma, valores y reglas de negocio.</li>
+          <li><b>Evalúa antes de cambiar</b> prompt, modelo o recuperación.</li>
+          <li><b>Lo irreversible, con humano.</b> Siempre.</li>
+          <li><b>Asume la inyección</b>: limita lo que puede pasar si ocurre.</li>
+          <li><b>Secretos fuera del código e imagen</b>, rotables sin desplegar.</li>
+          <li><b>Despliega por fases</b> y ten un plan para apagar.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>AuthenticationError</code> / falta la clave</td><td>Variable de entorno no cargada o <code>.env</code> en otra carpeta.</td></tr>
+            <tr><td><code>rate_limit_exceeded (429)</code> enseguida</td><td>Plan gratuito por minuto o reintentos sin espera. Backoff y respetar <code>retry-after</code>.</td></tr>
+            <tr><td>La respuesta llega cortada</td><td><code>finish_reason == "length"</code>: sube <code>max_tokens</code> o pide menos (el razonamiento también cuenta).</td></tr>
+            <tr><td><code>'NoneType' object has no attribute 'strip'</code></td><td>Leíste <code>content</code> sin mirar <code>finish_reason</code> (con tool_calls viene None).</td></tr>
+            <tr><td><code>create() got an unexpected keyword argument 'system'</code></td><td>El system es el primer mensaje, no un parámetro.</td></tr>
+            <tr><td>400 al pasar <code>reasoning_effort</code> o <code>json_schema</code></td><td>El modelo no lo admite. Comprueba capacidades por modelo.</td></tr>
+            <tr><td>El modelo ignora una instrucción</td><td>Falta uno de los seis componentes, o la instrucción compite con muchas. Ejemplo concreto.</td></tr>
+            <tr><td>Inventa endpoints o comandos</td><td>Falta contexto cerrado y una salida para «no sé». RAG o herramienta.</td></tr>
+            <tr><td>La confianza siempre es 0,95</td><td>No es una probabilidad: calibra o deja de usarla para decidir.</td></tr>
+            <tr><td>100 % en entrenamiento y 55 % en prueba</td><td>Sobreajuste: más datos, modelo más simple, regularización.</td></tr>
+            <tr><td>Todas las similitudes entre 0,9 y 1,0</td><td>Modelo de embeddings poco discriminante o textos muy parecidos: calibra con tus datos.</td></tr>
+            <tr><td>No encuentra <code>ERR_POOL_TIMEOUT</code></td><td>Búsqueda sólo semántica. Añade la literal (híbrida).</td></tr>
+            <tr><td>El RAG cita <code>[7]</code> con 4 fragmentos</td><td>Valida las citas en código.</td></tr>
+            <tr><td>El RAG nunca dice «no lo sé»</td><td>Sin umbral, sin fórmula literal o con instrucciones que empujan a responder.</td></tr>
+            <tr><td><code>An assistant message with 'tool_calls' must be followed by tool messages…</code></td><td>Falta un mensaje <code>tool</code> por cada llamada, seguidos y con su <code>tool_call_id</code>.</td></tr>
+            <tr><td>El agente repite la misma herramienta</td><td>El resultado no le dice qué hacer después, o falta límite de vueltas.</td></tr>
+            <tr><td>Tickets duplicados</td><td>Sin idempotencia (clave única) en la cola o en la herramienta.</td></tr>
+            <tr><td>El emisor del webhook reintenta sin parar</td><td>Respuesta lenta o error ante duplicados. 202 rápido, siempre.</td></tr>
+            <tr><td>La firma HMAC nunca coincide</td><td>Firmaste el JSON reserializado en vez del cuerpo crudo.</td></tr>
+            <tr><td>n8n: <code>ECONNREFUSED</code> a localhost</td><td>Desde el contenedor, localhost es el contenedor. Usa el nombre del servicio.</td></tr>
+            <tr><td>Un usuario ve la respuesta de otro</td><td>Clave de caché sin el usuario en datos personalizados.</td></tr>
+            <tr><td>Sigue llegando factura tras apagar</td><td>Claves sin revocar o procesos programados vivos.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos de LLM</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué un LLM alucina y por qué no recuerda?</p>
+            <div class="q-ans">Porque predice el texto más probable a continuación: si no tiene el dato, genera algo plausible igualmente. Y cada llamada es independiente: no guarda estado. La «memoria» es tu código reenviando el historial (con coste en tokens), y los datos fiables llegan por RAG o herramientas.</div></div>
+          <div class="q"><p class="q-text">2. Te piden clasificar tickets 50.000 veces al día con un LLM. ¿Qué propones?</p>
+            <div class="q-ans">Primero reglas para lo obvio y un clasificador clásico (TF-IDF + regresión logística) entrenado con tickets etiquetados: milisegundos, coste casi cero, privacidad e interpretabilidad. El LLM sólo para lo que las capas baratas no resuelvan con confianza. Es el patrón híbrido.</div></div>
+          <div class="q"><p class="q-text">3. ¿<code>temperature=0</code> garantiza determinismo?</p>
+            <div class="q-ans">No: reduce mucho la variación pero no la elimina. El comportamiento reproducible se consigue con salidas estructuradas, validación y reglas en código, y los tests se escriben sobre propiedades (forma, categoría válida), no sobre el texto exacto.</div></div>
+          <div class="q"><p class="q-text">4. Tu chatbot va bien al principio y en el turno 30 es lento y peor. ¿Qué pasa?</p>
+            <div class="q-ans">Cada turno reenvía toda la conversación: crece el coste, la latencia (la atención es cuadrática) y la instrucción importante se diluye. Se resuelve resumiendo o recortando el historial y llevando el conocimiento a RAG en vez de al contexto.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué reintentas y qué no?</p>
+            <div class="q-ans">Se reintentan los 429, los 5xx y los errores de red, con espera exponencial más azar y respetando <code>retry-after</code>, con un máximo. Los 4xx (clave inválida, petición mal formada, modelo inexistente) no: fallarán igual y sólo retrasan el error.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué todo el proyecto pasa por <code>ClienteLLM</code>?</p>
+            <div class="q-ans">Para tener una sola puerta: reintentos, timeouts, registro de uso y coste, excepciones propias y caché se instalan una vez. Cambiar de proveedor o de modelo es tocar un archivo, y en los tests se sustituye por un doble.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué no meter el texto del usuario en el prompt de sistema con una f-string?</p>
+            <div class="q-ans">Porque el system es el canal de máxima confianza: cualquier instrucción que el usuario escriba pasaría a tener autoridad de regla. Los datos externos van en mensajes <code>user</code>, delimitados, y aun así se asume que pueden contener intentos de inyección.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cómo diseñarías un esquema de salida para clasificar?</p>
+            <div class="q-ans">Con Pydantic: enums cerrados con un valor de escape (otro, desconocido), el razonamiento antes del veredicto, restricciones (<code>max_length</code>, rangos) y los mínimos campos necesarios. Después, reglas de negocio en código y un reintento correctivo que muestre al modelo sus propios errores.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · RAG, embeddings y evaluación</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es RAG y por qué no basta con un contexto gigante?</p>
+            <div class="q-ans">Recuperar los fragmentos relevantes de tu documentación, añadirlos al prompt y generar una respuesta que los cite. Meterlo todo en el contexto es caro en cada pregunta, lento y diluye lo relevante; además RAG permite actualizar el conocimiento al instante y comprobar la fuente.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué búsqueda híbrida y cómo se fusiona?</p>
+            <div class="q-ans">La semántica entiende paráfrasis pero falla con códigos y nombres exactos; la literal es al revés. Se combinan con RRF, que fusiona por <b>posición</b> en cada lista porque las puntuaciones de dos buscadores distintos no son comparables.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué recuperar 20 y reordenar a 4?</p>
+            <div class="q-ans">La recuperación es rápida pero imprecisa (cada texto se vectoriza por separado). La reordenación lee pregunta y fragmento juntos y acierta mucho más, pero es cara: se aplica sólo a unos pocos candidatos. Así se gana precisión sin pagar el modelo caro sobre todo el corpus.</div></div>
+          <div class="q"><p class="q-text">4. Tu RAG responde mal. ¿Qué compruebas primero?</p>
+            <div class="q-ans">Si el fragmento que contiene la respuesta estaba entre los recuperados. Eso separa los fallos de recuperación (falta contenido, chunking, búsqueda) de los de generación (no lo usa, lo extrae mal, mal formato). Arreglar sin saber cuál es, es adivinar.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué significa una similitud de 0,42?</p>
+            <div class="q-ans">Por sí sola, nada: no es un porcentaje y depende del modelo de embeddings. El umbral se calibra con datos propios, mirando qué valores tienen los pares relevantes y los irrelevantes en tu corpus.</div></div>
+          <div class="q"><p class="q-text">6. Tu modelo tiene 95 % de precisión en P1 y 40 % de recall. ¿Vale?</p>
+            <div class="q-ans">No para detectar caídas: cuando dice P1 suele acertar, pero se le escapan seis de cada diez. Para incidentes graves importa más no perderlos (recall), aceptando algún falso positivo. Se ajusta el umbral o se reequilibran las clases.</div></div>
+          <div class="q"><p class="q-text">7. La nueva versión sube el acierto global del 82 % al 87 %. ¿La despliegas?</p>
+            <div class="q-ans">Antes miro el desglose por categoría y por campo: puede haber mejorado lo fácil y empeorado lo crítico (P1, casos adversarios). También latencia P95 y coste. Si alguna categoría importante retrocede, no.</div></div>
+          <div class="q"><p class="q-text">8. ¿Puedes fiarte de un LLM como juez?</p>
+            <div class="q-ans">Sólo después de validarlo contra evaluaciones humanas (por encima de un 80 % de acuerdo) y con una rúbrica objetiva, porque tiene sesgos conocidos: posición, verbosidad, preferencia por su propio estilo e indulgencia.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Agentes, herramientas y automatización</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Cómo funciona una llamada a herramienta?</p>
+            <div class="q-ans">Envías las herramientas con su esquema; el modelo responde con <code>finish_reason="tool_calls"</code> y los argumentos como cadena JSON. Tu código los valida, ejecuta y devuelve un mensaje <code>tool</code> por llamada con su <code>tool_call_id</code>, tras el mensaje assistant intacto. El modelo decide; tu código ejecuta y aplica permisos.</div></div>
+          <div class="q"><p class="q-text">2. Una herramienta borra registros y el modelo la pide muy seguro. ¿La ejecutas?</p>
+            <div class="q-ans">No sin confirmación humana: es irreversible y la petición puede venir de una inyección o de un malentendido. El agente se detiene, se pide aprobación con contexto, y la decisión (incluida una denegación con comentario) se devuelve al modelo como resultado.</div></div>
+          <div class="q"><p class="q-text">3. ¿Agente o flujo fijo?</p>
+            <div class="q-ans">Flujo fijo cuando los pasos son siempre los mismos: más barato, predecible y fácil de probar. Agente sólo cuando el camino depende del caso (qué consultar, en qué orden). Y siempre con límites de vueltas, tiempo, coste y escrituras.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué distinguir <code>COMPLETADO</code> de <code>LIMITE_VUELTAS</code> si ambos devuelven texto?</p>
+            <div class="q-ans">Porque el segundo es un fallo: el agente no terminó la tarea y el texto puede parecer una respuesta sin serlo. Distinguirlo permite avisar, escalar a una persona y medir con qué frecuencia ocurre.</div></div>
+          <div class="q"><p class="q-text">5. ¿Cuándo un servidor MCP en vez de una herramienta nativa?</p>
+            <div class="q-ans">Cuando la usan varios clientes (otro agente, un IDE, una app de escritorio) o la mantiene otro equipo: el protocolo da descubrimiento y desacopla. Si sólo la usa tu agente, una herramienta nativa es más simple.</div></div>
+          <div class="q"><p class="q-text">6. ¿Dónde pones «el pool admite 20 conexiones» y «cómo gestionar un P1»?</p>
+            <div class="q-ans">El dato cambiante, en la documentación consultada por RAG. El procedimiento, en una skill cuya descripción indique cuándo usarla. El prompt de sistema queda para reglas universales y las herramientas para actuar.</div></div>
+          <div class="q"><p class="q-text">7. Tu webhook tarda 15 segundos en responder. ¿Qué pasa en el emisor?</p>
+            <div class="q-ans">Probablemente da timeout y reintenta, así que llegan duplicados y se procesan varias veces. El webhook debe validar, encolar con una clave única y devolver 202 en menos de un segundo, también ante duplicados; el trabajo pesado lo hace un trabajador.</div></div>
+          <div class="q"><p class="q-text">8. ¿Por qué el prompt de clasificación no vive en un nodo de n8n?</p>
+            <div class="q-ans">Porque ahí no se versiona en Git, no pasa por revisión, no se evalúa en CI ni tiene tests. La IA vive en el código; n8n conecta y enruta llamando a la API, que devuelve un destino de un enum cerrado.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Seguridad, observabilidad y producción</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Cómo te proteges de la inyección de prompts?</p>
+            <div class="q-ans">Asumiendo que no se puede impedir del todo (instrucciones y datos comparten canal) y limitando el daño: mínimo privilegio (permisos por origen), confirmación humana para lo irreversible y validación de salidas. Delimitar, anonimizar y detectar ayudan, pero reducen probabilidad, no garantizan.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué es la trifecta letal?</p>
+            <div class="q-ans">Un agente que a la vez accede a datos privados, procesa contenido no confiable y puede comunicarse con el exterior. Con las tres, una instrucción escondida en un correo puede exfiltrar datos. Quitar cualquiera de las tres patas rompe la cadena.</div></div>
+          <div class="q"><p class="q-text">3. Tienes un detector de inyección del 95 %. ¿Das al agente la herramienta de conceder accesos?</p>
+            <div class="q-ans">No: el 5 % restante basta a un atacante, y la detección no es una barrera. Conceder accesos es irreversible en la práctica: requiere aprobación humana con contexto, y el agente sólo prepara la solicitud.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué cachearías y qué no?</p>
+            <div class="q-ans">Respuestas deterministas y sin efectos, con una clave que incluya modelo, prompt de sistema, mensajes, parámetros y usuario si la respuesta es personal. Nunca lo que consulta sistemas vivos o ejecuta herramientas. Y al cambiar un prompt, se vacía.</div></div>
+          <div class="q"><p class="q-text">5. La latencia media es 2 s y los usuarios dicen que va lento. ¿Quién tiene razón?</p>
+            <div class="q-ans">Probablemente los usuarios: la media esconde la cola. Hay que mirar P95/P99 por origen y capacidad; unas pocas peticiones de agente con muchas vueltas pueden tardar 20 s sin mover la media.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué haces cuando se agota el presupuesto o cae el proveedor?</p>
+            <div class="q-ans">Degradar por escalones: modelo de respaldo, después sin agente, después sólo reglas y, en último término, encolar para más tarde con un mensaje claro. Nunca un error sin explicación ni un corte en seco.</div></div>
+          <div class="q"><p class="q-text">7. Tu jefe quiere encender NakaDesk para toda la empresa el lunes. ¿Qué respondes?</p>
+            <div class="q-ans">Que se lanza por fases controladas por configuración: sombra (compara con humanos sin actuar), piloto, sólo lectura, acciones con aprobación y autonomía acotada. Se avanza mirando las discrepancias peligrosas, no el acuerdo global, y retroceder es cambiar una variable.</div></div>
+          <div class="q"><p class="q-text">8. ¿Qué incluye «saber apagarlo»?</p>
+            <div class="q-ans">Cerrar la entrada (webhooks y flujos), vaciar o respaldar la cola, guardar datos y trazas que deban conservarse, parar los procesos y, sobre todo, revocar las claves de API: si no, el gasto o el riesgo continúan.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Un LLM predice texto: alucina y no recuerda. Clave en .env; usage y finish_reason.</li>
+          <li><b>1</b> · Reglas → ML → LLM → no IA. Híbrido. Entrenar ≠ inferir.</li>
+          <li><b>2</b> · Tokens = precio y límite. Contexto que cabe ≠ que conviene. temperature no es determinismo.</li>
+          <li><b>3</b> · Roles, streaming, finish_reason, reintentos con backoff, una sola puerta.</li>
+          <li><b>4</b> · Prompt = código: seis componentes, ejemplos, delimitadores, versiones.</li>
+          <li><b>5</b> · Esquema + Pydantic + reintento correctivo; valor de escape; confianza ≠ probabilidad.</li>
+          <li><b>6</b> · TF-IDF + regresión logística; precisión/recall por clase; train ≠ test.</li>
+          <li><b>7</b> · Embeddings y coseno; umbral calibrado; chunking con título.</li>
+          <li><b>8</b> · RAG híbrido + RRF + reordenación + umbral + citas validadas.</li>
+          <li><b>9</b> · Banco de evaluación por categoría, juez validado, CI con código de salida.</li>
+          <li><b>10</b> · Herramientas: el modelo pide, tú ejecutas; clasificación por efecto.</li>
+          <li><b>11</b> · Agente con cuatro límites, estados finales y parada para lo irreversible.</li>
+          <li><b>12</b> · MCP: N + M; herramientas, recursos y prompts; riesgos de terceros.</li>
+          <li><b>13</b> · Skills: procedimientos con divulgación progresiva y descripción que dice cuándo.</li>
+          <li><b>14</b> · Webhook: firma, 202 rápido, cola con clave única, trabajador aparte.</li>
+          <li><b>15</b> · n8n conecta y enruta; items; credenciales; flujo de errores.</li>
+          <li><b>16</b> · Power Automate: aprobaciones con tarjeta que permite decidir.</li>
+          <li><b>17</b> · La IA vive en el código; contrato con enum; correlación.</li>
+          <li><b>18</b> · Programar con IA: contexto, criterio ejecutable, revisar el diff entero.</li>
+          <li><b>19</b> · Inyección sin solución completa; trifecta; mínimo privilegio por origen.</li>
+          <li><b>20</b> · Calidad, coste, latencia, fiabilidad; caché sin efectos; degradar por escalones.</li>
+          <li><b>21</b> · Despliegue por fases, mantenimiento continuo y apagado con revocación de claves.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Cada vez que pruebes un modelo nuevo, pásalo por el banco de evaluación de NakaDesk antes de opinar.</li>
+            <li>Antes de una entrevista, dibuja la arquitectura de NakaDesk y explica dónde está cada control de coste y de seguridad.</li>
+            <li>Practica la pregunta «¿esto necesita IA?» con problemas reales de tu trabajo: es la que más se agradece en una entrevista.</li>
+            <li>Mantén un registro de fallos reales y conviértelos en casos del banco: es lo que hace que el sistema mejore de verdad.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <!-- ---------- VISTA: GLOSARIO ---------- -->
   <section class="view" id="glosario">
     <div class="crumb">Anexo</div>

@@ -18622,7 +18622,737 @@ docker run -d -p 3000:3000 --env-file .env.produccion nakaeats:0.9</code></pre>
     </details>
   </section>
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: Next.js y NakaEats de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="50 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|App Router|Server Components|use client|Server Actions|Caché|Autorización|Rutas paralelas|SEO|Route Handlers">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del primer <code>page.tsx</code> a
+      NakaEats con base de datos, sesiones, caché por etiquetas, SEO, subida de fotos y despliegue. Cada concepto aparece con
+      lo mínimo para recordarlo —qué es, para qué sirve y cómo se escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a Next.js tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  7 · CALIDAD Y ENTREGA   Vitest · Playwright · standalone · Docker · observabilidad (23–24)
+                ▲
+  6 · INTEGRACIONES       Route Handlers · webhooks · subida de fotos               (21–22)
+                ▲
+  5 · WEB PÚBLICA         next/image · SEO · Open Graph · Core Web Vitals           (17–20)
+                ▲
+  4 · USUARIOS            sesiones · autorización (proxy, layout, DAL) · slots       (13–16)
+                ▲
+  3 · DATOS DE VERDAD     Drizzle + PostgreSQL · Server Actions · caché · optimista (9–12)
+                ▲
+  2 · GUÍA PÚBLICA        datos async · [slug] · streaming · filtros en la URL      (5–8)
+                ▲
+  1 · FUNDAMENTOS         App Router · servidor/cliente · rutas · use client · CSS   (0–4)</div>
+
+        <h3>El mapa de NakaEats</h3>
+        <div class="diagram">  src/app/
+  ├─ layout.tsx                       &lt;html&gt;, fuentes, cabecera
+  ├─ page.tsx                         portada (destacados)
+  ├─ restaurantes/page.tsx            listado con filtros (searchParams)
+  ├─ restaurante/[slug]/
+  │   ├─ page.tsx · loading.tsx · error.tsx · opengraph-image.tsx
+  │   ├─ acciones.ts                  Server Actions (publicar reseña, votar)
+  │   └─ @modal/(.)foto/…             galería en modal (ruta interceptada)
+  ├─ (auth)/login · registro          sin cabecera, mismas URLs
+  ├─ panel/layout.tsx + @metricas @resenas …   rutas paralelas
+  ├─ api/…/route.ts                   API pública y webhooks
+  ├─ sitemap.ts · robots.ts
+  src/lib/datos.ts (capa de datos) · src/db/schema.ts (Drizzle) · src/proxy.ts</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos</b></td><td>Servidor por defecto; el cliente es la excepción.</td><td>Empuja <code>'use client'</code> a las hojas.</td></tr>
+            <tr><td><b>Guía pública</b></td><td>Pedir datos es <code>await</code> en el componente.</td><td><code>params</code> y <code>searchParams</code> son promesas.</td></tr>
+            <tr><td><b>Datos de verdad</b></td><td>Escribir con Server Actions y refrescar la caché.</td><td>Después de escribir, revalidar.</td></tr>
+            <tr><td><b>Usuarios</b></td><td>Defensa en profundidad pegada al dato.</td><td>El layout no es una frontera de seguridad.</td></tr>
+            <tr><td><b>Web pública</b></td><td>Imágenes, metadatos y métricas reales.</td><td>Medir antes de tocar.</td></tr>
+            <tr><td><b>Integraciones</b></td><td>Endpoints para terceros y ficheros que no son de fiar.</td><td>Nunca te fíes de quien llama.</td></tr>
+            <tr><td><b>Entrega</b></td><td>Tests útiles y despliegues reversibles.</td><td><code>NEXT_PUBLIC_*</code> es público y de compilación.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Ejecuta <code>npm run build</code> en NakaEats y explica cada fila de la tabla de rutas: por qué es ○, ● o ƒ y cuánto
+        First Load JS lleva. Ese informe resume medio curso.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🏗 Bloque 1 · App Router, servidor y cliente, rutas y estilos (cap. 0–4)</summary>
+      <div class="acc-body">
+
+        <h3>Qué es Next.js (0–1)</h3>
+        <ul class="clean">
+          <li>React + enrutado + renderizado en el servidor + caché + optimización + backend en el mismo proyecto.</li>
+          <li>Cuatro formas de conseguir HTML: <b>CSR</b>, <b>SSG</b>, <b>ISR</b> y <b>SSR</b>, elegidas <b>por ruta</b>. App Router = carpeta <code>app/</code>; <code>getServerSideProps</code> es del router antiguo.</li>
+          <li>El servidor ejecuta los componentes y envía <b>HTML + payload RSC</b>; el navegador lo pinta antes de ejecutar nada. <b>Hidratar</b> = enganchar estado y eventos a ese HTML.</li>
+          <li>Hora, azar o <code>window</code> durante el render → <b>error de hidratación</b>: calcúlalos en un <code>useEffect</code>.</li>
+          <li><code>console.log</code> de servidor → terminal; de cliente → navegador (y terminal en el primer render). Prueba de fuego: «Ver código fuente» o JavaScript desactivado.</li>
+        </ul>
+
+        <h3>Enrutado por archivos (2)</h3>
+        <ul class="clean">
+          <li>La carpeta es la URL; es visitable sólo con <code>page.tsx</code> (<code>export default</code>).</li>
+          <li><code>layout.tsx</code> envuelve su carpeta y las hijas, recibe <code>children</code> y <b>no se remonta</b> al navegar (para lo contrario, <code>template.tsx</code>). Sólo el raíz lleva <code>&lt;html&gt;</code> y <code>&lt;body&gt;</code>.</li>
+          <li>Grupos <code>(nombre)</code> organizan sin aparecer en la URL; carpetas <code>_nombre</code> quedan fuera del enrutado.</li>
+          <li><code>&lt;Link&gt;</code> = navegación blanda con precarga; <code>&lt;a&gt;</code> recarga (enlaces externos). <code>usePathname</code> exige un componente de cliente pequeño.</li>
+        </ul>
+
+        <h3>La frontera <code>'use client'</code> (3)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>// MenuPlegable.tsx
+'use client';                                       // puerta al paquete del navegador
+export function MenuPlegable({ children }: { children: React.ReactNode }) {
+  const [abierto, setAbierto] = useState(false);
+  return &lt;nav&gt;&lt;button onClick={() =&gt; setAbierto(!abierto)}&gt;Cocinas&lt;/button&gt;{abierto &amp;&amp; children}&lt;/nav&gt;;
+}
+
+// layout.tsx (Server Component)
+const cocinas = await listarCocinas();              // la consulta no viaja al navegador
+&lt;MenuPlegable&gt;&lt;ListaCocinas cocinas={cocinas} /&gt;&lt;/MenuPlegable&gt;   // servidor dentro como children</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>'use client'</code> marca un <b>punto de entrada</b>: arrastra el archivo y
+        todo lo que importa. «De cliente» significa «además en el cliente». Las props que cruzan deben ser
+        <b>serializables</b> (funciones no, salvo Server Actions). Un componente de cliente no puede importar uno de servidor,
+        pero sí recibirlo como <code>children</code>. Regla de oro: <b>la frontera, hacia las hojas</b>. <code>import
+        'server-only'</code> convierte una fuga de secretos en error de compilación. El coste se ve en el First Load JS del build.</p>
+
+        <h3>Estilos (4)</h3>
+        <ul class="clean">
+          <li>CSS global, CSS Modules y Tailwind se generan al compilar; el CSS-in-JS clásico exige <code>'use client'</code>.</li>
+          <li><b>Tailwind</b>: clases atómicas; sólo incluye las que aparecen <b>escritas literalmente</b> (<code>`border-${color}-400`</code> no funciona).</li>
+          <li><b>Tokens</b> en <code>@theme</code>, nombrados por función (<code>superficie</code>), única fuente del color. Tema oscuro con <code>prefers-color-scheme</code> redefiniendo tokens.</li>
+          <li><b><code>next/font</code></b> autoaloja la fuente y ajusta la de respaldo: sin peticiones a terceros ni salto de diseño.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📄 Bloque 2 · Datos en el servidor, rutas dinámicas, streaming y filtros (cap. 5–8)</summary>
+      <div class="acc-body">
+
+        <h3>Componentes async y capa de datos (5)</h3>
+        <div class="code-block" data-lang="TypeScript · src/app/restaurante/[slug]/page.tsx">
+<pre><code>type Props = { params: Promise&lt;{ slug: string }&gt; };
+
+export async function generateStaticParams() {          // ● se generan en el build
+  return (await restaurantesDestacados()).map((r) =&gt; ({ slug: r.slug }));
+}
+
+export default async function RestaurantePage({ params }: Props) {
+  const { slug } = await params;                        // params es una promesa
+  const local = await obtenerRestaurante(slug);         // capa de datos con nombre de negocio
+  if (!local) notFound();                               // 404 real + not-found.tsx
+  return (
+    &lt;&gt;
+      &lt;h1&gt;{local.nombre}&lt;/h1&gt;                           {/* lo primario, en el HTML inicial */}
+      &lt;Suspense fallback={&lt;EsqueletoResenas /&gt;}&gt;
+        &lt;Resenas slug={slug} /&gt;                         {/* hace SU PROPIO await: streaming */}
+      &lt;/Suspense&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> pedir datos = componente <code>async</code> + <code>await</code>; se acabaron
+        <code>useEffect</code> y estados de carga para leer. Las consultas viven en <code>src/lib/datos.ts</code>, no en los
+        componentes (por eso cambiar a PostgreSQL no tocó ninguna página). <code>fetch</code> en el servidor acepta
+        <code>cache</code>, <code>next.revalidate</code> y <code>next.tags</code>, y no lanza con 404 (<code>respuesta.ok</code>).
+        Dos <code>await</code> independientes seguidos son una <b>cascada</b>: <code>Promise.all</code>.</p>
+
+        <h3>Rutas dinámicas (6)</h3>
+        <ul class="clean">
+          <li><code>[slug]</code> un segmento; <code>[...slug]</code> varios; <code>[[...slug]]</code> también el vacío.</li>
+          <li><code>generateStaticParams</code> genera en el build; con <code>dynamicParams</code> por defecto, el resto se genera bajo demanda en la primera visita (estrategia habitual: las más visitadas en el build).</li>
+          <li><code>notFound()</code> devuelve un <b>404 real</b> (un «No encontrado» pintado con 200 engaña a los buscadores).</li>
+          <li><code>generateMetadata</code> por ruta; las consultas repetidas se deduplican en el mismo render. Una URL publicada es un contrato: si cambia el slug, redirige.</li>
+        </ul>
+
+        <h3>Carga, streaming y errores (7)</h3>
+        <ul class="clean">
+          <li><b>Streaming</b>: lo listo sale ya y lo lento llega después en el mismo documento (el SEO no sufre: los datos acaban en el HTML).</li>
+          <li><code>loading.tsx</code> envuelve la ruta entera; <code>&lt;Suspense&gt;</code> es el control fino y <b>sólo funciona si el componente de dentro hace el await</b>.</li>
+          <li>Esqueleto con las dimensiones reales (sin salto), mejor que una ruleta. <code>role="status"</code>.</li>
+          <li><code>error.tsx</code> es <b>de cliente</b> obligatoriamente, recibe <code>error</code> y <code>reset</code>; en producción muestra el <code>digest</code>. <code>global-error.tsx</code> para el layout raíz.</li>
+        </ul>
+
+        <h3>Búsqueda y filtros en la URL (8)</h3>
+        <ul class="clean">
+          <li>Lo que describe <b>qué se ve</b> va en la URL; lo que describe cómo se interactúa, en <code>useState</code>.</li>
+          <li>El servidor lee <code>searchParams</code> (promesa, vuelve la ruta dinámica); el cliente escribe con <code>useRouter</code>: <b><code>replace</code> al teclear</b>, <code>push</code> al pulsar un filtro.</li>
+          <li>Debounce con <code>setTimeout</code> + <code>clearTimeout</code> en la limpieza; <code>useTransition</code> conserva la lista anterior y da <code>isPending</code>.</li>
+          <li><code>useSearchParams()</code> exige un <code>&lt;Suspense&gt;</code> alrededor (si no, falla el build).</li>
+          <li>Paginación con <b>enlaces</b> (se comparten y se rastrean). Construye URLs con <code>URLSearchParams</code>. Todo lo de la URL es entrada de usuario: normaliza y acota.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🗄 Bloque 3 · Drizzle, Server Actions, caché y UI optimista (cap. 9–12)</summary>
+      <div class="acc-body">
+
+        <h3>PostgreSQL con Drizzle (9)</h3>
+        <ul class="clean">
+          <li>Esquema en TypeScript (<code>src/db/schema.ts</code>) con <code>pgTable</code>; los tipos salen de él (<code>$inferSelect</code>, <code>$inferInsert</code>).</li>
+          <li>Cambios con <b>migraciones</b> de <code>drizzle-kit</code> (lee el SQL antes de aplicarlo); nunca a mano. Seed para datos de prueba.</li>
+          <li>Índices donde se filtra y ordena; claves foráneas con <code>onDelete: 'cascade'</code> cuando el hijo no tiene sentido sin el padre.</li>
+          <li>Lo derivado se calcula (nota media con <code>avg</code> y <code>leftJoin</code> para no perder los locales sin reseñas).</li>
+          <li><code>.env</code> nunca se sube; <code>.env.example</code> sí. El cliente de BD se cachea en <code>globalThis</code> en desarrollo (si no, <code>too many clients</code>). PostgreSQL con Docker Compose.</li>
+        </ul>
+
+        <h3>Server Actions (10)</h3>
+        <div class="code-block" data-lang="TypeScript · src/app/restaurante/[slug]/acciones.ts">
+<pre><code>'use server';
+
+const EsquemaResena = z.object({
+  slug: z.string().min(1),
+  nota: z.coerce.number().int().min(1).max(5),        // FormData sólo trae cadenas
+  texto: z.string().trim().min(20).max(1000),
+});
+
+export async function publicarResena(_anterior: EstadoFormulario, datos: FormData) {
+  const usuario = await usuarioActual();               // endpoint PÚBLICO: comprueba quién llama (13–14)
+  if (!usuario) return { ok: false, mensaje: 'Inicia sesión para opinar.' };
+  const resultado = EsquemaResena.safeParse(Object.fromEntries(datos));
+  if (!resultado.success)
+    return { ok: false, errores: resultado.error.flatten().fieldErrors };   // y los valores escritos
+  await crearResena({ ...resultado.data, autorId: usuario.id });
+  revalidateTag(etiquetas.resenas(resultado.data.slug)); // si no, se sigue viendo la versión cacheada
+  return { ok: true, mensaje: '¡Gracias! Tu reseña ya está publicada.' };
+}
+
+// en el cliente: const [estado, accion, pendiente] = useActionState(publicarResena, inicial);
+//                &lt;form action={accion}&gt;&lt;input name="texto" /&gt;…&lt;/form&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> una Server Action es una función con <code>'use server'</code> que el cliente
+        puede llamar; Next.js crea el endpoint. En <code>&lt;form action&gt;</code> funciona sin JavaScript (<b>mejora
+        progresiva</b>); los campos necesitan <code>name</code>. Validación del cliente = cortesía; del servidor (Zod) = verdad;
+        restricciones del esquema = garantía. <b>Es un endpoint público</b>: comprueba sesión y permiso dentro.</p>
+
+        <h3>Caché y revalidación (11)</h3>
+        <div class="code-block" data-lang="TypeScript · src/lib/datos.ts">
+<pre><code>export const etiquetas = {
+  restaurantes: 'restaurantes',
+  restaurante: (slug: string) =&gt; `restaurante:${slug}`,
+  resenas: (slug: string) =&gt; `resenas:${slug}`,
+};
+
+export const obtenerRestaurante = (slug: string) =&gt;
+  unstable_cache(() =&gt; _obtener(slug),
+    ['restaurante', slug],                              // la clave incluye TODO lo que la hace única
+    { tags: [etiquetas.restaurante(slug)], revalidate: 3600 })();</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> cuatro capas: deduplicación, caché de datos, caché de ruta y caché del router (en
+        el navegador). <b>En desarrollo casi no actúa</b>: prueba con <code>build</code> + <code>start</code>. Una ruta pasa a
+        dinámica (ƒ) al usar <code>searchParams</code>, <code>cookies()</code> o <code>headers()</code>; estático significa «igual
+        para todos», no «sin datos». Se refresca por tiempo (<code>revalidate</code>) y bajo demanda (<code>revalidateTag</code>
+        con etiquetas por concepto). Las consultas propias no se cachean solas (<code>unstable_cache</code> o
+        <code>'use cache'</code>). <b>Lo que depende del usuario no se cachea jamás.</b></p>
+
+        <h3>UI optimista y estados pendientes (12)</h3>
+        <ul class="clean">
+          <li>Tres respuestas a la espera: bloquear, atenuar y adelantarse.</li>
+          <li><code>useFormStatus</code> (de <code>react-dom</code>) se llama desde un <b>hijo</b> del <code>&lt;form&gt;</code>.</li>
+          <li><code>useOptimistic</code> pinta un valor provisional que se descarta solo al llegar el real; la actualización tiene que ocurrir <b>dentro de una transición</b> (o de la acción del formulario).</li>
+          <li>Revertir sin avisar es peor que no ser optimista. Nunca optimista con dinero, lo irreversible o lo impredecible (reservas con plazas).</li>
+          <li>Incrementos atómicos en SQL (<code>utiles = utiles + 1</code>), no leer-sumar-guardar. Anuncios con <code>role="status"</code>/<code>aria-live</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔐 Bloque 4 · Sesiones, autorización, rutas paralelas e interceptadas (cap. 13–16)</summary>
+      <div class="acc-body">
+
+        <h3>Autenticación con cookies (13)</h3>
+        <ul class="clean">
+          <li><b>Autenticación</b> = quién eres; <b>autorización</b> = qué puedes hacer.</li>
+          <li>Contraseñas con hash lento y sal (<b>bcrypt</b>), nunca en claro ni con SHA-256. Errores de login genéricos.</li>
+          <li>Sesión en cookie <b><code>httpOnly</code>, <code>secure</code>, <code>sameSite=lax</code></b> con caducidad, con un JWT firmado (<code>jose</code>): firmado, no cifrado; al verificar, fija el algoritmo.</li>
+          <li><code>cookies()</code> es asíncrono y vuelve <b>dinámica</b> la ruta: aíslalo en un componente pequeño dentro de <code>&lt;Suspense&gt;</code> para no convertir todo el sitio en ƒ.</li>
+          <li>Las cookies sólo se modifican en Server Actions o Route Handlers. Cerrar sesión, con un formulario (no un enlace).</li>
+        </ul>
+
+        <h3>Autorización en tres capas (14)</h3>
+        <div class="code-block" data-lang="TypeScript · capa de acceso a datos">
+<pre><code>import 'server-only';
+import { cache } from 'react';
+
+export const usuarioActual = cache(async () =&gt; {      // memoizado POR PETICIÓN, no compartido
+  const sesion = await leerSesion();
+  if (!sesion) return null;
+  const [usuario] = await db.select().from(usuarios)   // releer de la BD: rol y bajas al día
+    .where(eq(usuarios.id, sesion.id)).limit(1);
+  return usuario ?? null;
+});
+
+async function exigirDuenoDe(restauranteId: number) {
+  const usuario = await exigirUsuario();               // sin sesión: redirect('/login')
+  if (usuario.rol === 'admin') return usuario;
+  if (usuario.rol !== 'dueno' || usuario.restauranteId !== restauranteId) forbidden();
+  return usuario;                                      // permiso = RELACIÓN con el local, no sólo rol
+}
+
+export async function metricasDelLocal(restauranteId: number) {
+  await exigirDuenoDe(restauranteId);                  // la comprobación, pegada al dato
+  /* … consultas de métricas … */
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el control de acceso roto suele ser un olvido. <b>Defensa en profundidad</b>:
+        <b>proxy</b> (<code>src/proxy.ts</code>, antes middleware: redirecciones baratas, no corre en Node completo), <b>layout</b>
+        (no es frontera: no se vuelve a renderizar entre rutas hijas) y <b>DAL</b> (la frontera real, pegada al dato). Comprobar
+        el rol en vez de la relación produce un <b>IDOR</b> (cambiar el 7 por el 8 en la URL). <code>redirect()</code> y
+        <code>forbidden()</code> lanzan: no los metas en un <code>try/catch</code>. Nunca cachees al usuario con <code>unstable_cache</code>.</p>
+
+        <h3>Rutas paralelas (15)</h3>
+        <ul class="clean">
+          <li>Varias páginas a la vez en un layout: cada <b>slot</b> es una carpeta <code>@nombre</code> (no crea segmento de URL) y llega al layout como prop; <code>children</code> es el implícito.</li>
+          <li>Cada slot tiene su <code>loading.tsx</code> y su <code>error.tsx</code>: carga y falla <b>de forma independiente</b>; se renderizan en paralelo (tarda el más lento, no la suma).</li>
+          <li><b><code>default.tsx</code></b> dice qué pintar en una carga completa de una ruta que el slot no conoce: sin él, 404 al recargar.</li>
+          <li>Si no necesitas errores ni cargas independientes, un <code>&lt;Suspense&gt;</code> es más simple.</li>
+        </ul>
+
+        <h3>Rutas interceptadas: el modal con URL (16)</h3>
+        <ul class="clean">
+          <li>Un modal es una pantalla y tiene URL (compartir, recargar, atrás).</li>
+          <li>Una ruta <b>interceptada</b> (<code>@modal/(.)foto/…</code>) pinta otra ruta encima, pero sólo en <b>navegación suave</b>; en una dura (recarga, enlace externo) se sirve la página real: hacen falta las dos versiones.</li>
+          <li>Prefijos <code>(.)</code>, <code>(..)</code>, <code>(..)(..)</code>, <code>(...)</code> cuentan segmentos de ruta (grupos y slots no cuentan). Slot con <code>default.tsx</code>.</li>
+          <li><code>&lt;dialog&gt;</code> con <code>showModal()</code>: foco atrapado, Esc y fondo inerte gratis. <b>Cerrar es navegar</b>: <code>onClose → router.back()</code>.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🌍 Bloque 5 · Imágenes, SEO, tarjetas sociales y rendimiento (cap. 17–20)</summary>
+      <div class="acc-body">
+
+        <h3>next/image (17)</h3>
+        <div class="code-block" data-lang="TypeScript">
+<pre><code>&lt;Image
+  src={foto.url} alt={`Plato de ${local.nombre}`}
+  width={foto.ancho} height={foto.alto}               // proporción: evita el CLS
+  sizes="(min-width: 1024px) 33vw, 100vw"             // qué ancho ocupará: sin él, asume 100vw
+  priority={esPortada}                                // sólo la imagen del LCP
+/&gt;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> cuatro trabajos: redimensionar, convertir, aplazar y reservar espacio. Las
+        dimensiones declaran la <b>proporción</b> (el tamaño en pantalla lo decide el CSS); o <code>fill</code> con un padre
+        posicionado. Importación estática = dimensiones y <code>placeholder="blur"</code> gratis. <code>remotePatterns</code> es una
+        lista blanca de seguridad y coste: nunca <code>hostname: '**'</code>. Guarda ancho y alto al subir.</p>
+
+        <h3>SEO (18)</h3>
+        <ul class="clean">
+          <li>Rastrear, indexar y posicionar son pasos distintos. Gran parte ya estaba hecha: HTML del servidor, URLs propias, velocidad.</li>
+          <li><code>metadata</code> para lo fijo, <code>generateMetadata</code> para lo que depende de datos (consulta compartida con la página). <b><code>metadataBase</code></b> o las tarjetas apuntan a localhost. Plantilla de título en el layout.</li>
+          <li><b>Canonical</b> consolida variantes. Combinaciones de filtros: <code>robots: { index: false, follow: true }</code> (bloquear en robots.txt no las saca del índice).</li>
+          <li><code>sitemap.ts</code> y <code>robots.ts</code> son código que sale de la base de datos. <b>JSON-LD</b> veraz (mentir en <code>aggregateRating</code> se penaliza).</li>
+        </ul>
+
+        <h3>Imágenes Open Graph (19)</h3>
+        <ul class="clean">
+          <li><code>opengraph-image.tsx</code> junto a la página: <code>ImageResponse</code> convierte JSX en PNG (Satori + resvg) y genera solas las etiquetas <code>og:image</code>; <code>size</code>, <code>contentType</code> y <code>alt</code> exportados.</li>
+          <li>Satori no es un navegador: flexbox sí, grid no; <code>display: flex</code> explícito con varios hijos; estilos en línea.</li>
+          <li>Fuentes pasadas como binario TTF/OTF/WOFF (<b>nunca WOFF2</b>), con la lectura cacheada.</li>
+          <li>En rutas prerenderizadas se genera en el build. Itera abriendo la URL de la imagen: la caché de las redes es agresiva.</li>
+        </ul>
+
+        <h3>Rendimiento (20)</h3>
+        <ul class="clean">
+          <li><b>Medir antes de tocar.</b> Core Web Vitals: <b>LCP</b> &lt; 2,5 s (ver), <b>INP</b> &lt; 200 ms (responder), <b>CLS</b> &lt; 0,1 (estabilidad).</li>
+          <li>Los datos de <b>campo</b> mandan sobre los de laboratorio; Lighthouse no mide INP. Envío de métricas con <code>navigator.sendBeacon</code>.</li>
+          <li>La cifra del build que importa es <b>First Load JS</b>. La mayor optimización ya estaba hecha: componentes de servidor por defecto.</li>
+          <li><code>next/dynamic</code> <b>mueve</b> el coste, no lo elimina: sólo para lo grande y poco usado. Los archivos barril engordan el paquete (<code>optimizePackageImports</code>).</li>
+          <li><code>'use cache'</code> (Cache Components): la caché como directiva sobre funciones y componentes.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔌 Bloque 6 · Route Handlers, webhooks y subida de ficheros (cap. 21–22)</summary>
+      <div class="acc-body">
+
+        <h3>Route Handlers y webhooks (21)</h3>
+        <div class="code-block" data-lang="TypeScript · src/app/api/webhooks/pagos/route.ts">
+<pre><code>function firmaValida(cuerpo: string, marca: string, recibida: string) {
+  const esperada = createHmac('sha256', SECRETO).update(`${marca}.${cuerpo}`).digest('hex');
+  const a = Buffer.from(esperada, 'utf8'), b = Buffer.from(recibida, 'utf8');
+  return a.length === b.length &amp;&amp; timingSafeEqual(a, b);       // tiempo constante
+}
+
+export async function POST(peticion: Request) {
+  const cuerpo = await peticion.text();                         // el cuerpo CRUDO
+  const firma = peticion.headers.get('x-firma') ?? '';
+  const marca = peticion.headers.get('x-timestamp') ?? '';
+  if (Math.abs(Date.now() / 1000 - Number(marca)) &gt; 300 || !firmaValida(cuerpo, marca, firma))
+    return new Response('firma inválida', { status: 401 });
+  const evento = JSON.parse(cuerpo);
+  const insertado = await db.insert(eventosPago)
+    .values({ idExterno: evento.id, tipo: evento.type, datos: evento })
+    .onConflictDoNothing().returning();                         // idempotencia: id externo único
+  if (insertado.length === 0) return Response.json({ recibido: true });   // ya procesado
+  /* … procesar el evento … */
+  return Response.json({ recibido: true });
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>route.ts</code> responde con lo que quieras (JSON, CSV, un flujo) usando
+        <code>Request</code>/<code>Response</code> estándar. <b>Server Action para tu interfaz; Route Handler para terceros</b>,
+        webhooks y lo que no es HTML. Nunca consumas tu propia API desde tu servidor: importa la función. Método no exportado =
+        405; <code>OPTIONS</code> para CORS (que no es autenticación). Webhook: <b>HMAC sobre el cuerpo crudo</b>, comparación en
+        tiempo constante, marca de tiempo e <b>idempotencia</b>. Límite de frecuencia en lo caro y atacable.</p>
+
+        <h3>Subida de fotos (22)</h3>
+        <ul class="clean">
+          <li>Nunca en el sistema de archivos del servidor (efímero y no compartido) ni en <code>public/</code>: <b>almacenamiento de objetos</b> (S3, MinIO).</li>
+          <li>Dos caminos: a través del servidor (control y procesado) o directo con <b>URL prefirmada</b> (ficheros grandes).</li>
+          <li><code>type</code> y nombre los elige quien sube: la verdad está en los <b>números mágicos</b>. Nada de SVG de usuarios sin sanear. Nombre propio con un id aleatorio.</li>
+          <li>Comprobaciones de la más barata a la más cara: tamaño antes de <code>arrayBuffer()</code>, dimensiones (bombas de descompresión), y <b>reencodear con <code>sharp</code></b>: valida, comprime y borra el <b>EXIF</b> (incluido el GPS).</li>
+          <li>Al borrar: primero la fila, después el objeto (un huérfano es mejor que una imagen rota).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · Tests y despliegue (cap. 23–24)</summary>
+      <div class="acc-body">
+
+        <h3>Tests (23)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Herramienta</th><th>Para qué</th><th>Regla</th></tr></thead>
+          <tbody>
+            <tr><td><b>Vitest</b></td><td>Lógica pura: validaciones, cálculos, capa de datos</td><td>Rápido y abundante</td></tr>
+            <tr><td><b>Testing Library</b></td><td>Componentes de cliente (formularios, botones)</td><td>Por rol, etiqueta y texto; nunca por clase</td></tr>
+            <tr><td><b>Playwright</b></td><td>Recorridos completos y Server Components async</td><td>Sobre el build, BD propia y semilla determinista; <code>storageState</code> para la sesión</td></tr>
+          </tbody>
+        </table></div>
+        <p>Un test avisa de cuándo algo deja de funcionar. Prueba lo que se rompería en silencio, lo que ya se rompió y lo que duele.
+        Ninguna espera fija (primera causa de tests intermitentes). La cobertura encuentra huecos; no es un objetivo.</p>
+
+        <h3>Despliegue y producción (24)</h3>
+        <div class="code-block" data-lang="TypeScript · next.config.ts">
+<pre><code>const config: NextConfig = {
+  output: 'standalone',                 // servidor mínimo: imagen de ~1 GB a ~120 MB
+};</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>next build</code> produce estáticos, servidor, HTML prerenderizado y
+        <code>standalone</code> (en Docker hay que copiar también <code>.next/static</code> y <code>public</code>, o la web sale sin
+        estilos). <b><code>NEXT_PUBLIC_*</code> se incrustan al compilar</b>: cambiarlas exige reconstruir y nunca llevan secretos.</p>
+        <ul class="clean">
+          <li><b>Migraciones compatibles hacia atrás</b> (durante un despliegue conviven dos versiones del código): nada de renombrar columnas en un paso.</li>
+          <li>Vercel o contenedor propio; el despliegue automático sólo vale si un test rojo lo impide (tests antes, no en paralelo).</li>
+          <li>Observabilidad: errores estructurados (<code>instrumentation.ts</code>, <code>onRequestError</code>), métricas reales y un <code>/api/salud</code> que compruebe la base de datos.</li>
+          <li>Imágenes con versión, no sólo <code>latest</code>. Revertir código es rápido; datos, no. Saber apagarlo todo es parte de desplegar.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista técnica de Next.js"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|SSR vs SSG vs ISR|Server vs Client|Server Action vs Route Handler|revalidatePath vs revalidateTag|Proxy vs DAL|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> de Next.js con App Router: las parejas de
+      conceptos que parecen iguales, los patrones que aplicaste en NakaEats, los errores que todo el mundo se encuentra y las
+      preguntas típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero en voz alta y sólo después despliega
+      la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>Renderizado y componentes</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>CSR / SSR / SSG / ISR</b></td><td>Pinta el navegador / HTML por petición / HTML en el build / HTML en el build que se regenera.</td><td>Por ruta: ficha pública SSG/ISR, panel privado dinámico.</td></tr>
+            <tr><td><b>App Router / Pages Router</b></td><td><code>app/</code>, Server Components / <code>pages/</code>, <code>getServerSideProps</code>.</td><td>App Router en proyectos nuevos.</td></tr>
+            <tr><td><b>Server Component / Client Component</b></td><td>Sólo en el servidor, puede ser async, cero JS / también en el cliente, estado y eventos.</td><td>Servidor por defecto; cliente en las hojas interactivas.</td></tr>
+            <tr><td><b>SSR / RSC</b></td><td>HTML generado en el servidor que luego se hidrata / componente cuyo código nunca llega al navegador.</td><td>—</td></tr>
+            <tr><td><b>Renderizar / hidratar</b></td><td>Generar HTML / enganchar estado y eventos a ese HTML.</td><td>—</td></tr>
+            <tr><td><b>Estática ○ / con datos ● / dinámica ƒ</b></td><td>Sin datos / prerenderizada con <code>generateStaticParams</code> / por petición.</td><td>ƒ si usa cookies, headers o searchParams.</td></tr>
+            <tr><td><b><code>layout.tsx</code> / <code>template.tsx</code></b></td><td>No se remonta al navegar / se remonta en cada página.</td><td>Menú con estado / animación de entrada.</td></tr>
+            <tr><td><b><code>loading.tsx</code> / <code>&lt;Suspense&gt;</code></b></td><td>Toda la ruta / una parte concreta.</td><td>Ambos: ruta al navegar, Suspense para lo lento.</td></tr>
+            <tr><td><b><code>error.tsx</code> / <code>not-found.tsx</code></b></td><td>Algo reventó (cliente, con reset) / no existe (404 con <code>notFound()</code>).</td><td>—</td></tr>
+            <tr><td><b><code>&lt;Link&gt;</code> / <code>&lt;a&gt;</code> / <code>router.push</code></b></td><td>Navegación blanda con precarga / recarga / navegar por código.</td><td>Link siempre; push tras una acción.</td></tr>
+            <tr><td><b><code>router.push</code> / <code>router.replace</code></b></td><td>Añade al historial / sustituye.</td><td>replace al teclear en un buscador.</td></tr>
+            <tr><td><b>Tailwind / CSS Modules / CSS-in-JS</b></td><td>Clases atómicas / CSS con ámbito / estilos en JS (exige cliente).</td><td>Tailwind + Modules con Server Components.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Datos, escritura y caché</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>await en el componente / useEffect + fetch</b></td><td>Datos en el HTML, sin JS / tras hidratar, invisible para buscadores.</td><td>Leer en el servidor siempre que se pueda.</td></tr>
+            <tr><td><b><code>params</code> / <code>searchParams</code></b></td><td>Segmentos de la ruta / query string. Ambos son promesas.</td><td>Identidad / filtros.</td></tr>
+            <tr><td><b>Server Action / Route Handler</b></td><td>Función invocada desde tu interfaz / URL para terceros con Request y Response.</td><td>Formularios propios / webhooks, API pública, CSV.</td></tr>
+            <tr><td><b>Validación HTML / Zod / restricción de BD</b></td><td>Cortesía / verdad / garantía.</td><td>Las tres.</td></tr>
+            <tr><td><b><code>revalidatePath</code> / <code>revalidateTag</code></b></td><td>Martillo: una ruta entera / bisturí: todo lo que use ese dato.</td><td>Etiquetas por concepto.</td></tr>
+            <tr><td><b><code>revalidate</code> por tiempo / bajo demanda</b></td><td>Se regenera cada N segundos / al cambiar el dato.</td><td>Las dos combinadas.</td></tr>
+            <tr><td><b>Caché de datos / caché del router</b></td><td>En el servidor, compartida / en el navegador, por usuario.</td><td>—</td></tr>
+            <tr><td><b><code>cache()</code> de React / <code>unstable_cache</code></b></td><td>Memoiza dentro de una petición / persiste entre peticiones y usuarios.</td><td>Usuario actual con cache(); catálogo con unstable_cache.</td></tr>
+            <tr><td><b><code>useFormStatus</code> / <code>useActionState</code> / <code>useOptimistic</code> / <code>useTransition</code></b></td><td>Pendiente desde un hijo del form / estado devuelto por la acción / valor provisional / acciones sin formulario.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Seguridad, rutas avanzadas y entrega</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Autenticación / autorización</b></td><td>Quién eres / qué puedes hacer.</td><td>—</td></tr>
+            <tr><td><b>Sesión en cookie httpOnly / en localStorage</b></td><td>Inaccesible desde JS / legible por cualquier script (XSS).</td><td>Cookie siempre.</td></tr>
+            <tr><td><b>Proxy / layout / DAL</b></td><td>Redirección barata antes de la ruta / marco que no se re-renderiza / comprobación pegada al dato.</td><td>Las tres; la DAL es la frontera real.</td></tr>
+            <tr><td><b>Rol / permiso</b></td><td>Qué tipo de usuario / relación con el recurso concreto.</td><td>Comprobar la relación evita IDOR.</td></tr>
+            <tr><td><b><code>redirect()</code> / <code>forbidden()</code> / <code>notFound()</code></b></td><td>Ir a otra URL / 403 / 404. Todos lanzan.</td><td>Fuera de try/catch.</td></tr>
+            <tr><td><b>Ruta paralela / interceptada</b></td><td>Varias páginas a la vez en un layout / otra ruta encima en navegación suave.</td><td>Panel con secciones / modal con URL.</td></tr>
+            <tr><td><b>Navegación suave / dura</b></td><td>Link en la app / recarga o enlace externo.</td><td>La interceptación sólo actúa en la suave.</td></tr>
+            <tr><td><b><code>metadata</code> / <code>generateMetadata</code></b></td><td>Fija / depende de datos.</td><td>—</td></tr>
+            <tr><td><b><code>noindex</code> / robots.txt</b></td><td>No indexar (debe poder rastrearse) / no rastrear (puede seguir indexada).</td><td>Filtros: noindex, follow.</td></tr>
+            <tr><td><b>Laboratorio / campo</b></td><td>Lighthouse en tu equipo / usuarios reales.</td><td>Decide con datos de campo.</td></tr>
+            <tr><td><b>Variables de servidor / <code>NEXT_PUBLIC_*</code></b></td><td>Se leen en ejecución, privadas / se incrustan al compilar, públicas.</td><td>Secretos nunca con NEXT_PUBLIC_.</td></tr>
+            <tr><td><b>Vitest / Testing Library / Playwright</b></td><td>Lógica / componentes de cliente / recorridos y Server Components async.</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en NakaEats</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Frontera en las hojas + children como hueco</b></td><td>JavaScript innecesario en el navegador.</td><td>Botón de favorito, menú plegable (3)</td></tr>
+            <tr><td><b>Capa de datos con nombres de negocio</b></td><td>Consultas repartidas por los componentes.</td><td><code>src/lib/datos.ts</code> (5, 9)</td></tr>
+            <tr><td><b>Generar lo popular, el resto bajo demanda</b></td><td>Builds eternos.</td><td><code>generateStaticParams</code> (6)</td></tr>
+            <tr><td><b>Primario en el HTML, secundario en streaming</b></td><td>El dato más lento manda.</td><td>Reseñas en Suspense (7)</td></tr>
+            <tr><td><b>Estado de la vista en la URL</b></td><td>Filtros que no se comparten ni sobreviven.</td><td>Buscador (8)</td></tr>
+            <tr><td><b>Formulario con mejora progresiva</b></td><td>Formularios que dependen de JS.</td><td>Server Action + useActionState (10)</td></tr>
+            <tr><td><b>Etiquetas centralizadas</b></td><td>Invalidaciones con erratas o a ciegas.</td><td><code>etiquetas</code> (11)</td></tr>
+            <tr><td><b>Optimista con reversión y aviso</b></td><td>Latencia percibida.</td><td>Votos útiles (12)</td></tr>
+            <tr><td><b>Defensa en profundidad + DAL</b></td><td>Control de acceso roto.</td><td><code>exigirDuenoDe</code> (14)</td></tr>
+            <tr><td><b>Slots independientes</b></td><td>Un fallo o una sección lenta bloquea el panel.</td><td><code>@metricas</code>, <code>@resenas</code> (15)</td></tr>
+            <tr><td><b>Modal con URL</b></td><td>Modales que rompen compartir y atrás.</td><td><code>@modal/(.)foto</code> (16)</td></tr>
+            <tr><td><b>Webhook verificado e idempotente</b></td><td>Eventos falsos o duplicados.</td><td><code>api/webhooks/pagos</code> (21)</td></tr>
+            <tr><td><b>Reencodear al subir</b></td><td>Ficheros maliciosos y datos ocultos.</td><td><code>sharp</code> (22)</td></tr>
+            <tr><td><b>Migración expandir / contraer</b></td><td>500 durante los despliegues.</td><td>Producción (24)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>Prueba con <code>build</code> + <code>start</code></b>: el desarrollo no cachea ni optimiza igual.</li>
+          <li><b>Lee la tabla del build</b>: tipo de cada ruta y First Load JS.</li>
+          <li><b>Antes de <code>'use client'</code></b>, señala la línea que lo obliga y extrae sólo eso.</li>
+          <li><b>Toda entrada es hostil</b>: URL, FormData, cuerpo de un webhook, fichero subido.</li>
+          <li><b>Después de escribir, revalida</b> la etiqueta del concepto afectado.</li>
+          <li><b>Nada del usuario en cachés compartidas.</b></li>
+          <li><b>Server-only</b> en todo archivo con secretos o acceso a datos.</li>
+          <li><b>Mide antes de optimizar</b>, con datos de campo.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td>404 en una carpeta recién creada</td><td>Falta <code>page.tsx</code> con <code>export default</code>.</td></tr>
+            <tr><td><code>You're importing a component that needs useState…</code></td><td>Hook en un Server Component. Extrae esa parte a un archivo con <code>'use client'</code>.</td></tr>
+            <tr><td><code>window is not defined</code></td><td>API del navegador durante el render. Léela en un <code>useEffect</code>.</td></tr>
+            <tr><td><code>Hydration failed…</code></td><td>Hora, azar o navegador en el render: el HTML del servidor no coincide.</td></tr>
+            <tr><td><code>Functions cannot be passed directly to Client Components</code></td><td>Función normal como prop a un componente de cliente. Server Action o mover la lógica al cliente.</td></tr>
+            <tr><td><code>params should be awaited</code></td><td><code>params</code> es una promesa: <code>await params</code>.</td></tr>
+            <tr><td>«No encontrado» pintado con estado 200</td><td>No se llamó a <code>notFound()</code>.</td></tr>
+            <tr><td><code>&lt;Suspense&gt;</code> no cambia nada</td><td>El await está en el padre. Muévelo al componente suspendido.</td></tr>
+            <tr><td><code>useSearchParams() should be wrapped in a suspense boundary</code></td><td>Envuelve el componente en <code>&lt;Suspense&gt;</code>.</td></tr>
+            <tr><td><code>too many clients already</code></td><td>Cliente de BD recreado en cada recarga en desarrollo. Cachéalo en <code>globalThis</code>.</td></tr>
+            <tr><td>Se guarda pero la página no se actualiza</td><td>Falta <code>revalidateTag</code>/<code>revalidatePath</code> tras escribir.</td></tr>
+            <tr><td>«En desarrollo funciona y en producción no se actualiza»</td><td>Caché activa sólo en producción. Prueba con build + start y revisa etiquetas.</td></tr>
+            <tr><td>Una ficha muestra datos de otro restaurante</td><td>Clave de <code>unstable_cache</code> sin el slug.</td></tr>
+            <tr><td>Todo el sitio pasa a ƒ al añadir el login</td><td><code>cookies()</code> en el layout raíz. Aíslalo en un componente con Suspense.</td></tr>
+            <tr><td><code>NEXT_REDIRECT</code> en la consola</td><td><code>redirect()</code> dentro de un <code>try/catch</code> que lo captura.</td></tr>
+            <tr><td>Un dueño edita el local de otro</td><td>Se comprueba el rol, no la relación (IDOR). Compruébalo en la DAL.</td></tr>
+            <tr><td>Ruta paralela o modal: 404 al recargar</td><td>Falta <code>default.tsx</code> en el slot.</td></tr>
+            <tr><td><code>hostname … is not configured under images</code></td><td>Añádelo a <code>remotePatterns</code> (sin comodines totales).</td></tr>
+            <tr><td>Tarjetas sociales con URL localhost</td><td>Falta <code>metadataBase</code>.</td></tr>
+            <tr><td>La firma del webhook nunca coincide</td><td>Se firmó <code>JSON.stringify(await req.json())</code>. Usa el cuerpo crudo con <code>req.text()</code>.</td></tr>
+            <tr><td>La foto desaparece al desplegar</td><td>Guardada en el disco del servidor o en <code>public/</code>. Almacenamiento de objetos.</td></tr>
+            <tr><td>Web sin estilos en el contenedor</td><td>Standalone sin copiar <code>.next/static</code> ni <code>public</code>.</td></tr>
+            <tr><td>Cambias una <code>NEXT_PUBLIC_*</code> y no surte efecto</td><td>Se incrustó al compilar: reconstruye.</td></tr>
+            <tr><td>500 durante un despliegue tras renombrar una columna</td><td>Migración no compatible hacia atrás: expandir / contraer.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Renderizado y componentes</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué aporta Next.js sobre React?</p>
+            <div class="q-ans">Enrutado por archivos, renderizado en el servidor (con streaming), elección de estrategia por ruta (estática, regenerada o dinámica), caché de datos y de rutas, optimización de imágenes y fuentes, metadatos para SEO y backend en el mismo proyecto (Server Actions y Route Handlers). React sólo resuelve la vista.</div></div>
+          <div class="q"><p class="q-text">2. Diferencia entre Server Component y Client Component.</p>
+            <div class="q-ans">El de servidor se ejecuta sólo en el servidor: puede ser async, leer la base de datos y usar secretos, y su código no llega al navegador; no tiene estado ni eventos. El de cliente (<code>'use client'</code>) se renderiza en el servidor y además se hidrata en el navegador, con estado, efectos y eventos. Por defecto todo es de servidor.</div></div>
+          <div class="q"><p class="q-text">3. ¿Qué hace exactamente <code>'use client'</code>?</p>
+            <div class="q-ans">Marca un punto de entrada al paquete del navegador: ese archivo y todo lo que importa viajan al cliente. No marca un solo componente. Por eso se pone lo más abajo posible del árbol y se pasan los componentes de servidor como <code>children</code>.</div></div>
+          <div class="q"><p class="q-text">4. «Abierto ahora» calculado con la hora actual da error de hidratación. ¿Por qué y cómo lo resuelves?</p>
+            <div class="q-ans">El servidor y el navegador calculan la hora en momentos (y zonas) distintos, así que el HTML no coincide. Opciones: calcularlo en el servidor y pasarlo como dato, o en el cliente dentro de un <code>useEffect</code> con un estado neutro inicial.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué estrategia de renderizado para portada, ficha y panel privado?</p>
+            <div class="q-ans">Portada: estática con revalidación (ISR) o por etiquetas. Ficha: generada en el build para las populares y bajo demanda para el resto, revalidada al cambiar. Panel privado: dinámica, porque depende de la sesión y nunca debe cachearse para todos.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué el streaming no perjudica al SEO y cargar con useEffect sí?</p>
+            <div class="q-ans">Con streaming, el contenido suspendido llega en la misma respuesta HTML, sólo que más tarde: el buscador lo recibe. Con useEffect, los datos se piden después de hidratar desde el navegador y no están en el HTML que se rastrea.</div></div>
+          <div class="q"><p class="q-text">7. Envuelves las reseñas en Suspense y la página sigue tardando lo mismo. ¿Qué pasa?</p>
+            <div class="q-ans">El <code>await</code> está en la página, fuera del Suspense: la página espera antes de devolver nada. El componente suspendido debe ser quien haga el await de sus datos.</div></div>
+          <div class="q"><p class="q-text">8. ¿Dónde guardas los filtros de un listado y por qué?</p>
+            <div class="q-ans">En la URL (<code>searchParams</code>): se comparten, sobreviven a recargar, funcionan con atrás y los lee el servidor para pintar el resultado. Se escriben con <code>router.replace</code> al teclear (con debounce) y <code>push</code> en cambios discretos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Datos, escritura y caché</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es una Server Action y qué riesgo tiene?</p>
+            <div class="q-ans">Una función con <code>'use server'</code> que el cliente invoca como si fuera local; Next.js crea un endpoint POST por debajo. Riesgo: es un endpoint público, así que cualquiera puede llamarla con cualquier FormData. Dentro hay que validar con un esquema y comprobar sesión y permiso.</div></div>
+          <div class="q"><p class="q-text">2. Server Action o Route Handler: ¿cómo decides?</p>
+            <div class="q-ans">Server Action para mutaciones desde tu propia interfaz (formularios, botones). Route Handler cuando quien llama es un tercero (webhook, app móvil, integración) o la respuesta no es HTML (JSON público, CSV, flujo). Y nunca consumir tu propia API desde tu servidor: se importa la función.</div></div>
+          <div class="q"><p class="q-text">3. Publicas una reseña, está en la BD, y la ficha muestra las antiguas. ¿Qué falta?</p>
+            <div class="q-ans">Invalidar la caché tras escribir: <code>revalidateTag(etiquetas.resenas(slug))</code> (o <code>revalidatePath</code>). Sin ello, la caché de datos y de ruta siguen sirviendo la versión anterior hasta que caduque.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué vuelve dinámica una ruta y qué se pierde?</p>
+            <div class="q-ans">Usar <code>cookies()</code>, <code>headers()</code> o <code>searchParams</code> (o desactivar la caché). Se pierde el HTML prerenderizado servido desde la caché: cada visita ejecuta la ruta. Por eso lo dependiente del usuario se aísla en componentes pequeños con Suspense.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué no se cachea nada que dependa del usuario?</p>
+            <div class="q-ans">Porque la caché de datos es compartida entre visitantes: el resultado de uno se serviría a otro, filtrando datos privados. Para el usuario actual se usa <code>cache()</code> de React, que sólo memoiza dentro de una petición.</div></div>
+          <div class="q"><p class="q-text">6. <code>unstable_cache(() =&gt; buscarPorSlug(slug), ['restaurante'])</code>: ¿qué falla?</p>
+            <div class="q-ans">La clave no incluye el slug, así que todas las fichas comparten entrada de caché y se sirven datos de otro restaurante. La clave debe incluir todo lo que hace única la consulta: <code>['restaurante', slug]</code>.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué <code>utiles = utiles + 1</code> en SQL y no leer, sumar y guardar?</p>
+            <div class="q-ans">Porque con dos votos simultáneos ambos leerían el mismo valor y uno se perdería. La operación en la base es atómica. Es la misma razón por la que los contadores no se calculan en JavaScript.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cuándo no usarías <code>useOptimistic</code>?</p>
+            <div class="q-ans">Cuando el resultado es incierto o caro de revertir: pagos, reservas con plazas limitadas, borrados irreversibles. Ahí se bloquea o se atenúa con <code>useFormStatus</code>/<code>isPending</code> y se espera a la confirmación.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Seguridad y rutas avanzadas</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Dónde guardas la sesión y con qué atributos?</p>
+            <div class="q-ans">En una cookie <code>httpOnly</code> (no la lee JavaScript: protege frente a XSS), <code>secure</code> (sólo HTTPS), <code>sameSite=lax</code> (mitiga CSRF) y con caducidad explícita. Nunca en localStorage.</div></div>
+          <div class="q"><p class="q-text">2. Proteges el panel en <code>panel/layout.tsx</code>. ¿Basta?</p>
+            <div class="q-ans">No: el layout no se vuelve a renderizar al navegar entre páginas hijas, y las Server Actions y los datos se pueden pedir sin pasar por él. La comprobación debe estar en la capa de acceso a datos, pegada a cada consulta y mutación; el proxy y el layout son capas adicionales.</div></div>
+          <div class="q"><p class="q-text">3. Un dueño cambia el id de la URL y ve el local de otro. ¿Qué falló?</p>
+            <div class="q-ans">Se comprobó el rol («es dueño») pero no la relación («es dueño de este local»): es un IDOR. La DAL debe verificar que el recurso pertenece al usuario (<code>usuario.restauranteId === restauranteId</code>) y responder con <code>forbidden()</code>.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué el proxy no puede ser la única defensa?</p>
+            <div class="q-ans">Porque corre antes de la ruta con un entorno limitado (no Node completo, sin acceso cómodo a la base de datos), se puede configurar mal el <code>matcher</code> y no protege los datos en sí. Sirve para redirigir barato a quien no tiene sesión; la decisión real se toma en la DAL.</div></div>
+          <div class="q"><p class="q-text">5. ¿Para qué sirven las rutas paralelas?</p>
+            <div class="q-ans">Para pintar varias secciones de un layout como páginas independientes: cada slot <code>@nombre</code> tiene su carga y su error, se renderizan en paralelo y un fallo no tumba el resto. Necesitan <code>default.tsx</code> para las recargas. Si no hace falta esa independencia, basta con Suspense.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cómo se hace un modal con URL y por qué hay dos versiones de la página?</p>
+            <div class="q-ans">Con una ruta interceptada dentro de un slot (<code>@modal/(.)foto/…</code>): al navegar con Link desde la ficha, la foto se pinta encima como modal; al recargar o entrar desde fuera, se sirve la página real. Por eso existen las dos, y el slot necesita <code>default.tsx</code>. Cerrar es <code>router.back()</code>.</div></div>
+          <div class="q"><p class="q-text">7. ¿Cómo verificas un webhook?</p>
+            <div class="q-ans">Leyendo el cuerpo crudo (<code>req.text()</code>), calculando el HMAC con el secreto compartido sobre marca de tiempo y cuerpo, comparando en tiempo constante (<code>timingSafeEqual</code>), rechazando marcas viejas y guardando el id del evento con restricción única para que los reenvíos no se procesen dos veces.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cómo validas una imagen subida por un usuario?</p>
+            <div class="q-ans">Sin fiarte de su tipo ni de su nombre: compruebo el tamaño antes de leerla, los números mágicos, las dimensiones (bombas de descompresión) y la reencodeo con sharp, que valida, comprime y elimina el EXIF (incluido el GPS). La guardo con un nombre aleatorio en almacenamiento de objetos.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Web pública, rendimiento y despliegue</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué hace <code>next/image</code> y para qué sirve <code>sizes</code>?</p>
+            <div class="q-ans">Redimensiona y convierte a formatos modernos, aplaza las imágenes fuera de pantalla y reserva el espacio con las dimensiones (evita CLS). <code>sizes</code> le dice al navegador qué ancho ocupará la imagen para que elija la variante adecuada; sin él asume 100vw y descarga imágenes enormes en móvil.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué no poner <code>priority</code> en todas las imágenes?</p>
+            <div class="q-ans">Porque compiten por el ancho de banda inicial y retrasan la que de verdad importa. Se pone sólo en la imagen del LCP (la grande visible al cargar).</div></div>
+          <div class="q"><p class="q-text">3. Google ha indexado miles de URLs de filtros. ¿Bloqueas en robots.txt?</p>
+            <div class="q-ans">No: robots.txt impide rastrear, no indexar, y además impediría que Google viera la orden de no indexar. Lo correcto es <code>robots: { index: false, follow: true }</code> en esas páginas y un canonical, para que se sigan descubriendo las fichas.</div></div>
+          <div class="q"><p class="q-text">4. Explica LCP, INP y CLS.</p>
+            <div class="q-ans">LCP: cuánto tarda en verse el elemento principal (&lt; 2,5 s). INP: cuánto tarda la página en responder a las interacciones (&lt; 200 ms). CLS: cuánto se desplaza el contenido inesperadamente (&lt; 0,1). Se deciden con datos de campo, no sólo con Lighthouse.</div></div>
+          <div class="q"><p class="q-text">5. ¿<code>next/dynamic</code> en la cabecera, el buscador y las tarjetas?</p>
+            <div class="q-ans">No: sólo mueve el coste a otra petición y retrasa lo que se necesita ya, empeorando la sensación. Compensa con componentes grandes y poco usados (un mapa, un editor). La palanca principal es que lo no interactivo sea Server Component.</div></div>
+          <div class="q"><p class="q-text">6. Cambias <code>NEXT_PUBLIC_URL</code> en el panel del proveedor y nada cambia. ¿Por qué?</p>
+            <div class="q-ans">Las variables <code>NEXT_PUBLIC_*</code> se sustituyen en el código al compilar. Hay que reconstruir y desplegar. Por la misma razón nunca deben contener secretos.</div></div>
+          <div class="q"><p class="q-text">7. Renombras una columna en una migración y durante dos minutos todo da 500. ¿Por qué?</p>
+            <div class="q-ans">Durante el despliegue conviven la versión vieja del código (que busca la columna antigua) y la base ya migrada. Las migraciones deben ser compatibles hacia atrás: expandir (añadir la nueva y escribir en ambas), migrar, cambiar el código y contraer (quitar la vieja) en otro despliegue.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cómo probarías un Server Component async?</p>
+            <div class="q-ans">Con Playwright, de extremo a extremo sobre el build, con base de datos propia y semilla determinista. Testing Library no renderiza componentes de servidor async; la lógica que contienen se extrae a funciones y se prueba con Vitest.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · App Router; estrategia de renderizado por ruta; la tabla del build.</li>
+          <li><b>1</b> · HTML + payload; hidratar; nada de hora o azar en el render.</li>
+          <li><b>2</b> · Carpeta = URL; page y layout; grupos; Link.</li>
+          <li><b>3</b> · <code>'use client'</code> es una puerta; serializable; children como hueco; server-only.</li>
+          <li><b>4</b> · Tailwind literal, tokens en @theme, next/font.</li>
+          <li><b>5</b> · Componente async; capa de datos; Promise.all contra cascadas.</li>
+          <li><b>6</b> · <code>[slug]</code>; params promesa; generateStaticParams; notFound().</li>
+          <li><b>7</b> · Streaming; Suspense donde está el await; error.tsx de cliente.</li>
+          <li><b>8</b> · Filtros en la URL; replace al teclear; Suspense con useSearchParams.</li>
+          <li><b>9</b> · Drizzle; migraciones; cliente en globalThis; .env fuera de Git.</li>
+          <li><b>10</b> · Server Actions con Zod y comprobación de quién llama; mejora progresiva.</li>
+          <li><b>11</b> · Cuatro capas de caché; revalidateTag por concepto; nada privado en caché.</li>
+          <li><b>12</b> · useFormStatus, useOptimistic en transición, incrementos atómicos.</li>
+          <li><b>13</b> · bcrypt; cookie httpOnly; JWT firmado; cookies() vuelve dinámico.</li>
+          <li><b>14</b> · Proxy + layout + DAL; permiso = relación; redirect lanza.</li>
+          <li><b>15</b> · Slots <code>@nombre</code> independientes; default.tsx.</li>
+          <li><b>16</b> · Ruta interceptada = modal con URL; navegación suave; dialog.</li>
+          <li><b>17</b> · next/image: dimensiones, sizes, priority sólo en el LCP.</li>
+          <li><b>18</b> · Metadata API, metadataBase, canonical, noindex/follow, sitemap.ts.</li>
+          <li><b>19</b> · opengraph-image.tsx con ImageResponse; Satori sólo flex; fuentes no WOFF2.</li>
+          <li><b>20</b> · LCP, INP, CLS con datos de campo; First Load JS; next/dynamic con cabeza.</li>
+          <li><b>21</b> · route.ts; HMAC sobre el cuerpo crudo; idempotencia; CORS no es auth.</li>
+          <li><b>22</b> · Objetos, no disco; números mágicos; sharp borra EXIF.</li>
+          <li><b>23</b> · Vitest, Testing Library por rol, Playwright sobre el build.</li>
+          <li><b>24</b> · standalone; NEXT_PUBLIC al compilar; migraciones compatibles; salud real.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Una vez por semana, añade a NakaEats una ruta o una acción y comprueba en el build cómo cambia su tipo y su JS.</li>
+            <li>Antes de una entrevista, rehaz de memoria una ficha con <code>[slug]</code>, notFound, Suspense y una Server Action validada que revalida.</li>
+            <li>Explica en voz alta las cuatro capas de caché con un ejemplo de «por qué no se actualiza»: es la pregunta más habitual.</li>
+            <li>Repasa el capítulo 14 cada vez que diseñes una zona privada: el control de acceso roto sigue siendo la vulnerabilidad número uno.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de comandos</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

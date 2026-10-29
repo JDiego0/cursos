@@ -20143,7 +20143,854 @@ ls -lh copia/final.dump</code></pre>
   </section>
 
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: PostgreSQL y NakaMarket de cero en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Tipos|Restricciones|JOIN|GROUP BY|CTE|Ventanas|JSONB|Índices|EXPLAIN|MVCC|Transacciones|RLS">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo el curso</strong> en una sola lectura: del primer
+      <code>CREATE TABLE usuarios</code> a la base de NakaMarket con búsqueda, particiones, auditoría, seguridad por fila y
+      copias que se restauran. Cada concepto aparece con lo mínimo para recordarlo —qué es, para qué sirve y cómo se
+      escribe—, en el orden en que lo aprendiste.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo cuando vuelvas a SQL tras semanas sin practicar, o salta al
+      bloque que necesites. El número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las
+      diferencias que más se confunden y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El curso en un diagrama</h3>
+        <div class="diagram">  7 · OPERACIÓN           roles · RLS · copias · migraciones · producción   (23–24)
+                ▲
+  6 · INTEGRIDAD Y LÓGICA  transacciones · PL/pgSQL · triggers             (20–22)
+                ▲
+  5 · RENDIMIENTO          índices · EXPLAIN · VACUUM · particionado        (16–19)
+                ▲
+  4 · TIPOS ESPECIALES     fechas y rangos · texto completo · JSONB         (13–15)
+                ▲
+  3 · CONSULTAS            GROUP BY · CTE · ventanas · vistas               (9–12)
+                ▲
+  2 · MODELO RELACIONAL    claves foráneas · JOIN · N:M · normalización     (5–8)
+                ▲
+  1 · FUNDAMENTOS          tipos · CRUD · WHERE · restricciones             (0–4)</div>
+
+        <h3>El esquema de NakaMarket</h3>
+        <div class="diagram">  usuarios ─1:N─▶ anuncios ─N:M─▶ categorias (árbol: madre_id)
+     │              │  └─ anuncio_categoria (puente)
+     │              ├─1:N─▶ fotos
+     ├─ favoritos ◀─┘ (puente con datos propios)
+     ├─1:N─▶ pedidos ─1:N─▶ pedido_lineas (precio congelado) ─▶ anuncios
+     │          └─1:N─▶ pagos
+     ├─ mensajes (remitente / destinatario)
+     ├─ valoraciones
+     └─ eventos (particionada por mes) · auditoria (por trigger) · promociones (rangos)</div>
+
+        <h3>Lo que debes recordar de cada bloque</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Bloque</th><th>Idea central</th><th>Si sólo recuerdas una cosa…</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fundamentos</b></td><td>El tipo y las restricciones hacen que la base rechace lo imposible.</td><td>NULL no se compara con <code>=</code>.</td></tr>
+            <tr><td><b>Modelo relacional</b></td><td>Cada hecho en un sitio, conectado por claves foráneas.</td><td>Indexa cada clave foránea.</td></tr>
+            <tr><td><b>Consultas</b></td><td>Agregar, encadenar pasos y comparar sin colapsar filas.</td><td>Los JOIN pueden multiplicar filas.</td></tr>
+            <tr><td><b>Tipos especiales</b></td><td>Fechas, texto y JSON con operadores e índices propios.</td><td><code>timestamptz</code> y la zona del negocio al presentar.</td></tr>
+            <tr><td><b>Rendimiento</b></td><td>Medir con el plan, indexar con criterio y mantener.</td><td>Compara filas estimadas con reales.</td></tr>
+            <tr><td><b>Integridad y lógica</b></td><td>Concurrencia correcta y reglas que se cumplen siempre.</td><td>Una transacción no excluye: <code>FOR UPDATE</code>.</td></tr>
+            <tr><td><b>Operación</b></td><td>Mínimo privilegio, RLS y copias probadas.</td><td>Una copia sin restaurar no es una copia.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note tip"><b class="t">Cómo repasar con eficacia</b>
+        <p>Ten un <code>psql</code> abierto contra NakaMarket mientras lees y ejecuta cada consulta de memoria antes de mirar
+        la solución. En SQL, el resultado (y el número de filas) te dice al instante si lo recordabas bien.</p></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧱 Bloque 1 · Tablas, tipos, CRUD, consultas y restricciones (cap. 0–4)</summary>
+      <div class="acc-body">
+
+        <h3>El entorno (0)</h3>
+        <ul class="clean">
+          <li><b>SGBD cliente-servidor</b>: el servidor escucha en el puerto 5432; psql, pgAdmin o tu app le hablan en SQL. Ningún cliente toca los archivos de datos (copiar la carpeta en caliente no es una copia).</li>
+          <li><b>SQL es declarativo</b>: dices qué quieres y el planificador decide cómo.</li>
+          <li>Jerarquía: <b>clúster → base de datos → esquema → tablas</b>; los roles viven en el clúster.</li>
+          <li>En psql, <code>\dt</code>, <code>\d tabla</code>, <code>\h SELECT</code> son meta-comandos (sin <code>;</code>). Prompt <code>nakamarket-#</code> = falta el punto y coma.</li>
+          <li>Codificación e intercalación se eligen al crear la base y no se cambian: UTF-8. <code>\pset null '[null]'</code> en <code>.psqlrc</code>.</li>
+        </ul>
+
+        <h3>Tipos de datos (1)</h3>
+        <div class="code-block" data-lang="SQL · sql/01_usuarios.sql">
+<pre><code>CREATE TABLE usuarios (
+    id              bigint GENERATED ALWAYS AS IDENTITY,
+    email           text        NOT NULL,
+    nombre          text        NOT NULL,
+    telefono        text,                         -- parece número, no se suma: texto
+    codigo_postal   text,                         -- '08001' conserva el cero
+    saldo_centimos  bigint      NOT NULL DEFAULT 0,   -- dinero: entero en céntimos
+    fecha_nacimiento date,                        -- un día del calendario
+    fecha_alta      timestamptz NOT NULL DEFAULT now(), -- un instante
+    verificado      boolean     NOT NULL DEFAULT false
+);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> el tipo decide qué se admite, cuánto ocupa, cómo se ordena y qué operaciones
+        hay. <b>Dinero nunca en coma flotante</b>: <code>numeric</code> o céntimos en <code>bigint</code>. <code>text</code> y
+        <code>varchar(n)</code> rinden igual. Identificadores en minúsculas y sin comillas (<code>"Nombre"</code> obliga a
+        entrecomillar siempre). <code>ADD/DROP/RENAME COLUMN</code> son instantáneos; <code>ALTER COLUMN … TYPE</code>
+        reescribe la tabla. <code>pg_typeof(x)</code> para salir de dudas.</p>
+
+        <h3>CRUD (2)</h3>
+        <div class="code-block" data-lang="SQL">
+<pre><code>INSERT INTO usuarios (email, nombre) VALUES ('ana@naka.es', 'Ana O''Neill')
+RETURNING id;                                        -- el id generado, sin max(id)
+
+BEGIN;                                               -- red de seguridad
+SELECT count(*) FROM usuarios WHERE ciudad = 'Madrid';   -- el WHERE, primero como SELECT
+UPDATE usuarios SET verificado = true WHERE ciudad = 'Madrid';   -- lee el «UPDATE n»
+ROLLBACK;                                            -- o COMMIT
+
+TRUNCATE pruebas;                                    -- vaciar entera: no DELETE fila a fila</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> comilla <b>simple</b> para valores, <b>doble</b> para identificadores; el
+        apóstrofo se duplica. Lista de columnas siempre en el <code>INSERT</code>. <code>UPDATE</code>/<code>DELETE</code> sin
+        <code>WHERE</code> afectan a toda la tabla. <b>NULL = desconocido</b>: se compara con <code>IS NULL</code> y contagia
+        (<code>NULL + 1</code> es NULL). Tras un error dentro de una transacción, todo se ignora hasta <code>ROLLBACK</code>.
+        Cargas masivas con <code>\copy</code>.</p>
+
+        <h3>WHERE, ORDER BY y paginación (3)</h3>
+        <ul class="clean">
+          <li>Orden de ejecución: <b>FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</b>. Por eso un alias del SELECT vale en ORDER BY y no en WHERE.</li>
+          <li><code>IN</code>, <code>BETWEEN</code> (incluye extremos), <code>ILIKE</code>. <b>AND precede a OR</b>: paréntesis siempre.</li>
+          <li>Lógica de tres valores: <code>WHERE x NOT IN (1, 2, NULL)</code> no devuelve nada. <code>IS DISTINCT FROM</code> compara tratando NULL como valor.</li>
+          <li><code>coalesce</code> rellena huecos, <code>nullif</code> los crea, <code>CASE</code> etiqueta (el <code>WHEN … IS NULL</code>, primero).</li>
+          <li>Sin <code>ORDER BY</code> no hay orden. Para paginar, orden total (añade <code>id</code>). <code>OFFSET</code> grande lee y descarta: pagina por clave.</li>
+          <li><code>LIKE '%x%'</code> no usa un B-tree normal (se resuelve en el 14). <code>count(*) FILTER (WHERE …)</code> para comparar condiciones.</li>
+        </ul>
+
+        <h3>Restricciones (4)</h3>
+        <div class="code-block" data-lang="SQL · sql/04_restricciones_usuarios.sql">
+<pre><code>ALTER TABLE usuarios
+    ADD CONSTRAINT pk_usuarios PRIMARY KEY (id),
+    ADD CONSTRAINT uq_usuarios_email UNIQUE (email),
+    ADD CONSTRAINT ck_usuarios_email CHECK (email LIKE '%_@_%'),
+    ADD CONSTRAINT ck_usuarios_saldo CHECK (saldo_centimos &gt;= 0);
+
+-- en producción, sobre una tabla grande:
+ALTER TABLE pagos ADD CONSTRAINT ck_pagos_importe CHECK (importe_centimos &gt;= 0) NOT VALID;
+ALTER TABLE pagos VALIDATE CONSTRAINT ck_pagos_importe;
+
+SELECT setval(pg_get_serial_sequence('usuarios', 'id'), (SELECT max(id) FROM usuarios));</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> la integridad va en la base, por la que pasan todas las aplicaciones.
+        <code>PRIMARY KEY</code> = UNIQUE + NOT NULL + índice; clave sustituta <code>bigint</code> y la natural protegida con
+        UNIQUE. <code>GENERATED ALWAYS AS IDENTITY</code> mejor que <code>serial</code>. Las secuencias no retroceden con
+        ROLLBACK (huecos normales) y tras restaurar hay que recolocarlas con <code>setval</code>. UNIQUE admite varios NULL
+        (salvo <code>NULLS NOT DISTINCT</code>). Un <b>CHECK rechaza lo falso, no lo desconocido</b> y sólo ve su fila. Nombres
+        con prefijo: <code>pk_</code>, <code>uq_</code>, <code>ck_</code>, <code>fk_</code>, <code>ix_</code>.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔗 Bloque 2 · Claves foráneas, JOIN, N:M y normalización (cap. 5–8)</summary>
+      <div class="acc-body">
+
+        <h3>Claves foráneas (5)</h3>
+        <div class="code-block" data-lang="SQL · sql/05_anuncios.sql">
+<pre><code>CREATE TABLE anuncios (
+    id               bigint GENERATED ALWAYS AS IDENTITY,
+    vendedor_id      bigint NOT NULL,
+    titulo           text   NOT NULL,
+    precio_centimos  bigint NOT NULL CHECK (precio_centimos &gt;= 0),
+    estado           text   NOT NULL DEFAULT 'borrador',
+    CONSTRAINT pk_anuncios PRIMARY KEY (id),
+    CONSTRAINT fk_anuncios_vendedor FOREIGN KEY (vendedor_id)
+        REFERENCES usuarios (id) ON DELETE RESTRICT
+);
+CREATE INDEX ix_anuncios_vendedor ON anuncios (vendedor_id);   -- PostgreSQL no lo crea</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> la FK garantiza que el padre existe (sin huérfanas). En 1:N va en el lado
+        «muchos». <code>ON DELETE</code> es una decisión por relación: <b>RESTRICT</b> por defecto (datos con valor histórico),
+        <b>CASCADE</b> sólo si el hijo no significa nada sin el padre, o <b>borrado lógico</b>. Sin índice en la FK, borrar un
+        padre recorre la tabla hija entera. Una FK que admite NULL es una relación opcional.</p>
+
+        <h3>JOIN (6)</h3>
+        <div class="code-block" data-lang="SQL">
+<pre><code>-- todos los usuarios y sus compras de marzo (incluidos los que no compraron)
+SELECT u.nombre, count(p.id) AS compras             -- count(columna), no count(*)
+FROM usuarios u
+LEFT JOIN pedidos p
+       ON p.comprador_id = u.id
+      AND p.creado_en &gt;= '2026-03-01'                -- filtro de la tabla externa: en el ON
+GROUP BY u.id, u.nombre;
+
+-- quién NO tiene anuncios: anti-join
+SELECT u.* FROM usuarios u
+WHERE NOT EXISTS (SELECT 1 FROM anuncios a WHERE a.vendedor_id = u.id);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>INNER</b> descarta lo que no casa; <b>LEFT</b> conserva la izquierda con
+        NULL; FULL, CROSS y SELF JOIN (alias obligatorios). Una condición sobre la tabla externa en el <code>WHERE</code>
+        convierte el LEFT en INNER. Un JOIN 1:N <b>multiplica filas</b>: comprueba el <code>count(*)</code> antes de sumar.
+        <code>NOT EXISTS</code> mejor que <code>NOT IN</code> (los NULL). <code>JOIN … ON</code> explícito; nunca
+        <code>NATURAL JOIN</code> ni comas.</p>
+
+        <h3>Relaciones N:M (7)</h3>
+        <ul class="clean">
+          <li>N:M = <b>tabla puente</b> con dos FK (<code>anuncio_categoria</code>); nunca listas separadas por comas.</li>
+          <li>Clave primaria compuesta <code>(anuncio_id, categoria_id)</code> + un <b>segundo índice en orden inverso</b>.</li>
+          <li>Si la relación tiene datos propios (cuándo, quién), ya es una entidad con nombre (<code>favoritos</code>, <code>pedido_lineas</code>).</li>
+          <li><b>Autorreferencia</b> (<code>categorias.madre_id</code>) para árboles; profundidad arbitraria con <code>WITH RECURSIVE</code>.</li>
+          <li><b>UPSERT</b>: <code>INSERT … ON CONFLICT (cols) DO NOTHING / DO UPDATE SET x = EXCLUDED.x</code>; idempotente frente a dobles pulsaciones.</li>
+          <li><b>Índice único parcial</b> para reglas que un CHECK no puede expresar: <code>CREATE UNIQUE INDEX … ON anuncio_categoria (anuncio_id) WHERE principal</code>.</li>
+        </ul>
+
+        <h3>Normalización (8)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Forma</th><th>Regla</th><th>Ejemplo de violación</th></tr></thead>
+          <tbody>
+            <tr><td><b>1FN</b></td><td>Un valor por celda, sin grupos repetitivos.</td><td><code>foto_1, foto_2</code> o etiquetas separadas por comas.</td></tr>
+            <tr><td><b>2FN</b></td><td>Nada depende sólo de parte de una clave compuesta.</td><td><code>titulo_anuncio</code> en <code>anuncio_categoria</code>.</td></tr>
+            <tr><td><b>3FN</b></td><td>Nada depende de otro atributo no clave.</td><td><code>cliente_ciudad</code> en <code>facturas</code>.</td></tr>
+          </tbody>
+        </table></div>
+        <p>«Cada dato depende de la clave, de toda la clave y de nada más que de la clave». Se <b>desnormaliza a propósito</b>
+        por valor histórico (<code>pedido_lineas.precio_centimos</code> congela el precio pagado: no es redundancia), agregado
+        precalculado (la reputación) o almacén analítico. Datos de prueba deterministas con <code>generate_series</code>.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>📊 Bloque 3 · Agregados, CTE, funciones de ventana y vistas (cap. 9–12)</summary>
+      <div class="acc-body">
+
+        <h3>GROUP BY y HAVING (9)</h3>
+        <div class="code-block" data-lang="SQL · sql/15_informes.sql">
+<pre><code>SELECT u.ciudad,
+       count(*)                                         AS anuncios,
+       count(*) FILTER (WHERE a.estado = 'vendido')     AS vendidos,
+       round(100.0 * count(*) FILTER (WHERE a.estado = 'vendido')
+             / nullif(count(*), 0), 1)                  AS pct_vendidos,
+       coalesce(sum(a.precio_centimos), 0)              AS total,
+       percentile_cont(0.5) WITHIN GROUP (ORDER BY a.precio_centimos) AS mediana
+FROM anuncios a JOIN usuarios u ON u.id = a.vendedor_id
+WHERE a.estado &lt;&gt; 'borrador'                           -- filtra filas antes
+GROUP BY u.ciudad
+HAVING count(*) &gt;= 10                                  -- filtra grupos después
+ORDER BY total DESC;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> todo lo del SELECT, agrupado o agregado (agrupar por la PK trae el resto de la
+        tabla). <code>count(*)</code> cuenta filas; <code>count(col)</code>, no nulos. <code>sum</code> de nada es NULL
+        (<code>coalesce</code>). <code>avg</code> ignora nulos. <code>100.0 *</code> evita la división entera;
+        <code>nullif(…, 0)</code>, la división por cero. <code>ROLLUP</code>/<code>CUBE</code>/<code>GROUPING SETS</code> para
+        subtotales. Publica media <b>y</b> mediana. Regla de oro: los subtotales suman el total.</p>
+
+        <h3>Subconsultas, CTE y recursividad (10)</h3>
+        <div class="code-block" data-lang="SQL · sql/16_cte.sql">
+<pre><code>WITH pedidos_por_cliente AS (                       -- agregado sobre agregado
+    SELECT comprador_id, count(*) AS n FROM pedidos GROUP BY comprador_id
+)
+SELECT avg(n) FROM pedidos_por_cliente;
+
+WITH RECURSIVE arbol AS (
+    SELECT id, nombre, madre_id, ARRAY[id] AS camino
+    FROM categorias WHERE madre_id IS NULL           -- caso base
+    UNION ALL
+    SELECT c.id, c.nombre, c.madre_id, a.camino || c.id
+    FROM categorias c JOIN arbol a ON c.madre_id = a.id
+    WHERE NOT c.id = ANY (a.camino)                  -- protección contra ciclos
+)
+SELECT * FROM arbol;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> una subconsulta cabe en SELECT (escalar), WHERE, FROM (con alias) y
+        <code>JOIN LATERAL</code> (la derecha ve la izquierda: «los N mejores de cada grupo»). <code>EXISTS</code> para
+        «tiene/no tiene». Desde la v12 una CTE usada una vez se integra en la consulta; <code>MATERIALIZED</code> la fuerza
+        aparte. <code>WITH RECURSIVE</code> = base + <code>UNION ALL</code> + paso, siempre con protección contra ciclos (array
+        o <code>CYCLE</code>). Una CTE puede llevar <code>INSERT/UPDATE/DELETE … RETURNING</code> para mover datos de forma atómica.</p>
+
+        <h3>Funciones de ventana (11)</h3>
+        <div class="code-block" data-lang="SQL · sql/18_ventanas.sql">
+<pre><code>SELECT * FROM (
+    SELECT a.*,
+           row_number() OVER (PARTITION BY categoria_id ORDER BY precio_centimos DESC, id) AS rn,
+           sum(precio_centimos) OVER (ORDER BY fecha_publicacion, id
+                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS acumulado,
+           precio_centimos - lag(precio_centimos) OVER (PARTITION BY vendedor_id ORDER BY fecha_publicacion) AS dif
+    FROM anuncios a
+) t
+WHERE rn &lt;= 3;                                      -- filtrar la ventana: fuera, en subconsulta o CTE</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> agregar <b>sin colapsar</b> filas. <code>PARTITION BY</code> = grupos;
+        <code>ORDER BY</code> dentro cambia el marco a «desde el principio hasta aquí», por eso <code>sum() OVER (ORDER BY …)</code>
+        es acumulado y <code>sum() OVER ()</code> el total. <b>ROWS</b> (filas físicas) frente a <b>RANGE</b> (agrupa empates).
+        <code>row_number</code> nunca repite, <code>rank</code> empata con huecos, <code>dense_rank</code> sin huecos.
+        <code>lag/lead</code> para comparar con el periodo anterior. Se evalúan tras WHERE/GROUP BY/HAVING. Añade una columna
+        única al ORDER BY. <code>WINDOW w AS (…)</code> para no repetir. «Gaps and islands» con lag + suma acumulada.</p>
+
+        <h3>Vistas y vistas materializadas (12)</h3>
+        <ul class="clean">
+          <li><b>Vista</b> = consulta con nombre: no guarda datos ni acelera; da abstracción, seguridad y un solo sitio. Los filtros se empujan dentro.</li>
+          <li>Vista simple = actualizable; <code>WITH CHECK OPTION</code> impide escribir filas que la vista no vería. Para el resto, triggers <code>INSTEAD OF</code>.</li>
+          <li><b>Materializada</b> = resultado en disco, rápido y desactualizado hasta <code>REFRESH</code>. <code>REFRESH … CONCURRENTLY</code> no bloquea lecturas pero exige <b>índice único</b>.</li>
+          <li>No hay refresco automático: prográmalo (pg_cron) y añade una columna <code>calculado_en</code>.</li>
+          <li>Las vistas crean dependencias (no se puede borrar una columna usada). Definiciones en un archivo, en orden de dependencia.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🕒 Bloque 4 · Fechas, búsqueda de texto y JSONB (cap. 13–15)</summary>
+      <div class="acc-body">
+
+        <h3>Fechas, intervalos y rangos (13)</h3>
+        <div class="code-block" data-lang="SQL · sql/21_fechas.sql">
+<pre><code>SELECT d::date AS dia, count(p.id) AS pedidos       -- count(columna): 0 los días vacíos
+FROM generate_series('2026-03-01'::date, '2026-03-31', INTERVAL '1 day') AS d
+LEFT JOIN pedidos p
+       ON date_trunc('day', p.creado_en AT TIME ZONE 'Europe/Madrid') = d   -- zona del negocio
+GROUP BY d ORDER BY d;
+
+CREATE TABLE promociones (
+    anuncio_id bigint NOT NULL REFERENCES anuncios,
+    vigencia   tstzrange NOT NULL,                  -- límites '[)'
+    EXCLUDE USING gist (anuncio_id WITH =, vigencia WITH &amp;&amp;)   -- prohíbe solapes
+);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>timestamptz</code> guarda un <b>instante</b> en UTC y lo muestra en la zona
+        de la sesión; <code>timestamp</code> sin zona es ambiguo. Fija la zona del negocio con <code>AT TIME ZONE</code> en los
+        informes. <code>now()</code> = inicio de la transacción. <code>INTERVAL '1 day'</code> ≠ <code>'24 hours'</code> en los
+        cambios de hora. <code>generate_series</code> + LEFT JOIN para series sin huecos. Rangos (<code>tstzrange</code>,
+        <code>daterange</code>) con operadores <code>&amp;&amp;</code>, <code>@&gt;</code>; la restricción de exclusión necesita
+        <code>btree_gist</code> para combinar <code>=</code> con rangos.</p>
+
+        <h3>Búsqueda de texto (14)</h3>
+        <div class="code-block" data-lang="SQL · sql/23_busqueda.sql">
+<pre><code>ALTER TABLE anuncios ADD COLUMN busqueda tsvector
+    GENERATED ALWAYS AS (
+        setweight(to_tsvector('es_naka', coalesce(titulo, '')), 'A') ||
+        setweight(to_tsvector('es_naka', coalesce(descripcion, '')), 'B')
+    ) STORED;
+CREATE INDEX ix_anuncios_busqueda ON anuncios USING gin (busqueda);
+
+SELECT id, titulo, ts_rank(busqueda, q) AS relevancia
+FROM anuncios, websearch_to_tsquery('es_naka', 'bici montaña -niño') AS q
+WHERE busqueda @@ q
+ORDER BY relevancia DESC LIMIT 20;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> cuatro niveles: LIKE, regex (<code>~</code>, <code>~*</code>), <b>texto
+        completo</b> (raíces: «bicicletas» encuentra «bicicleta») y <b>trigramas</b> (<code>pg_trgm</code>, erratas e
+        <code>ILIKE '%x%'</code> indexable con <code>gin_trgm_ops</code>). La <b>misma configuración</b> al indexar y al
+        consultar (si no, cero resultados sin error). Columna generada <code>STORED</code> con expresión inmutable
+        (configuración explícita y <code>coalesce</code>). <code>websearch_to_tsquery</code> nunca da error de sintaxis.
+        Acentos con <code>unaccent</code> en una configuración propia (<code>es_naka</code>). GIN rápido de leer y caro de escribir.</p>
+
+        <h3>JSONB, arrays, ENUM y UUID (15)</h3>
+        <div class="code-block" data-lang="SQL · sql/24_jsonb.sql">
+<pre><code>ALTER TABLE anuncios ADD COLUMN atributos jsonb NOT NULL DEFAULT '{}'
+    CHECK (jsonb_typeof(atributos) = 'object');
+CREATE INDEX ix_anuncios_atributos ON anuncios USING gin (atributos jsonb_path_ops);
+
+SELECT titulo, atributos-&gt;&gt;'talla' AS talla              -- -&gt;&gt; devuelve texto
+FROM anuncios
+WHERE atributos @&gt; '{"material": "aluminio"}'           -- @&gt; usa el índice GIN
+  AND (atributos-&gt;&gt;'marchas')::int &gt;= 21;              -- convertir para comparar números</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <code>jsonb</code>, no <code>json</code>. <code>-&gt;</code> devuelve jsonb,
+        <code>-&gt;&gt;</code> texto. El GIN sirve para <code>@&gt;</code>, no para <code>-&gt;&gt; =</code> (para eso, B-tree de
+        expresión). JSONB es para lo <b>variable</b>; lo común a todas las filas es una columna y lo que debe existir en otra
+        tabla, una FK. Arrays para valores libres sin catálogo. Un <b>ENUM</b> no permite quitar valores: para listas que
+        cambian, CHECK o tabla. <b>DOMAIN</b> = tipo con restricciones reutilizable. <b>bigint dentro, uuid fuera</b> (URLs no enumerables).</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚡ Bloque 5 · Índices, EXPLAIN, VACUUM y particionado (cap. 16–19)</summary>
+      <div class="acc-body">
+
+        <h3>Índices (16)</h3>
+        <div class="code-block" data-lang="SQL · sql/27_indices.sql">
+<pre><code>CREATE INDEX CONCURRENTLY ix_anuncios_ciudad_estado_precio
+    ON anuncios (ciudad, estado, precio_centimos);            -- igualdades primero, rango al final
+CREATE INDEX ix_anuncios_activos_fecha
+    ON anuncios (fecha_publicacion DESC) WHERE estado = 'activo';   -- parcial
+CREATE INDEX ix_usuarios_email_lower ON usuarios (lower(email));   -- de expresión
+CREATE INDEX ix_anuncios_vend_fecha ON anuncios (vendedor_id, fecha_publicacion DESC)
+    INCLUDE (precio_centimos);                                -- Index Only Scan</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> un índice es una estructura ordenada aparte: acelera lecturas, cuesta espacio y
+        <b>ralentiza todas las escrituras</b>. B-tree: igualdad, rangos, <code>LIKE 'prefijo%'</code>, ORDER BY, MIN/MAX. Si el
+        filtro devuelve mucha tabla, el <b>Seq Scan es mejor</b> (selectividad). Compuesto: sólo se usa un <b>prefijo
+        izquierdo</b>. La columna, desnuda a un lado de la comparación (o índice de expresión idéntico). En producción
+        <code>CONCURRENTLY</code> y comprueba <code>indisvalid</code>. Audita índices con <code>idx_scan = 0</code> y duplicados.
+        <code>ANALYZE</code> tras cargas masivas.</p>
+
+        <h3>EXPLAIN ANALYZE (17)</h3>
+        <div class="code-block" data-lang="SQL">
+<pre><code>EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM anuncios WHERE ciudad = 'Bilbao' AND estado = 'activo';
+--  Index Scan using ix_anuncios_ciudad_estado_precio on anuncios
+--    (cost=0.43..812.10 rows=310 width=...) (actual time=0.05..4.2 rows=298 loops=1)
+--    Index Cond: ((ciudad = 'Bilbao') AND (estado = 'activo'))
+--    Buffers: shared hit=305</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> se lee de dentro hacia fuera. <code>rows</code> = estimación; <code>actual …
+        rows</code> = realidad: una desviación de 10× explica casi todos los planes malos (falta <code>ANALYZE</code> o columnas
+        correlacionadas → <code>CREATE STATISTICS</code>). <code>actual time</code> es <b>por vuelta</b>: multiplica por
+        <code>loops</code>. <code>Filter</code> con muchas <code>Rows Removed</code> = trabajo tirado. <code>EXPLAIN ANALYZE</code>
+        <b>ejecuta</b> (un DELETE borra: dentro de BEGIN/ROLLBACK). <code>Sort Method: external merge Disk</code> → más
+        <code>work_mem</code> por sesión. <b>pg_stat_statements</b> por <code>total_exec_time</code> dice qué arreglar.
+        <code>random_page_cost = 1.1</code> en SSD.</p>
+
+        <h3>MVCC y VACUUM (18)</h3>
+        <ul class="clean">
+          <li><b>MVCC</b>: un UPDATE escribe una versión nueva y marca la vieja; un DELETE marca. Lecturas y escrituras no se bloquean entre sí.</li>
+          <li>Precio: <b>tuplas muertas</b> → <b>bloat</b> si no se recogen. <code>VACUUM</code> marca el espacio reutilizable (no lo devuelve); <code>VACUUM FULL</code> sí, con bloqueo exclusivo (en caliente, <code>pg_repack</code>).</li>
+          <li><b>Autovacuum</b> al 20 % de filas modificadas: en tablas grandes baja <code>autovacuum_vacuum_scale_factor</code> por tabla.</li>
+          <li>Impiden limpiar: transacciones abiertas (<em>idle in transaction</em>), ranuras de replicación abandonadas, transacciones preparadas huérfanas. Configura <code>idle_in_transaction_session_timeout</code>, <code>statement_timeout</code>, <code>lock_timeout</code>.</li>
+          <li>VACUUM también <b>congela</b>: sin él, <b>wraparound</b> y el servidor deja de aceptar escrituras.</li>
+          <li><b>TOAST</b> guarda aparte valores grandes (<code>SELECT *</code> los lee). <code>REINDEX CONCURRENTLY</code>. <b>BRIN</b>: minúsculo, para columnas correlacionadas con el orden físico (históricos).</li>
+        </ul>
+
+        <h3>Particionado (19)</h3>
+        <div class="code-block" data-lang="SQL · sql/30_particionado.sql">
+<pre><code>CREATE TABLE eventos (
+    id      bigint GENERATED ALWAYS AS IDENTITY,
+    momento timestamptz NOT NULL,
+    tipo    text NOT NULL,
+    datos   jsonb,
+    PRIMARY KEY (id, momento)                       -- la clave de partición, dentro
+) PARTITION BY RANGE (momento);
+
+CREATE TABLE eventos_2026_03 PARTITION OF eventos
+    FOR VALUES FROM ('2026-03-01') TO ('2026-04-01');
+CREATE TABLE eventos_defecto PARTITION OF eventos DEFAULT;   -- debe estar vacía
+
+ALTER TABLE eventos DETACH PARTITION eventos_2025_03;        -- archivar: instantáneo
+DROP TABLE eventos_2025_03;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> particionar <b>no acelera por sí solo</b>: sin filtro por la clave se recorren
+        todas. Motivos reales: borrado instantáneo, mantenimiento por trozos e índices que caben en memoria. RANGE, LIST y HASH.
+        La clave va en la PK y en todo índice único. <b>Poda</b> sólo si el filtro es directo sobre la clave (no
+        <code>date_trunc(momento)</code>). PostgreSQL no crea particiones solo: automatízalo (pg_partman o un procedimiento).</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔒 Bloque 6 · Transacciones, PL/pgSQL y triggers (cap. 20–22)</summary>
+      <div class="acc-body">
+
+        <h3>Transacciones y concurrencia (20)</h3>
+        <div class="code-block" data-lang="SQL · sql/31_transacciones.sql">
+<pre><code>BEGIN;
+SELECT estado FROM anuncios WHERE id = 42 FOR UPDATE;   -- bloquea la fila: leer-decidir-escribir
+UPDATE anuncios SET estado = 'reservado'
+WHERE id = 42 AND estado = 'activo';                  -- o la condición dentro del UPDATE
+INSERT INTO pedidos (comprador_id) VALUES (17);
+COMMIT;
+
+-- cola de trabajo con varios consumidores
+SELECT id FROM tareas WHERE estado = 'pendiente'
+ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>ACID</b> (atomicidad, consistencia, aislamiento, durabilidad). El
+        <b>WAL</b> se escribe antes del COMMIT: durabilidad y replicación. Nunca hay lecturas sucias; por defecto
+        <b>READ COMMITTED</b> (cada instrucción ve una foto nueva). <b>REPEATABLE READ</b> y <b>SERIALIZABLE</b> pueden abortar:
+        exigen reintentos. <b>Una transacción da atomicidad, no exclusión</b>: «comprobar que está libre y reservarlo» necesita
+        <code>FOR UPDATE</code> o la condición en el UPDATE. Interbloqueos: bloquea siempre en el mismo orden.
+        <code>pg_blocking_pids()</code> para diagnosticar. <code>lock_timeout</code> antes de un ALTER. <code>SAVEPOINT</code> y
+        bloqueos consultivos (<code>pg_advisory_xact_lock</code>).</p>
+
+        <h3>PL/pgSQL (21)</h3>
+        <div class="code-block" data-lang="SQL · sql/32_funciones.sql">
+<pre><code>CREATE OR REPLACE FUNCTION precio_con_iva(p_centimos bigint)
+RETURNS bigint LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$ SELECT round(p_centimos * 1.21)::bigint $$;
+
+CREATE OR REPLACE FUNCTION cerrar_pedido(p_pedido_id bigint)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
+AS $$
+DECLARE v_estado text;
+BEGIN
+    SELECT estado INTO v_estado FROM pedidos WHERE id = p_pedido_id FOR UPDATE;
+    IF v_estado IS DISTINCT FROM 'pagado' THEN
+        RAISE EXCEPTION 'El pedido % no está pagado', p_pedido_id USING ERRCODE = 'P0001';
+    END IF;
+    UPDATE pedidos SET estado = 'enviado' WHERE id = p_pedido_id;
+END $$;
+REVOKE ALL ON FUNCTION cerrar_pedido(bigint) FROM PUBLIC;</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>función</b> devuelve valor y se usa en consultas; <b>procedimiento</b>
+        (<code>CALL</code>) puede hacer COMMIT. <code>LANGUAGE sql</code> si basta. <b>Volatilidad</b>: IMMUTABLE (indexable),
+        STABLE (una vez por consulta), VOLATILE (por fila). Prefijos <code>p_</code>/<code>v_</code> contra ambigüedades;
+        <code>PERFORM</code> o <code>SELECT … INTO</code>. Cada bloque <code>EXCEPTION</code> es un SAVEPOINT. SQL dinámico con
+        <code>format(%I, %L)</code> y <code>USING</code>. <code>SECURITY DEFINER</code> exige <code>SET search_path</code> y
+        <code>REVOKE … FROM PUBLIC</code>. Antes que un bucle, un <code>UPDATE … FROM</code>.</p>
+
+        <h3>Triggers y auditoría (22)</h3>
+        <ul class="clean">
+          <li>Dos piezas: función <code>RETURNS trigger</code> + <code>CREATE TRIGGER</code>. <b>BEFORE</b> para modificar la propia fila (devolver NULL la cancela); <b>AFTER</b> para lo demás; <b>INSTEAD OF</b> sólo en vistas.</li>
+          <li><code>NEW</code>/<code>OLD</code>, <code>TG_OP</code>, <code>TG_TABLE_NAME</code>; <code>to_jsonb(NEW)</code> para una auditoría genérica. Por fila o por instrucción.</li>
+          <li><code>WHEN (OLD.x IS DISTINCT FROM NEW.x)</code> y <code>UPDATE OF columna</code> evitan ejecuciones en balde.</li>
+          <li>«Quién»: la aplicación hace <code>SET LOCAL app.usuario_id = '17'</code> y el trigger lo lee con <code>current_setting</code>. LOCAL obligatorio con agrupadores de conexiones.</li>
+          <li>Nunca llamar a servicios externos desde un trigger: <code>NOTIFY</code> o tabla de tareas. Auditoría en AFTER (en BEFORE registra lo que luego puede fallar). Tabla de auditoría particionada.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · Roles, RLS, copias y producción (cap. 23–24)</summary>
+      <div class="acc-body">
+
+        <h3>Roles, permisos y seguridad por fila (23)</h3>
+        <div class="code-block" data-lang="SQL · sql/34_roles.sql y 35_rls.sql">
+<pre><code>REVOKE ALL ON DATABASE nakamarket FROM PUBLIC;
+CREATE ROLE naka_lectura NOLOGIN;                        -- grupo
+GRANT USAGE ON SCHEMA public TO naka_lectura;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO naka_lectura;
+ALTER DEFAULT PRIVILEGES FOR ROLE naka_migracion IN SCHEMA public
+    GRANT SELECT ON TABLES TO naka_lectura;              -- tablas futuras
+CREATE ROLE app_web LOGIN PASSWORD '...' IN ROLE naka_lectura CONNECTION LIMIT 50;
+
+ALTER TABLE mensajes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY p_mensajes_mios ON mensajes FOR SELECT TO naka_aplicacion
+    USING (remitente_id = usuario_actual() OR destinatario_id = usuario_actual());</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> usuarios y grupos son <b>roles</b>; permisos a grupos. Revoca lo de
+        <code>PUBLIC</code>. Hace falta <code>USAGE</code> en el esquema <b>y</b> en las secuencias. <code>GRANT … ON ALL
+        TABLES</code> sólo afecta a lo existente: lo futuro con <code>ALTER DEFAULT PRIVILEGES FOR ROLE &lt;creador&gt;</code>.
+        La aplicación nunca es propietaria ni superusuario. <b>RLS</b>: <code>USING</code> para leer, <code>WITH CHECK</code>
+        para escribir; falla cerrado. El dueño de la tabla la evita salvo <code>FORCE ROW LEVEL SECURITY</code>; superusuarios
+        y <code>BYPASSRLS</code>, siempre. Los permisos limitan el daño de una inyección SQL.</p>
+
+        <h3>Copias, migraciones y producción (24)</h3>
+        <div class="code-block" data-lang="Terminal">
+<pre><code>pg_dump -Fc -d nakamarket -f nakamarket.dump           # formato personalizado
+pg_dumpall --globals-only -f roles.sql                 # los roles NO van en pg_dump
+pg_restore -d nakamarket_prueba -j 4 nakamarket.dump   # restauración en paralelo</code></pre>
+        </div>
+        <p class="code-note"><b>Qué recordar:</b> <b>una copia que no has restaurado no es una copia</b>; cronométrala (ése es tu
+        tiempo de recuperación). <code>-Fc</code>/<code>-Fd</code> permiten restauración selectiva y en paralelo. Tras restaurar:
+        roles y secuencias. <b>PITR</b> (copia base + WAL archivado) vuelve a un instante concreto. <b>La réplica no es una
+        copia</b>: replica también el <code>DELETE</code> sin WHERE.</p>
+        <ul class="clean">
+          <li><b>Migraciones</b> numeradas, idempotentes, hacia adelante, con <code>lock_timeout</code> corto y el patrón <b>expandir / contraer</b> (añadir columna nueva, escribir en ambas, migrar, cambiar lecturas, quitar la vieja).</li>
+          <li>Configuración: <code>shared_buffers</code>, <code>effective_cache_size</code>, <code>work_mem</code>, <code>maintenance_work_mem</code>, <code>random_page_cost</code>.</li>
+          <li><b>Cada conexión es un proceso</b>: agrupador (PgBouncer) en vez de subir <code>max_connections</code>.</li>
+          <li>Docker: volumen persistente; <code>docker-entrypoint-initdb.d</code> sólo corre con el volumen vacío.</li>
+          <li>Actualiza las versiones menores en cuanto salen. Vigila las señales de salud (transacciones abiertas, ranuras, edad de congelación, índices inválidos).</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista técnica de PostgreSQL y SQL"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 8 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|WHERE vs HAVING|INNER vs LEFT|NOT IN vs NOT EXISTS|rank vs row_number|VACUUM|Aislamiento|Patrones">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>repasar lo que más se pregunta y más se confunde</strong> de SQL y PostgreSQL: las parejas de
+      conceptos que parecen iguales, los patrones de diseño que aplicaste en NakaMarket, los errores que todo el mundo ha
+      visto y las preguntas típicas de una entrevista técnica, con respuestas cortas y razonadas.</p>
+      <p><strong>Cómo usarlo:</strong> en los bloques de entrevista, responde tú primero (si es una consulta, escríbela) y
+      sólo después despliega la respuesta. El último acordeón es la versión de cinco minutos para leer justo antes de entrar.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+
+        <h3>SQL básico y modelo</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>Comilla simple / doble</b></td><td>Valor de texto / identificador.</td><td><code>WHERE nombre = 'Ana'</code>.</td></tr>
+            <tr><td><b>NULL / '' / 0</b></td><td>Desconocido / texto vacío / cero real.</td><td>NULL cuando no hay dato; nunca 0 como «sin dato».</td></tr>
+            <tr><td><b><code>= NULL</code> / <code>IS NULL</code></b></td><td>Siempre desconocido (nunca verdadero) / comprueba el nulo.</td><td>Siempre <code>IS NULL</code> o <code>IS DISTINCT FROM</code>.</td></tr>
+            <tr><td><b><code>count(*)</code> / <code>count(col)</code> / <code>count(DISTINCT col)</code></b></td><td>Filas / valores no nulos / valores distintos.</td><td><code>count(col)</code> tras un LEFT JOIN.</td></tr>
+            <tr><td><b>DELETE / TRUNCATE / DROP</b></td><td>Borra filas (con WHERE, deja tuplas muertas) / vacía la tabla al instante / elimina la tabla.</td><td>TRUNCATE para vaciar entera.</td></tr>
+            <tr><td><b><code>text</code> / <code>varchar(n)</code></b></td><td>Igual rendimiento; varchar añade un límite.</td><td><code>text</code> salvo límite de negocio.</td></tr>
+            <tr><td><b><code>numeric</code> / <code>double precision</code> / céntimos en <code>bigint</code></b></td><td>Exacto / aproximado / exacto y rápido.</td><td>Dinero: nunca double.</td></tr>
+            <tr><td><b><code>timestamp</code> / <code>timestamptz</code> / <code>date</code></b></td><td>Hora sin zona (ambigua) / instante absoluto / día de calendario.</td><td>Instantes: timestamptz. Cumpleaños: date.</td></tr>
+            <tr><td><b><code>serial</code> / <code>IDENTITY</code></b></td><td>Heredado / estándar moderno.</td><td><code>GENERATED ALWAYS AS IDENTITY</code>.</td></tr>
+            <tr><td><b>PRIMARY KEY / UNIQUE</b></td><td>Única + NOT NULL, una por tabla / única, admite NULL, varias.</td><td>PK sustituta + UNIQUE en la natural.</td></tr>
+            <tr><td><b>CHECK / FK / índice único parcial / EXCLUDE</b></td><td>Regla sobre la propia fila / existencia en otra tabla / unicidad bajo condición / no solapar.</td><td>Según la regla: CHECK no ve otras filas.</td></tr>
+            <tr><td><b>RESTRICT / CASCADE / SET NULL</b></td><td>Impide borrar el padre / borra los hijos / desvincula.</td><td>RESTRICT por defecto; CASCADE en puentes.</td></tr>
+            <tr><td><b>Normalizar / desnormalizar</b></td><td>Cada hecho una vez / duplicar a propósito.</td><td>Desnormalizar por historia, agregado o analítica, documentado.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Consultas</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>WHERE / HAVING</b></td><td>Filtra filas antes de agrupar / grupos después.</td><td>Todo lo posible en WHERE.</td></tr>
+            <tr><td><b>INNER / LEFT JOIN</b></td><td>Sólo lo que casa / conserva la izquierda con NULL.</td><td>«Todos los X» → LEFT desde X.</td></tr>
+            <tr><td><b>Condición en ON / en WHERE (LEFT JOIN)</b></td><td>Filtra la tabla derecha / filtra el resultado (lo vuelve INNER).</td><td>Filtros de la derecha, en el ON.</td></tr>
+            <tr><td><b>NOT IN / NOT EXISTS</b></td><td>Con un NULL en la lista devuelve vacío / inmune a nulos.</td><td>NOT EXISTS siempre.</td></tr>
+            <tr><td><b>UNION / UNION ALL</b></td><td>Quita duplicados (ordena) / los conserva (más rápido).</td><td>UNION ALL salvo que necesites quitar duplicados.</td></tr>
+            <tr><td><b>Subconsulta / CTE</b></td><td>Anidada / paso con nombre (integrado desde v12).</td><td>CTE por legibilidad o para agregar sobre agregados.</td></tr>
+            <tr><td><b>Correlacionada / no correlacionada</b></td><td>Menciona columnas de fuera / independiente.</td><td>Mira el plan antes de «optimizarla».</td></tr>
+            <tr><td><b>GROUP BY / función de ventana</b></td><td>Colapsa filas / calcula sin colapsar.</td><td>Ventana para rankings, acumulados y comparativas.</td></tr>
+            <tr><td><b><code>row_number</code> / <code>rank</code> / <code>dense_rank</code></b></td><td>Nunca repite / empata con huecos (1,1,3) / empata sin huecos (1,1,2).</td><td>row_number para top N.</td></tr>
+            <tr><td><b>ROWS / RANGE</b></td><td>Filas físicas / agrupa empates.</td><td>ROWS para acumulados fila a fila.</td></tr>
+            <tr><td><b>Ventana / LATERAL (top N por grupo)</b></td><td>Numera todo y filtra / busca N por grupo con índice.</td><td>Muchos grupos y pocos por grupo → LATERAL. Mide.</td></tr>
+            <tr><td><b>Vista / vista materializada</b></td><td>Consulta con nombre, siempre al día / resultado guardado, hasta REFRESH.</td><td>Materializada para paneles caros.</td></tr>
+            <tr><td><b>OFFSET / paginación por clave</b></td><td>Lee y descarta / salta con <code>WHERE (fecha, id) &lt; (…)</code>.</td><td>Por clave en listados largos.</td></tr>
+            <tr><td><b>LIKE / ILIKE / regex / texto completo / trigramas</b></td><td>Patrón / sin mayúsculas / expresión regular / raíces de palabras / similitud con erratas.</td><td>Buscador: texto completo + trigramas.</td></tr>
+            <tr><td><b><code>-&gt;</code> / <code>-&gt;&gt;</code></b></td><td>Devuelve jsonb / devuelve texto.</td><td><code>-&gt;&gt;</code> para comparar o mostrar.</td></tr>
+            <tr><td><b><code>json</code> / <code>jsonb</code></b></td><td>Texto tal cual / binario, indexable.</td><td>jsonb siempre.</td></tr>
+            <tr><td><b><code>INTERVAL '1 day'</code> / <code>'24 hours'</code></b></td><td>Calendario / tiempo absoluto (difieren en cambios de hora).</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Rendimiento, concurrencia y operación</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Pareja</th><th>Diferencia</th><th>Cuándo usar cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><b>B-tree / GIN / GiST / BRIN</b></td><td>Igualdad, rangos, orden / contiene (jsonb, arrays, texto) / rangos y geometría / bloques de datos correlacionados.</td><td>BRIN para históricos insertados en orden.</td></tr>
+            <tr><td><b>Seq Scan / Index Scan / Index Only Scan / Bitmap</b></td><td>Lee todo / salta por el índice / ni toca la tabla / combina índices.</td><td>Seq Scan no es un fallo si el filtro trae mucha tabla.</td></tr>
+            <tr><td><b>EXPLAIN / EXPLAIN ANALYZE</b></td><td>Plan estimado / ejecuta y mide.</td><td>ANALYZE de escrituras dentro de BEGIN/ROLLBACK.</td></tr>
+            <tr><td><b>ANALYZE / VACUUM / VACUUM FULL</b></td><td>Estadísticas / recoge tuplas muertas / reescribe y devuelve espacio con bloqueo.</td><td>FULL nunca en horario de servicio.</td></tr>
+            <tr><td><b>Particionar / indexar</b></td><td>Repartir la tabla / acelerar búsquedas.</td><td>Particionar por retención y mantenimiento, no «para ir rápido».</td></tr>
+            <tr><td><b>READ COMMITTED / REPEATABLE READ / SERIALIZABLE</b></td><td>Foto por instrucción / foto por transacción / como si fueran en serie.</td><td>Por encima del defecto, con reintentos.</td></tr>
+            <tr><td><b>Pesimista / optimista</b></td><td>Bloquea antes (<code>FOR UPDATE</code>) / comprueba al escribir (versión).</td><td>Pesimista con conflictos frecuentes.</td></tr>
+            <tr><td><b><code>FOR UPDATE</code> / <code>SKIP LOCKED</code> / <code>NOWAIT</code></b></td><td>Espera al bloqueo / salta filas bloqueadas / falla al momento.</td><td>SKIP LOCKED para colas de trabajo.</td></tr>
+            <tr><td><b>Función / procedimiento</b></td><td>Devuelve valor, se usa en consultas / CALL, puede hacer COMMIT.</td><td>Procedimiento para lotes.</td></tr>
+            <tr><td><b>IMMUTABLE / STABLE / VOLATILE</b></td><td>Mismo resultado siempre / dentro de una consulta / puede cambiar en cada fila.</td><td>Declara la más estricta cierta.</td></tr>
+            <tr><td><b>SECURITY INVOKER / DEFINER</b></td><td>Permisos de quien llama / de quien la creó.</td><td>DEFINER con <code>SET search_path</code> y REVOKE.</td></tr>
+            <tr><td><b>BEFORE / AFTER / INSTEAD OF</b></td><td>Modifica la fila / reacciona / sustituye (vistas).</td><td>Auditoría en AFTER.</td></tr>
+            <tr><td><b>GRANT / RLS</b></td><td>Qué tablas y operaciones / qué filas.</td><td>Ambas: RLS en datos por usuario.</td></tr>
+            <tr><td><b>pg_dump / PITR / réplica</b></td><td>Foto lógica / volver a un instante / copia en vivo (replica errores).</td><td>Réplica no sustituye a copias.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+
+        <h3>Los patrones que aplicaste en NakaMarket</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Problema que resuelve</th><th>Dónde lo usaste</th></tr></thead>
+          <tbody>
+            <tr><td><b>Clave sustituta + UNIQUE natural</b></td><td>Claves que cambian y FK frágiles.</td><td><code>usuarios.id</code> + <code>uq_usuarios_email</code> (4)</td></tr>
+            <tr><td><b>Dinero en céntimos</b></td><td>Descuadres por coma flotante.</td><td><code>precio_centimos bigint</code> (1)</td></tr>
+            <tr><td><b>Borrado lógico</b></td><td>Padres con historia que no se pueden borrar.</td><td>Baja de usuarios (5)</td></tr>
+            <tr><td><b>Tabla puente</b></td><td>Relaciones N:M.</td><td><code>anuncio_categoria</code>, <code>favoritos</code> (7)</td></tr>
+            <tr><td><b>UPSERT idempotente</b></td><td>Dobles envíos y recargas.</td><td><code>ON CONFLICT</code> (7)</td></tr>
+            <tr><td><b>Valor congelado</b></td><td>Facturas que cambian al cambiar el precio.</td><td><code>pedido_lineas.precio_centimos</code> (8)</td></tr>
+            <tr><td><b>Anti-join con NOT EXISTS</b></td><td>«¿Quién no tiene…?»</td><td>Usuarios sin anuncios (6)</td></tr>
+            <tr><td><b>Árbol con WITH RECURSIVE</b></td><td>Jerarquías de profundidad arbitraria.</td><td>Categorías (10)</td></tr>
+            <tr><td><b>Top N por grupo</b></td><td>«Los 3 mejores de cada…»</td><td><code>row_number</code> / LATERAL (10–11)</td></tr>
+            <tr><td><b>Gaps and islands</b></td><td>Sesiones, rachas, tramos.</td><td>Sesiones de eventos (11)</td></tr>
+            <tr><td><b>Serie sin huecos</b></td><td>Gráficas que mienten.</td><td><code>generate_series</code> + LEFT JOIN (13)</td></tr>
+            <tr><td><b>Restricción de exclusión</b></td><td>Reservas o promociones solapadas.</td><td><code>promociones</code> (13)</td></tr>
+            <tr><td><b>Columna generada</b></td><td>Datos derivados que se desincronizan.</td><td><code>busqueda tsvector</code> (14)</td></tr>
+            <tr><td><b>Cola con SKIP LOCKED</b></td><td>Varios trabajadores sobre las mismas tareas.</td><td><code>tareas</code> (20)</td></tr>
+            <tr><td><b>Auditoría genérica por trigger</b></td><td>Saber quién cambió qué.</td><td><code>to_jsonb(NEW)</code> + <code>app.usuario_id</code> (22)</td></tr>
+            <tr><td><b>Expandir / contraer</b></td><td>Cambios de esquema sin parar el servicio.</td><td>Migraciones (24)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Las buenas prácticas que más se repiten</h3>
+        <ul class="clean">
+          <li><b>La integridad, en la base de datos</b>: tipos, NOT NULL, CHECK, FK. La aplicación valida por cortesía.</li>
+          <li><b>Nombra las restricciones</b> (<code>pk_</code>, <code>uq_</code>, <code>ck_</code>, <code>fk_</code>, <code>ix_</code>).</li>
+          <li><b>Indexa cada clave foránea</b> en la línea siguiente al CREATE TABLE.</li>
+          <li><b>WHERE primero como SELECT</b> y <code>BEGIN</code> antes de tocar datos que importan.</li>
+          <li><b>Cuenta después de cada JOIN</b>; comprueba que los subtotales suman el total.</li>
+          <li><b>Mide antes de indexar</b> con <code>EXPLAIN (ANALYZE, BUFFERS)</code>; estimadas frente a reales.</li>
+          <li><b>Transacciones cortas</b> y timeouts configurados.</li>
+          <li><b>Todo el SQL en archivos versionados</b>, numerados y reejecutables.</li>
+          <li><b>Mínimo privilegio</b>: la aplicación no es dueña de las tablas.</li>
+          <li><b>Restaura las copias</b> con regularidad y cronométralo.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Mensaje o síntoma</th><th>Causa y solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>relation "x" does not exist</code> con la tabla creada</td><td>Otra base o esquema (mira el prompt y <code>search_path</code>), o mayúsculas entre comillas.</td></tr>
+            <tr><td><code>column "Ana" does not exist</code></td><td>Comillas dobles en un valor. Usa simples.</td></tr>
+            <tr><td><code>UPDATE 0</code></td><td>El WHERE no casa (mayúsculas, espacios, NULL). Pruébalo como SELECT.</td></tr>
+            <tr><td><code>current transaction is aborted</code></td><td>Un error anterior en la transacción. <code>ROLLBACK</code> y repite.</td></tr>
+            <tr><td><code>duplicate key value violates unique constraint "pk_…"</code> al insertar sin id</td><td>Secuencia desfasada tras restaurar o cargar. <code>setval</code>.</td></tr>
+            <tr><td><code>must appear in the GROUP BY clause…</code></td><td>Columna ni agrupada ni agregada.</td></tr>
+            <tr><td><code>column "alias" does not exist</code> en el WHERE</td><td>El WHERE se evalúa antes del SELECT. Repite la expresión o usa una CTE.</td></tr>
+            <tr><td>El LEFT JOIN devuelve lo mismo que un INNER</td><td>Filtro de la tabla derecha en el WHERE. Muévelo al ON.</td></tr>
+            <tr><td>Totales inflados tras un JOIN</td><td>Relación 1:N multiplica filas. Agrega antes de unir o usa subconsultas.</td></tr>
+            <tr><td><code>NOT IN</code> devuelve cero filas</td><td>Hay un NULL en la subconsulta. NOT EXISTS.</td></tr>
+            <tr><td><code>window functions are not allowed in WHERE</code></td><td>Filtra la ventana en una subconsulta o CTE.</td></tr>
+            <tr><td>El informe diario cambia según quién lo ejecuta</td><td>Zona horaria de la sesión. <code>AT TIME ZONE</code> explícito.</td></tr>
+            <tr><td><code>generation expression is not immutable</code></td><td>Falta la configuración explícita en <code>to_tsvector</code>.</td></tr>
+            <tr><td>«He creado el índice y no se usa»</td><td>Baja selectividad, función sobre la columna, segunda columna del compuesto o falta <code>ANALYZE</code>.</td></tr>
+            <tr><td>Borrar un padre tarda segundos</td><td>FK sin índice en la tabla hija.</td></tr>
+            <tr><td>Tabla de 2 M de filas ocupa 40 GB</td><td>Bloat: transacción abierta o autovacuum mal ajustado.</td></tr>
+            <tr><td><code>deadlock detected</code></td><td>Bloqueos en orden distinto. Ordena siempre igual y reintenta.</td></tr>
+            <tr><td><code>could not serialize access…</code></td><td>Aislamiento alto sin bucle de reintento.</td></tr>
+            <tr><td>Un ALTER TABLE cuelga toda la aplicación</td><td>Espera un bloqueo y todo se encola detrás. <code>SET lock_timeout</code>.</td></tr>
+            <tr><td><code>no partition of relation "eventos" found for row</code></td><td>Falta la partición del mes (y no hay DEFAULT).</td></tr>
+            <tr><td><code>permission denied for sequence</code></td><td>Falta <code>USAGE</code> sobre la secuencia.</td></tr>
+            <tr><td>RLS activada y la aplicación no ve nada</td><td>Falta política para ese rol o no se fijó el usuario (<code>app.usuario_id</code>).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · SQL y modelado</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿En qué orden se ejecuta un SELECT y qué consecuencia práctica tiene?</p>
+            <div class="q-ans">FROM (y JOIN) → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT. Por eso un alias del SELECT no existe en el WHERE (sí en ORDER BY), los agregados no pueden ir en WHERE (van en HAVING) y las funciones de ventana se filtran desde fuera.</div></div>
+          <div class="q"><p class="q-text">2. Diferencia entre WHERE y HAVING.</p>
+            <div class="q-ans">WHERE filtra filas antes de agrupar y no admite agregados; HAVING filtra grupos después y sí los admite. Todo lo que pueda filtrarse en WHERE debe ir ahí: se procesan menos filas.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué <code>WHERE id NOT IN (SELECT cliente_id FROM pedidos)</code> puede devolver cero filas?</p>
+            <div class="q-ans">Si la subconsulta contiene un NULL, <code>x NOT IN (…, NULL)</code> nunca es verdadero (es desconocido), por la lógica de tres valores. NOT EXISTS no compara valores y es inmune: es la forma correcta del anti-join.</div></div>
+          <div class="q"><p class="q-text">4. Un informe une pedidos con sus líneas y suma los gastos de envío del pedido. Sale el triple. ¿Por qué?</p>
+            <div class="q-ans">El JOIN 1:N repite cada pedido tantas veces como líneas tiene, y el gasto de envío se suma una vez por línea. Hay que agregar las líneas en una subconsulta o CTE antes de unir, o sumar el envío desde la tabla de pedidos por separado. DISTINCT no lo arregla (importes iguales se perderían).</div></div>
+          <div class="q"><p class="q-text">5. Explica 1FN, 2FN y 3FN con un ejemplo cada una.</p>
+            <div class="q-ans">1FN: un valor por celda (no <code>foto_1, foto_2</code> ni listas con comas). 2FN: con clave compuesta, nada depende sólo de una parte (el título del anuncio no va en <code>anuncio_categoria</code>). 3FN: nada depende de otro atributo no clave (la ciudad del cliente no va en la factura, va en el cliente). «La clave, toda la clave y nada más que la clave».</div></div>
+          <div class="q"><p class="q-text">6. ¿Guardar el precio en <code>pedido_lineas</code> viola la normalización?</p>
+            <div class="q-ans">No: es un dato distinto. El precio del anuncio puede cambiar; el precio pagado en ese pedido no debe cambiar nunca. Coincidieron en un instante. Es desnormalización deliberada por valor histórico, y conviene nombrarla para que se note.</div></div>
+          <div class="q"><p class="q-text">7. ¿Clave natural o sustituta como clave primaria?</p>
+            <div class="q-ans">Sustituta (<code>bigint IDENTITY</code>) como PK y la natural protegida con UNIQUE. Las naturales cambian (un email), son largas y obligan a actualizar en cascada todas las FK. Si hay que exponer el identificador, un UUID público aparte.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cómo garantizas que un anuncio tenga como mucho una categoría principal?</p>
+            <div class="q-ans">Un CHECK no sirve porque sólo ve su propia fila. Se usa un índice único parcial: <code>CREATE UNIQUE INDEX … ON anuncio_categoria (anuncio_id) WHERE principal</code>. Para «no solapar en el tiempo», una restricción de exclusión con GiST.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Consultas avanzadas y tipos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Diferencia entre <code>row_number</code>, <code>rank</code> y <code>dense_rank</code>.</p>
+            <div class="q-ans">Con empates en el criterio de orden: <code>row_number</code> numera 1, 2, 3 sin repetir; <code>rank</code> da 1, 1, 3 (salta); <code>dense_rank</code> da 1, 1, 2. Para «top N por grupo» se usa row_number con una columna única de desempate.</div></div>
+          <div class="q"><p class="q-text">2. Escribe los 3 anuncios más caros de cada categoría.</p>
+            <div class="q-ans"><code>SELECT * FROM (SELECT a.*, row_number() OVER (PARTITION BY ac.categoria_id ORDER BY a.precio_centimos DESC, a.id) AS rn FROM anuncios a JOIN anuncio_categoria ac ON ac.anuncio_id = a.id) t WHERE rn &lt;= 3;</code> La ventana no puede filtrarse en el WHERE de su propio nivel. Con muchas categorías y un índice adecuado, LATERAL con <code>LIMIT 3</code> puede ser más rápido.</div></div>
+          <div class="q"><p class="q-text">3. ¿Por qué <code>sum(x) OVER (ORDER BY fecha)</code> da un acumulado y no el total?</p>
+            <div class="q-ans">Porque al añadir ORDER BY a la ventana el marco por defecto pasa a ser «desde el principio hasta la fila actual» (con RANGE, que además agrupa empates). Para el total, <code>OVER ()</code>; para acumulado fila a fila, <code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>.</div></div>
+          <div class="q"><p class="q-text">4. ¿Para qué sirve una CTE recursiva y qué riesgo tiene?</p>
+            <div class="q-ans">Para recorrer jerarquías o grafos de profundidad desconocida (árbol de categorías, organigramas): caso base + UNION ALL + paso que se referencia. El riesgo es un ciclo en los datos, que la hace infinita: se protege con un array de visitados o la cláusula CYCLE.</div></div>
+          <div class="q"><p class="q-text">5. ¿Una vista acelera una consulta lenta?</p>
+            <div class="q-ans">No: una vista es una consulta con nombre que se sustituye por su definición. Aporta abstracción, seguridad y un solo sitio. Para acelerar hace falta una vista materializada (guarda el resultado y hay que refrescarla), un índice o reescribir la consulta.</div></div>
+          <div class="q"><p class="q-text">6. El informe diario da cifras distintas desde el servidor y desde un portátil. ¿Qué pasa?</p>
+            <div class="q-ans">La columna es timestamptz y <code>date_trunc('day', …)</code> corta los días en la zona de cada sesión. Los pedidos de cerca de medianoche caen en días distintos. Se fija la zona del negocio: <code>date_trunc('day', creado_en AT TIME ZONE 'Europe/Madrid')</code>.</div></div>
+          <div class="q"><p class="q-text">7. ¿Cuándo usarías JSONB y cuándo columnas?</p>
+            <div class="q-ans">JSONB para atributos que varían por tipo de fila (talla en ropa, marchas en bicis) y no se consultan en todas las pantallas. Lo común a todas las filas va en columnas (tipos, restricciones, índices simples) y lo que debe existir en otra tabla, con FK. Si un atributo JSONB se vuelve central, se promociona a columna.</div></div>
+          <div class="q"><p class="q-text">8. ¿Cómo montarías un buscador de anuncios en PostgreSQL?</p>
+            <div class="q-ans">Columna generada <code>tsvector</code> con título (peso A) y descripción (peso B) usando una configuración española con unaccent, índice GIN, consultas con <code>websearch_to_tsquery</code> y orden por <code>ts_rank</code>. Para tolerar erratas, <code>pg_trgm</code> con índice <code>gin_trgm_ops</code> como respaldo.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Índices y rendimiento</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Creas un índice sobre <code>estado</code> y la consulta sigue haciendo Seq Scan. ¿Está roto?</p>
+            <div class="q-ans">Probablemente no. Si el 70 % de las filas cumple el filtro, leer la tabla secuencialmente es más barato que saltar por el índice a casi todas las páginas. Los índices compensan con filtros selectivos. Si el caso frecuente es un valor minoritario, un índice parcial.</div></div>
+          <div class="q"><p class="q-text">2. Tienes un índice (cliente_id, fecha). ¿Sirve para filtrar sólo por fecha?</p>
+            <div class="q-ans">No de forma eficiente: un compuesto sólo se aprovecha por su prefijo izquierdo. Para filtrar por fecha sola hace falta un índice que empiece por fecha. Regla de diseño: columnas de igualdad primero y la de rango al final.</div></div>
+          <div class="q"><p class="q-text">3. <code>WHERE lower(email) = …</code> no usa el índice sobre email. Soluciones.</p>
+            <div class="q-ans">Un índice de expresión <code>ON usuarios (lower(email))</code> (la expresión debe coincidir exactamente), o guardar el email ya normalizado y comparar la columna desnuda. La regla general: no envolver la columna indexada en una función.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué miras primero en un EXPLAIN ANALYZE?</p>
+            <div class="q-ans">Las filas estimadas frente a las reales en cada nodo: una diferencia de 10× o más indica estadísticas malas y explica la mayoría de los planes malos. Después, los nodos con más tiempo (multiplicando por loops), los Filter con muchas filas descartadas y los Sort o Hash que van a disco. Con BUFFERS, las páginas leídas.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué es MVCC y qué coste tiene?</p>
+            <div class="q-ans">Control de concurrencia por versiones: un UPDATE escribe una versión nueva y marca la antigua, y cada transacción ve la versión que le corresponde, así que lectores y escritores no se bloquean. El coste son las tuplas muertas, que VACUUM debe recoger; si no, la tabla engorda (bloat) y las consultas leen más páginas.</div></div>
+          <div class="q"><p class="q-text">6. VACUUM no reduce el tamaño de una tabla. ¿Ha fallado?</p>
+            <div class="q-ans">No necesariamente: VACUUM marca el espacio como reutilizable, no lo devuelve al sistema. Si además informa de tuplas «dead but not yet removable», algo impide limpiar: una transacción abierta, una ranura de replicación abandonada o una transacción preparada. Para recuperar espacio, VACUUM FULL (bloqueo exclusivo) o pg_repack.</div></div>
+          <div class="q"><p class="q-text">7. ¿Particionar una tabla la hace más rápida?</p>
+            <div class="q-ans">Sólo si las consultas filtran por la clave de partición (poda); si no, se recorren todas las particiones y además planificar cuesta más. Los motivos reales son operativos: borrar un mes con DETACH + DROP al instante, mantenimiento por trozos e índices que caben en memoria.</div></div>
+          <div class="q"><p class="q-text">8. La página 3.000 de un listado tarda 2 s y la 1 tarda 5 ms. ¿Por qué y cómo se arregla?</p>
+            <div class="q-ans">OFFSET obliga a leer y descartar todas las filas anteriores. La paginación por clave (<code>WHERE (fecha, id) &lt; (:ultima_fecha, :ultimo_id) ORDER BY fecha DESC, id DESC LIMIT 20</code>) con un índice sobre esas columnas cuesta lo mismo en cualquier página. Limitación: no permite saltar a una página arbitraria.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Transacciones, lógica y operación</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué significa ACID?</p>
+            <div class="q-ans">Atomicidad (todo o nada), Consistencia (las restricciones se cumplen antes y después), Aislamiento (las transacciones concurrentes no ven estados intermedios según el nivel) y Durabilidad (lo confirmado sobrevive a un corte, gracias al WAL). La consistencia depende de que tú declares las restricciones.</div></div>
+          <div class="q"><p class="q-text">2. «Comprobar disponibilidad y reservar» va en una transacción y aun así se vende dos veces. ¿Por qué?</p>
+            <div class="q-ans">La transacción da atomicidad, no exclusión: con READ COMMITTED, dos transacciones pueden leer «disponible» a la vez y las dos reservan. Se arregla bloqueando la fila (<code>SELECT … FOR UPDATE</code>) o poniendo la condición en el propio UPDATE (<code>WHERE estado = 'activo'</code>) y comprobando las filas afectadas.</div></div>
+          <div class="q"><p class="q-text">3. ¿Cómo implementas una cola de tareas con diez trabajadores?</p>
+            <div class="q-ans">Cada trabajador toma una tarea con <code>SELECT … WHERE estado = 'pendiente' ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED</code>, la procesa y la marca en la misma transacción. SKIP LOCKED hace que cada uno salte las que ya tienen otros, sin esperar ni duplicar.</div></div>
+          <div class="q"><p class="q-text">4. ¿Qué es un interbloqueo y cómo se previene?</p>
+            <div class="q-ans">Dos transacciones esperan cada una un bloqueo que tiene la otra. PostgreSQL lo detecta y aborta una (<code>deadlock detected</code>). Se previene bloqueando siempre los recursos en el mismo orden y con transacciones cortas; se gestiona reintentando.</div></div>
+          <div class="q"><p class="q-text">5. ¿Qué lógica pondrías en la base de datos y cuál en la aplicación?</p>
+            <div class="q-ans">En la base, lo que debe cumplirse la invoque quien la invoque: integridad, reglas de negocio invariantes, auditoría, operaciones atómicas complejas. En la aplicación, la presentación, el flujo de pantallas y la integración con servicios externos (nunca desde un trigger).</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué es peligrosa una función SECURITY DEFINER sin <code>SET search_path</code>?</p>
+            <div class="q-ans">Se ejecuta con los permisos de su dueño. Si resuelve nombres según el search_path de quien la llama, un usuario puede crear en su esquema una tabla o función con el mismo nombre y hacer que la función privilegiada use la suya. Se fija el search_path y se revoca EXECUTE a PUBLIC.</div></div>
+          <div class="q"><p class="q-text">7. Si la aplicación ya filtra por usuario, ¿para qué RLS?</p>
+            <div class="q-ans">Porque basta un olvido en una consulta, una inyección SQL o una herramienta nueva que se conecte directamente para exponer datos ajenos. RLS es una barrera en la propia base que no se puede olvidar y que falla cerrada. Además, centraliza la regla.</div></div>
+          <div class="q"><p class="q-text">8. Alguien ejecutó <code>DELETE FROM pedidos</code> sin WHERE e hizo commit. Hay réplica y copia diaria. ¿Qué haces?</p>
+            <div class="q-ans">La réplica no sirve: ya replicó el borrado. Si hay PITR, restaurar en otra instancia al instante anterior al DELETE y recuperar las filas. Si sólo hay la copia diaria, restaurarla aparte y reinsertar los pedidos, asumiendo que se pierden los posteriores a la copia (o se reconstruyen desde la auditoría). Después: <code>BEGIN</code> por costumbre, permisos mínimos y PITR.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <p>Una idea por capítulo. Si puedes explicar cada línea con tus palabras, tienes el curso.</p>
+        <ul class="clean">
+          <li><b>0</b> · Cliente-servidor; SQL declarativo; clúster → base → esquema → tabla.</li>
+          <li><b>1</b> · El tipo lo decide casi todo; dinero en céntimos; timestamptz para instantes.</li>
+          <li><b>2</b> · CRUD con lista de columnas, RETURNING, BEGIN antes de tocar; NULL = desconocido.</li>
+          <li><b>3</b> · Orden lógico del SELECT; lógica de tres valores; orden total para paginar.</li>
+          <li><b>4</b> · PK sustituta + UNIQUE natural; IDENTITY; CHECK rechaza lo falso; NOT VALID.</li>
+          <li><b>5</b> · FK en el lado muchos, con índice; RESTRICT por defecto.</li>
+          <li><b>6</b> · INNER vs LEFT; filtro de la derecha en el ON; NOT EXISTS; JOIN multiplica.</li>
+          <li><b>7</b> · Tabla puente con dos índices; ON CONFLICT; índice único parcial.</li>
+          <li><b>8</b> · 1FN, 2FN, 3FN; desnormalizar a propósito y documentado.</li>
+          <li><b>9</b> · GROUP BY, HAVING, FILTER, coalesce/nullif, media y mediana.</li>
+          <li><b>10</b> · Subconsultas, CTE, WITH RECURSIVE con ciclos controlados, LATERAL.</li>
+          <li><b>11</b> · Ventanas: PARTITION BY, marco ROWS/RANGE, row_number, lag.</li>
+          <li><b>12</b> · Vistas por concepto; materializadas con índice único y refresco programado.</li>
+          <li><b>13</b> · AT TIME ZONE del negocio; generate_series; rangos y EXCLUDE.</li>
+          <li><b>14</b> · tsvector generado + GIN + websearch_to_tsquery; pg_trgm para erratas.</li>
+          <li><b>15</b> · jsonb con @&gt; y GIN; ENUM con cuidado; bigint dentro, uuid fuera.</li>
+          <li><b>16</b> · B-tree, prefijo izquierdo, parcial, expresión, INCLUDE, CONCURRENTLY.</li>
+          <li><b>17</b> · Estimadas vs reales; loops; BUFFERS; pg_stat_statements.</li>
+          <li><b>18</b> · MVCC, tuplas muertas, autovacuum por tabla, timeouts, wraparound.</li>
+          <li><b>19</b> · Particionar por retención; la clave en la PK; poda; automatizar.</li>
+          <li><b>20</b> · ACID; READ COMMITTED; FOR UPDATE; SKIP LOCKED; orden de bloqueo.</li>
+          <li><b>21</b> · LANGUAGE sql si basta; volatilidad; SQL dinámico seguro; SECURITY DEFINER blindado.</li>
+          <li><b>22</b> · Triggers BEFORE/AFTER, WHEN, auditoría con SET LOCAL.</li>
+          <li><b>23</b> · Roles y grupos, PUBLIC revocado, privilegios por defecto, RLS.</li>
+          <li><b>24</b> · Copias restauradas, PITR, migraciones expandir/contraer, agrupador de conexiones.</li>
+        </ul>
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+          <ul class="clean" style="margin-bottom:0">
+            <li>Una vez por semana, plantéate una pregunta de negocio sobre NakaMarket y respóndela con una sola consulta (agregados, ventanas, CTE).</li>
+            <li>Antes de una entrevista, escribe de memoria: un anti-join, un top N por grupo, un acumulado y una serie sin huecos.</li>
+            <li>Ejecuta <code>EXPLAIN (ANALYZE, BUFFERS)</code> sobre tus consultas habituales y explica cada nodo en voz alta.</li>
+            <li>Haz una restauración de prueba de tu copia y cronométrala: es la pregunta de operación que más se hace.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de psql</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

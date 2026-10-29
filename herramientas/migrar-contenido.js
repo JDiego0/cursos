@@ -365,10 +365,13 @@ function verificar(curso, ficha) {
     }
   }
 
-  /* Cada capítulo aporta al menos un nodo y una fila. */
+  /* Cada capítulo aporta al menos un nodo y una fila. Los del módulo
+     de repaso no construyen nada nuevo: resumen lo que ya existe. */
   const conNodo = new Set(curso.arquitectura.flatMap((capa) => capa.nodes.map((n) => n.ch)));
   const conFila = new Set(curso.artefactos.map((a) => a.capitulo));
+  const deRepaso = new Set(curso.capitulos.filter((c) => /· Repaso/.test(c.modulo)).map((c) => c.num));
   for (const n of numeros) {
+    if (deRepaso.has(n)) continue;
     if (!conNodo.has(n)) avisos.push('el capítulo ' + n + ' no aporta ningún nodo a ARCH');
     if (!conFila.has(n)) avisos.push('el capítulo ' + n + ' no aporta ninguna fila a RESOURCES');
   }

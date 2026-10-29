@@ -24094,7 +24094,460 @@ find paquetes -name ".env*" -not -path "*/node_modules/*" || echo "sin archivos 
     </details>
   </section>
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-25"
+    data-num="25"
+    data-title="Repaso exprés: todo TypeScript de NakaBoard en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="60 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Inferencia|unknown|Uniones|Estrechamiento|strict|as const|Genéricos|keyof|Tipos utilitarios|Unión discriminada|Guardas|Zod|Result|Branded types">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria todo NakaBoard</strong>: de las primeras anotaciones al paquete publicado en npm,
+      pasando por las uniones discriminadas, los genéricos, el borde validado con Zod y el contrato compartido entre cliente y
+      servidor. Cada idea aparece con lo mínimo para recordarla: qué es, para qué sirve y un ejemplo del proyecto.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo tras un tiempo sin practicar, o salta al bloque que necesites. El
+      número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las diferencias que más se confunden
+      y un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>NakaBoard en un diagrama</h3>
+        <div class="diagram">  M6 CALIDAD Y PRODUCCIÓN   Vitest + expectTypeOf · ESLint con tipos · .d.ts ·      (21–24)
+                            monorepo con project references · tsup · npm · CI
+          ▲
+  M5 EN EJECUCIÓN           promesas · Zod en el borde · Result y marcas ·          (17–20)
+                            API y cliente con contrato compartido
+          ▲
+  M4 TIPOS AVANZADOS        condicionales e infer · mapeados y plantillas · clases  (14–16)
+          ▲
+  M3 EL SISTEMA DE TIPOS    genéricos · keyof y T[K] · utilitarios ·                (9–13)
+                            uniones discriminadas · guardas y satisfies
+          ▲
+  M2 FUNCIONES Y ESTRUCTURA funciones · módulos ES · strict · as const              (5–8)
+          ▲
+  M1 FUNDAMENTOS            tsc y tsconfig · primitivos e inferencia ·              (0–4)
+                            interfaces · uniones · arrays y tuplas</div>
+
+        <h3>Las ideas que vertebran todo el curso</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Idea</th><th>Dónde reaparece</th></tr></thead>
+          <tbody>
+            <tr><td><b>Los tipos se borran al compilar</b>: no validan nada en ejecución.</td><td>Desde el cap. 0 hasta Zod (18) y el contrato (20).</td></tr>
+            <tr><td><b>Anota los bordes, infiere el resto</b>.</td><td>Primitivos (1), funciones (5), genéricos (9).</td></tr>
+            <tr><td><b>Haz imposibles los estados imposibles</b>.</td><td>Uniones (3), uniones discriminadas (12), Result (19).</td></tr>
+            <tr><td><b>Un solo sitio de la verdad</b>: derivar en vez de repetir.</td><td>as const (8), utilitarios (11), mapeados (15), z.infer (18).</td></tr>
+            <tr><td><b>Ni as, ni any, ni !</b>: cada uno es una promesa sin comprobar.</td><td>unknown (1), strict (7), guardas (13), marcas (19).</td></tr>
+            <tr><td><b>Valida una vez, en el borde</b>, y confía en los tipos dentro.</td><td>Guardas (13), Zod (18), API (20).</td></tr>
+            <tr><td><b>Exhaustividad gratis</b>: que lo nuevo rompa la compilación.</td><td>Record (3), casoImposible (12), Manejadores (20).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧱 Bloque 1 · Fundamentos del tipado (cap. 0–4)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Qué es</b> (0): JavaScript + un sistema de tipos que se comprueba al compilar y se borra. Tres piezas: el compilador <code>tsc</code> (la verdad oficial), el servidor de lenguaje del editor y el motor que sólo entiende JavaScript. <code>tsc --noEmit</code> comprueba; <code>tsx</code> ejecuta sin comprobar. TypeScript en el proyecto, nunca global, y <code>strict: true</code> desde el archivo cero.</li>
+          <li><b>Inferencia</b> (1): anota parámetros y retornos de lo que exportas; deja las locales a la inferencia. <code>const</code> infiere el literal, <code>let</code> lo amplía. <code>any</code> apaga el compilador y se contagia; <code>unknown</code> obliga a comprobar. <code>void</code> = sin valor útil; <code>never</code> = no puede ocurrir. <code>as</code> cambia lo que el compilador cree, no lo que el valor es.</li>
+          <li><b>Objetos</b> (2): <code>interface</code> y <code>type</code> casi intercambiables; <code>type</code> además nombra uniones y tipos calculados; <code>interface</code> se fusiona. Tipado <b>estructural</b>: encaja lo que tiene la forma. El control de exceso de propiedades sólo actúa sobre literales escritos en el sitio. <code>readonly</code> es superficial. Entidad (<code>Tarea</code>) separada de entrada (<code>DatosNuevaTarea</code>).</li>
+          <li><b>Uniones y estrechamiento</b> (3): una unión de literales sustituye a varios booleanos incompatibles. Siete formas de estrechar: <code>typeof</code>, igualdad, <code>in</code>, <code>instanceof</code>, veracidad, nulos y guardas. La veracidad miente con <code>0</code>, <code>''</code> y <code>NaN</code>. <code>Record&lt;Union, T&gt;</code> da exhaustividad.</li>
+          <li><b>Arrays y tuplas</b> (4): <code>noUncheckedIndexedAccess</code> hace que <code>lista[0]</code> sea <code>T | undefined</code>. <code>readonly T[]</code> en parámetros es una promesa de no mutar, y no rompe a nadie (varianza en un sentido). Tuplas etiquetadas; si cuentas posiciones, querías un objeto. El spread copia superficialmente.</li>
+        </ul>
+        <div class="code-block" data-lang="TypeScript · inferencia, unknown y estrechamiento">
+<pre><code>const estado = 'pendiente';          // tipo 'pendiente' (literal)
+let otro = 'pendiente';              // tipo string (ampliado)
+
+function leer(dato: unknown): string {
+  if (typeof dato === 'string') return dato.trim();   // estrechado a string
+  return '';
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> muestra la ampliación de literales y cómo <code>unknown</code> obliga a comprobar antes
+        de usar el valor. Con <code>any</code>, <code>dato.trim()</code> compilaría y fallaría en ejecución.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧭 Bloque 2 · Funciones, módulos, strict y as const (cap. 5–8)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Funciones</b> (5): el tipo es <code>(a: A) =&gt; R</code>. La inferencia contextual tipa las callbacks. Valor por defecto mejor que opcional; con más de tres parámetros, objeto de opciones. Una función que acepta menos parámetros encaja (por eso <code>map(parseInt)</code> falla en silencio). Un retorno <code>void</code> admite una función <code>async</code>: sus errores se pierden. Evita sobrecargas: dos funciones con nombre.</li>
+          <li><b>Módulos</b> (6): sólo exportaciones nombradas; <code>import type</code> desaparece al compilar y <code>verbatimModuleSyntax</code> lo exige. La extensión del import es <code>.js</code> porque tsc no reescribe rutas. Barriles con lista explícita (sin <code>export *</code>). Alias <code>#dominio/*</code>: <code>paths</code> para el compilador e <code>imports</code> en package.json para Node. Un ciclo aparece como <code>Cannot access X before initialization</code>.</li>
+          <li><b>strict</b> (7): ocho reglas; la decisiva es <code>strictNullChecks</code>. <code>?.</code> corta la cadena, <code>??</code> sólo sustituye nulos (<code>||</code> también pisa el 0). El <code>!</code> promete sin comprobar: mejor <code>exigir(valor, 'qué')</code>. En el <code>catch</code> lo lanzado es <code>unknown</code>: normalízalo con <code>comoError</code>. Un solo tipo de vacío en el dominio (<code>undefined</code>).</li>
+          <li><b>as const</b> (8): conserva literales, marca readonly en profundidad y convierte arrays en tuplas. <code>typeof LISTA[number]</code> deriva la unión. El enum genera código, es nominal y el numérico acepta cualquier número: no lo usamos.</li>
+        </ul>
+        <div class="code-block" data-lang="TypeScript · src/dominio/estados.ts">
+<pre><code>export const ESTADOS = [
+  'pendiente', 'en curso', 'bloqueada', 'terminada', 'cancelada',
+] as const;
+
+export type EstadoTarea = typeof ESTADOS[number];</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> la lista existe en ejecución (para recorrerla y validar) y el tipo sale de ella.
+        Añadir un estado actualiza la unión, las guardas y cada <code>Record&lt;EstadoTarea, …&gt;</code>, que pasa a dar error
+        donde falte el caso nuevo.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧬 Bloque 3 · El sistema de tipos en serio (cap. 9–13)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Genéricos</b> (9): <code>&lt;T&gt;</code> es un hueco con nombre que se infiere de los argumentos. <code>T extends X</code> es una restricción («al menos esto»), y afila la inferencia. Si <code>T</code> aparece una sola vez en la firma, sobra: usa <code>unknown</code>. Se borran: no hay <code>new T()</code>. La interfaz <code>Almacen</code> separa la lógica de dónde se guardan los datos (<code>repositorioEnMemoria</code>). Generaliza al tercer uso.</li>
+          <li><b>keyof y T[K]</b> (10): <code>keyof T</code> es la unión de claves; <code>T[K]</code>, el tipo de un campo. El patrón <code>&lt;T, K extends keyof T&gt;(obj: T, c: K): T[K]</code> hace que el retorno dependa del argumento. <code>Object.keys</code> devuelve <code>string[]</code> por el tipado estructural. Nunca recibas un nombre de campo como <code>string</code>.</li>
+          <li><b>Utilitarios</b> (11): <code>Partial</code>, <code>Required</code>, <code>Readonly</code> (superficiales); <code>Pick</code> (lista blanca, para lo que sale del sistema) y <code>Omit</code> (lista negra); <code>Record</code>; <code>Exclude</code>/<code>Extract</code>/<code>NonNullable</code>; <code>ReturnType</code>/<code>Parameters</code>/<code>Awaited</code>. <code>Omit</code> no comprueba las claves: <code>OmitirDe&lt;T, K extends keyof T&gt;</code>.</li>
+          <li><b>Uniones discriminadas</b> (12): variantes con un campo literal común (<code>tipo</code>) y sólo los datos que tienen sentido en cada una. <code>casoImposible(valor: never)</code> en el <code>default</code> convierte el caso olvidado en error de compilación.</li>
+          <li><b>Guardas y satisfies</b> (13): <code>v is T</code> comprueba y estrecha; <code>asserts v is T</code> exige y estrecha el resto del bloque. El compilador no verifica el cuerpo: hay que probarlas. <code>satisfies</code> comprueba sin perder el tipo inferido. Las guardas validan pero no convierten (las fechas siguen siendo cadenas).</li>
+        </ul>
+        <div class="code-block" data-lang="TypeScript · unión discriminada exhaustiva">
+<pre><code>function icono(estado: EstadoDeTarea): string {
+  switch (estado.tipo) {
+    case 'pendiente': return '·';
+    case 'en curso':  return '▶';
+    case 'bloqueada': return '⛔';
+    case 'terminada': return '✓';
+    case 'cancelada': return '✕';
+    default: return casoImposible(estado);     // estado: never
+  }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> dentro de cada <code>case</code> el estado está estrechado a su variante (en
+        <code>'bloqueada'</code> existe <code>estado.motivo</code>). Si se añade un sexto estado, <code>estado</code> deja de ser
+        <code>never</code> en el <code>default</code> y la llamada no compila.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧪 Bloque 4 · Tipos avanzados (cap. 14–16)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Condicionales</b> (14): <code>T extends U ? A : B</code>, donde <code>extends</code> es «asignable a». <code>infer</code> saca una pieza con encaje de patrones. Con un parámetro desnudo <b>distribuyen</b> sobre la unión, y <code>never</code> desaparece de las uniones: así funcionan <code>Exclude</code> y los filtros. <code>[T] extends [U]</code> apaga la distribución. Recursivos con límite de profundidad (TS2589). Coste: compilación y legibilidad.</li>
+          <li><b>Mapeados y plantillas</b> (15): <code>{ [K in Claves]: V }</code> recorre claves; <code>+</code>/<code>-</code> añaden o quitan <code>?</code> y <code>readonly</code>; <code>as</code> renombra y una clave a <code>never</code> desaparece. Las plantillas <code>`${A}:${B}`</code> multiplican uniones (<code>Permiso = `${Recurso}:${Accion}`</code>), con un límite de 100.000 miembros. Describen forma, no validez: <code>ColorHex = `#${string}`</code> + guarda.</li>
+          <li><b>Clases</b> (16): <code>private</code>/<code>protected</code> sólo existen al compilar; <code>#campo</code> es privado de verdad. Propiedades de parámetro, <code>abstract</code>, <code>implements</code>, <code>override</code>. Perder <code>this</code> al pasar un método por nombre no lo detecta el compilador. Los errores sí son clases (<code>ErrorNakaBoard</code>, <code>NoEncontrado</code>) porque <code>instanceof</code> los reconoce en el <code>catch</code>. Para lo demás, funciones y closures.</li>
+        </ul>
+        <div class="code-block" data-lang="TypeScript · condicional distributivo e infer">
+<pre><code>type SinNulos&lt;T&gt; = T extends null | undefined ? never : T;
+type A = SinNulos&lt;string | null | number&gt;;      // string | number
+
+type Elemento&lt;T&gt; = T extends readonly (infer E)[] ? E : never;
+type B = Elemento&lt;readonly Tarea[]&gt;;             // Tarea</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> el primero se aplica a cada miembro de la unión y los <code>never</code> se caen. El
+        segundo usa <code>readonly</code> en el patrón porque un array de sólo lectura no encaja en <code>(infer E)[]</code>.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚡ Bloque 5 · Asincronía y el borde validado (cap. 17–18)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Promesas</b> (17): <code>Promise&lt;T&gt;</code> sólo describe el éxito; el error es <code>unknown</code>. <code>Awaited&lt;T&gt;</code> desenvuelve. Errores clásicos: la <b>promesa flotante</b> (compila porque encaja en <code>void</code>), <code>forEach(async …)</code> que no espera, <code>await</code> en bucle que serializa, y <code>return</code> sin <code>await</code> dentro de un <code>try</code>. <code>all</code> falla al primero, <code>allSettled</code> los da todos, <code>race</code> el primero en terminar, <code>any</code> el primero que acierte. Cancelar es <code>AbortSignal</code>. <code>cache ??= cargar()</code> guarda la promesa, no el resultado.</li>
+          <li><b>Zod</b> (18): «parsea, no valides». Un esquema da validador, conversor y tipo (<code>z.infer</code> = salida, <code>z.input</code> = entrada). <code>parse</code> lanza; <code>safeParse</code> devuelve una unión discriminada. <code>.refine()</code> para reglas de negocio; <code>z.discriminatedUnion</code> para uniones. Parsear una vez, en el borde, y envolver la librería.</li>
+        </ul>
+        <div class="code-block" data-lang="TypeScript · el esquema como fuente del tipo">
+<pre><code>export const EsquemaTarea = EsquemaEntidad.extend({ /* … */ });
+export type TareaValidada = z.infer&lt;typeof EsquemaTarea&gt;;
+
+const r = EsquemaTarea.safeParse(datos);        // nunca lanza
+if (r.success) {
+  console.log(r.data.titulo);                   // r.data: TareaValidada
+} else {
+  console.log(r.error.issues);                  // problemas con ruta y mensaje
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> el tipo sale del esquema, así que no pueden desincronizarse. Tras comprobar
+        <code>success</code>, <code>r.data</code> tiene el tipo validado sin un solo <code>as</code>.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧷 Bloque 6 · Result, marcas y la API con contrato (cap. 19–20)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Result</b> (19): <code>Resultado&lt;T, E&gt;</code> es una unión discriminada que pone el fallo en la firma (<code>exito</code>, <code>fallo</code>, <code>mapear</code>, <code>encadenar</code>, que corta al primer error). Result para lo previsible (negocio); excepción para lo roto (invariantes, arranque).</li>
+          <li><b>Branded types</b> (19): <code>Marcado&lt;string, 'IdTarea'&gt;</code> intersecta con una propiedad imposible de crear y vuelve nominal lo estructural. Coste cero en ejecución. El <code>as</code> que crea la marca vive sólo en el constructor inteligente (<code>idTarea</code>, <code>centimos</code>), tras validar.</li>
+          <li><b>Contrato compartido</b> (20): un módulo del que dependen cliente y servidor. Un tipo compartido es un acuerdo, no una garantía: los dos lados validan. Tipos serializables (fechas como cadenas). <code>RUTAS</code> con <code>as const satisfies</code> deriva cuerpo, consulta, parámetros y respuesta; <code>Manejadores</code> obliga a implementar todas las rutas. Orden en el servidor: autorizar, validar entrada, ejecutar, validar salida. Reintentar sólo lo idempotente.</li>
+        </ul>
+        <div class="code-block" data-lang="TypeScript · src/dominio/marcas.ts">
+<pre><code>declare const marca: unique symbol;
+export type Marcado&lt;T, M extends string&gt; = T &amp; { readonly [marca]: M };
+
+export type IdTarea   = Marcado&lt;string, 'IdTarea'&gt;;
+export type IdUsuario = Marcado&lt;string, 'IdUsuario'&gt;;
+// un IdUsuario ya no encaja donde se espera un IdTarea</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> en ejecución los dos son cadenas, pero el compilador ya no los considera
+        intercambiables. <code>declare</code> crea la marca sólo en el mundo de los tipos.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🚀 Bloque 7 · Pruebas, declaraciones, monorepo y entrega (cap. 21–24)</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Tema</th><th>Lo esencial</th></tr></thead>
+          <tbody>
+            <tr><td><b>Pruebas</b> (21)</td><td>Ya no se prueban tipos de argumentos; sí lo que el compilador cree sin comprobar: guardas, esquemas y casos límite (<code>NaN</code>, <code>''</code>, <code>0</code>). Dobles = implementaciones en memoria. <code>expectTypeOf</code> en <code>.test-d.ts</code>; <code>@ts-expect-error</code> (nunca <code>@ts-ignore</code>). ESLint con tipos caza promesas flotantes y <code>||</code> por <code>??</code>. Un comando: <code>npm run verificar</code>.</td></tr>
+            <tr><td><b>Declaraciones</b> (22)</td><td>Un <code>.d.ts</code> describe sin implementar. Orden de búsqueda: tipos del paquete → <code>@types/</code> → tus <code>declare module</code>. <code>declare module 'x';</code> sin cuerpo = todo <code>any</code>. Ampliación de módulos con <code>interface</code>; <code>declare global</code> exige <code>export {}</code>. Tipar <code>process.env</code>.</td></tr>
+            <tr><td><b>Monorepo</b> (23)</td><td>npm workspaces (<code>@nakaboard/dominio</code>, <code>contrato</code>, <code>infra</code>, <code>servidor</code>, <code>cliente</code>): las dependencias declaradas son la arquitectura. <code>composite</code> + <code>references</code> + <code>tsc --build</code> compilan contra <code>.d.ts</code>, de forma incremental. Medir con <code>--extendedDiagnostics</code> y <code>--generateTrace</code>.</td></tr>
+            <tr><td><b>Entrega</b> (24)</td><td>tsc comprueba y genera declaraciones; tsup/esbuild empaqueta. ESM frente a CJS. <code>exports</code> con <code>"types"</code> primero; <code>files</code> decide qué se sube; dependencias fuera del bundle. En tipos, cambio mayor = lo que deja de compilar al consumidor. Publicar desde CI con una etiqueta; npm sólo permite despublicar en 72 h.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-block" data-lang="TypeScript · tarea.test-d.ts">
+<pre><code>expectTypeOf(ordenarPor(tareas, 'titulo')).toEqualTypeOf&lt;Tarea[]&gt;();
+
+// @ts-expect-error · comentarios no es un campo ordenable
+ordenarPor(tareas, 'comentarios');</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> prueba los tipos igual que se prueba el comportamiento. Si alguien relaja la firma y
+        la segunda línea empieza a compilar, la directiva queda sin usar y la prueba falla.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-26"
+    data-num="26"
+    data-title="Diferencias clave y preparación de entrevista de TypeScript con NakaBoard"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 7 · Repaso y recuperación"
+    data-time="65 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|any vs unknown|interface vs type|as vs satisfies|Omit vs Pick|enum vs as const|Result vs excepción|Promise.all vs allSettled|Guarda vs aserción">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>fijar las distinciones que más se confunden</strong> en TypeScript y a practicar las preguntas que suelen
+      aparecer en una entrevista técnica, respondiendo con el código y las decisiones de NakaBoard.</p>
+      <p><strong>Cómo usarlo:</strong> intenta responder cada pregunta en voz alta antes de desplegarla. En una entrevista de
+      TypeScript se valora menos recitar utilitarios que explicar qué comprueba el compilador, qué no comprueba y qué haces
+      con lo que queda fuera.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Par</th><th>La diferencia</th><th>Cuándo cada uno</th></tr></thead>
+          <tbody>
+            <tr><td><code>any</code> · <code>unknown</code></td><td>Apaga el compilador y se contagia · acepta todo pero obliga a estrechar antes de usar.</td><td>Datos externos: <code>unknown</code>. <code>any</code>, nunca sin un comentario (1).</td></tr>
+            <tr><td><code>void</code> · <code>never</code></td><td>No devuelve nada útil · no puede ocurrir (lanza o es inalcanzable).</td><td><code>never</code> para exhaustividad (1, 12).</td></tr>
+            <tr><td><code>interface</code> · <code>type</code></td><td>Sólo objetos, se fusiona, mejores errores al extender · nombra cualquier tipo (uniones, calculados).</td><td>Objetos del dominio: cualquiera, con coherencia; uniones y derivados: <code>type</code> (2).</td></tr>
+            <tr><td>Anotación · inferencia</td><td>Escribes el tipo · lo deduce el compilador. Ambas protegen igual.</td><td>Anota los bordes exportados; infiere las locales (1).</td></tr>
+            <tr><td><code>as</code> · guarda <code>v is T</code> · <code>satisfies</code></td><td>Afirma sin comprobar · comprueba en ejecución y estrecha · comprueba al compilar sin perder el tipo inferido.</td><td><code>as</code> casi nunca; guarda en el borde; <code>satisfies</code> en constantes de configuración (13).</td></tr>
+            <tr><td>Predicado <code>v is T</code> · aserción <code>asserts v is T</code></td><td>Pregunta (devuelve boolean) · exige (lanza si no).</td><td>Filtrar y ramificar · precondiciones del resto del bloque (13).</td></tr>
+            <tr><td><code>!</code> · <code>?.</code> · <code>??</code> · <code>||</code></td><td>Promete que no es nulo · corta si es nulo · por defecto sólo ante nulos · por defecto ante cualquier falso.</td><td><code>??</code> para valores por defecto; <code>exigir()</code> en vez de <code>!</code> (7).</td></tr>
+            <tr><td><code>readonly</code> · <code>as const</code> · <code>Object.freeze</code></td><td>Campo no reasignable (superficial) · literales + readonly profundo al compilar · inmutable en ejecución (superficial).</td><td><code>freeze</code> sólo si el objeto sale del código tipado (8).</td></tr>
+            <tr><td><code>enum</code> · <code>as const</code> + unión</td><td>Genera código, nominal · no genera nada, estructural, se recorre.</td><td>NakaBoard: <code>as const</code> (8).</td></tr>
+            <tr><td><code>Pick</code> · <code>Omit</code></td><td>Lista blanca · lista negra (un campo nuevo se cuela).</td><td>DTO de salida: <code>Pick</code>; si usas <code>Omit</code>, <code>OmitirDe</code> (11).</td></tr>
+            <tr><td><code>keyof T</code> · <code>K extends keyof T</code></td><td>Pierde qué clave se pasó · conserva la clave y da <code>T[K]</code> exacto.</td><td>Funciones que leen un campo: el genérico (10).</td></tr>
+            <tr><td><code>Record&lt;Union, T&gt;</code> · <code>Record&lt;string, T&gt;</code></td><td>Exige todas las claves · firma de índice que no garantiza nada.</td><td>Unión conocida: lo primero (3, 11).</td></tr>
+            <tr><td><code>private</code> · <code>#campo</code></td><td>Sólo lo comprueba el compilador · privado real en ejecución.</td><td>Secretos de verdad: <code>#</code> (16).</td></tr>
+            <tr><td><code>Promise.all</code> · <code>allSettled</code> · <code>race</code> · <code>any</code></td><td>Falla al primero · todos los resultados · el primero que termine · el primero que acierte.</td><td>Importación tolerante: <code>allSettled</code> (17).</td></tr>
+            <tr><td><code>parse</code> · <code>safeParse</code></td><td>Lanza · devuelve <code>{ success, data | error }</code>.</td><td>Configuración rota: <code>parse</code>; datos de usuario: <code>safeParse</code> (18).</td></tr>
+            <tr><td><code>z.input</code> · <code>z.infer</code></td><td>Lo que entra · lo que sale tras transformaciones y defectos.</td><td>Formularios: tipar con el de entrada (18).</td></tr>
+            <tr><td>Result · excepción</td><td>El fallo está en la firma · el fallo es invisible al que llama.</td><td>Previsible (negocio): Result; roto (invariantes): excepción (19).</td></tr>
+            <tr><td>Tipado estructural · nominal (marca)</td><td>Encaja por forma · encaja por nombre.</td><td>Ids y unidades que no deben mezclarse: marca (2, 19).</td></tr>
+            <tr><td><code>@ts-expect-error</code> · <code>@ts-ignore</code></td><td>Exige que haya un error (falla si desaparece) · silencia sin comprobar.</td><td>Pruebas de tipos: sólo el primero (21).</td></tr>
+            <tr><td><code>tsc</code> · <code>tsc --build</code> · tsup</td><td>Compila un proyecto · compila el grafo de referencias en orden e incremental · empaqueta.</td><td>Monorepo: <code>--build</code>; publicar en dos formatos: tsup (23–24).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+        <h3>Los patrones de NakaBoard</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Patrón</th><th>Qué resuelve</th><th>Cap.</th></tr></thead>
+          <tbody>
+            <tr><td>Lista <code>as const</code> → <code>typeof L[number]</code></td><td>Un solo sitio de la verdad para valores y tipo.</td><td>8</td></tr>
+            <tr><td>Unión discriminada + <code>casoImposible</code></td><td>Estados imposibles y casos olvidados como errores de compilación.</td><td>12</td></tr>
+            <tr><td><code>&lt;T, K extends keyof T&gt;(o: T, c: K): T[K]</code></td><td>Funciones sobre campos que conocen el tipo de cada campo.</td><td>10</td></tr>
+            <tr><td>Interfaz <code>Almacen</code> + <code>repositorioEnMemoria</code></td><td>Separar la lógica del almacenamiento; dobles de prueba sin mocks.</td><td>9, 21</td></tr>
+            <tr><td><code>exigir(valor, 'qué')</code> y <code>comoError(lanzado)</code></td><td>Sustituir <code>!</code> y normalizar el <code>catch</code> una sola vez.</td><td>7</td></tr>
+            <tr><td>Esquema Zod → <code>z.infer</code></td><td>Validador, conversor y tipo que no pueden desincronizarse.</td><td>18</td></tr>
+            <tr><td><code>Resultado&lt;T, E&gt;</code> + <code>encadenar</code></td><td>Fallos de negocio visibles en la firma, sin <code>if</code> en cascada.</td><td>19</td></tr>
+            <tr><td><code>Marcado&lt;T, M&gt;</code> + constructor inteligente</td><td>Ids y unidades que no se confunden, validados una vez.</td><td>19</td></tr>
+            <tr><td><code>RUTAS as const satisfies</code> + <code>Manejadores</code></td><td>Contrato compartido del que salen cliente y servidor exhaustivos.</td><td>20</td></tr>
+            <tr><td><code>cache ??= cargar()</code></td><td>Una sola carga ante llamadas concurrentes.</td><td>17</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="code-block" data-lang="TypeScript · src/dominio/opcionales.ts">
+<pre><code>export function exigir&lt;T&gt;(valor: T | null | undefined, que: string): T {
+  if (valor === null || valor === undefined) throw new FaltaValor(que);
+  return valor;
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> cuesta lo mismo que <code>t!</code>, pero comprueba de verdad y, si falla, dice qué
+        faltaba (<code>falta un valor obligatorio: la tarea NB-1</code>) en lugar de un <code>Cannot read properties of
+        undefined</code> a mitad de línea.</p>
+
+        <div class="note good"><b class="t">⭐ Buenas prácticas que se repiten en todo el curso</b>
+        <ul class="clean">
+          <li><code>strict: true</code> y <code>noUncheckedIndexedAccess</code> desde el principio.</li>
+          <li>Cero <code>any</code>, <code>as</code> sólo en constructores inteligentes y guardas probadas, <code>!</code> sustituido por <code>exigir</code>.</li>
+          <li>Parámetros <code>readonly</code>, exportaciones nombradas, <code>import type</code>.</li>
+          <li>Derivar tipos cuando el origen deba arrastrarlos; escribirlos cuando no.</li>
+          <li>Un solo comando <code>verificar</code> (tipos + lint + pruebas) en el hook y en la CI.</li>
+        </ul></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Síntoma</th><th>Causa</th><th>Solución</th></tr></thead>
+          <tbody>
+            <tr><td><code>error TS18048: 'x' is possibly 'undefined'</code></td><td>Un valor opcional usado sin comprobar.</td><td>Estrechar, <code>??</code> o <code>exigir</code>; nunca <code>!</code> en masa (7).</td></tr>
+            <tr><td><code>error TS2345: Argument of type 'string' is not assignable to parameter of type '"a" | "b"'</code></td><td>Literal ampliado a <code>string</code>.</td><td><code>as const</code> o <code>const</code> (1, 8).</td></tr>
+            <tr><td><code>error TS2339: Property 'x' does not exist on type 'A | B'</code></td><td>Sobre una unión sólo vale lo común.</td><td>Estrechar por el discriminante (3, 12).</td></tr>
+            <tr><td><code>Cannot find module '…/tarea'</code> al ejecutar</td><td>Falta la extensión <code>.js</code> o el alias en <code>imports</code> de package.json.</td><td>Extensión <code>.js</code> y alias en los dos sitios (6).</td></tr>
+            <tr><td><code>Cannot access 'X' before initialization</code></td><td>Dependencia circular entre módulos.</td><td>Romper el ciclo, <code>import type</code> (6).</td></tr>
+            <tr><td>Compila y falla con <code>trim is not a function</code></td><td>Un <code>as</code> sobre <code>JSON.parse</code>.</td><td>Guarda o esquema Zod en el borde (13, 18).</td></tr>
+            <tr><td>El <code>try/catch</code> no captura un rechazo</td><td><code>return promesa</code> sin <code>await</code>, o promesa flotante.</td><td><code>return await</code> dentro de <code>try</code>; regla <code>no-floating-promises</code> (17, 21).</td></tr>
+            <tr><td><code>getFullYear is not a function</code></td><td>Una fecha llegó por JSON como cadena.</td><td>Tipos serializables en el contrato y conversión en el esquema (18, 20).</td></tr>
+            <tr><td>Un campo nuevo aparece en la API pública</td><td>DTO hecho con <code>Omit</code>.</td><td><code>Pick</code> o esquema de salida explícito (11, 20).</td></tr>
+            <tr><td><code>error TS2589: Type instantiation is excessively deep</code></td><td>Tipo recursivo sin límite.</td><td>Límite de profundidad con tupla (14).</td></tr>
+            <tr><td><code>error TS7016: Could not find a declaration file</code></td><td>Paquete sin tipos.</td><td><code>@types/…</code> o <code>declare module</code> con sólo lo que usas, nunca vacío (22).</td></tr>
+            <tr><td>El paquete publicado «no tiene tipos»</td><td><code>"types"</code> no va primero en <code>exports</code> o el <code>.d.ts</code> no está en <code>files</code>.</td><td>Revisar <code>exports</code> y probar con un tarball (24).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos y sistema de tipos</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué TypeScript no impide que lleguen datos malformados de una API?</p>
+            <div class="q-ans">Porque los tipos se comprueban al compilar y se borran: en ejecución sólo hay JavaScript. Un tipo describe lo que tú afirmas que llegará, no lo comprueba. Para garantizarlo hay que validar en el borde con guardas o un esquema (Zod) y, a partir de ahí, el resto del código trabaja con tipos ya comprobados.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué es el tipado estructural y qué consecuencia práctica tiene?</p>
+            <div class="q-ans">Un valor encaja en un tipo si tiene su forma, no por cómo se llama. Por eso dos tipos con los mismos campos son intercambiables y un objeto con campos de más pasa a través de una variable (el control de exceso de propiedades sólo se aplica a literales escritos en el sitio). Consecuencias: <code>Object.keys</code> devuelve <code>string[]</code> y un <code>IdTarea</code> y un <code>IdUsuario</code> que sean <code>string</code> se confunden; cuando hace falta lo nominal, se usa una marca.</div></div>
+          <div class="q"><p class="q-text">3. Tres booleanos <code>activa</code>, <code>pausada</code> y <code>archivada</code> aparecen los tres a <code>true</code> en producción. ¿Qué propones?</p>
+            <div class="q-ans">Sustituirlos por un único campo con una unión de literales (<code>'activa' | 'pausada' | 'archivada'</code>), o por una unión discriminada si cada estado lleva datos propios. Así el estado incoherente deja de poder escribirse, ganas autocompletado y protección contra erratas y, con <code>Record</code> o un <code>switch</code> con <code>casoImposible</code>, cada estado nuevo rompe la compilación donde falte tratarlo.</div></div>
+          <div class="q"><p class="q-text">4. Diferencia entre <code>(obj: T, c: keyof T) =&gt; T[keyof T]</code> y <code>&lt;K extends keyof T&gt;(obj: T, c: K) =&gt; T[K]</code>.</p>
+            <div class="q-ans">La primera pierde qué clave se pasó: devuelve la unión de los tipos de todos los campos y obliga a estrechar después. La segunda captura la clave concreta en <code>K</code>, así que el retorno es exactamente el tipo de ese campo: <code>leer(tarea, 'titulo')</code> es <code>string</code>. Es el patrón que hace que el tipo de retorno dependa del valor del argumento.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué <code>SinNulos&lt;string | null&gt;</code> da <code>string</code> con <code>T extends null | undefined ? never : T</code>?</p>
+            <div class="q-ans">Por dos mecanismos: la distributividad (con un parámetro desnudo, el condicional se aplica a cada miembro de la unión por separado: <code>string</code> → <code>string</code>, <code>null</code> → <code>never</code>) y que <code>never</code> desaparece al unir resultados. Así están hechos <code>Exclude</code> y <code>NonNullable</code>. Para evaluar la unión entera se envuelve en corchetes: <code>[T] extends [U]</code>.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cuándo un genérico sobra?</p>
+            <div class="q-ans">Cuando el parámetro de tipo aparece una sola vez en la firma: no relaciona nada con nada, así que <code>unknown</code> dice lo mismo con menos ruido. Un genérico existe para conectar tipos (entrada con salida, un argumento con otro). Además conviene generalizar al tercer uso, no al primero.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · strict, nulos y seguridad del código</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. <code>const descuento = entrada.valor || 10;</code> aplica un 10 % cuando el usuario pone 0. ¿Por qué y cómo se arregla?</p>
+            <div class="q-ans"><code>||</code> sustituye cualquier valor falso, y <code>0</code> lo es. Hay que usar <code>??</code>, que sólo sustituye <code>null</code> y <code>undefined</code>. El compilador no lo detecta porque ambos tipos son correctos; un linter con información de tipos sí puede avisar.</div></div>
+          <div class="q"><p class="q-text">2. Un compañero arregla treinta errores TS18048 añadiendo <code>!</code>. ¿Qué le dices?</p>
+            <div class="q-ans">Que el proyecto compila pero no es estricto: cada <code>!</code> es una promesa sin comprobar, un <code>any</code> del tamaño de una variable. Los errores eran información. Hay que decidir caso a caso: si el valor puede faltar, tratarlo (estrechar o <code>??</code>); si no debe faltar, <code>exigir(valor, 'qué')</code>, que falla con un mensaje útil; y si siempre está, quizá la firma mentía y debía no ser opcional.</div></div>
+          <div class="q"><p class="q-text">3. En un <code>catch (e)</code>, <code>e.message</code> no compila. ¿Por qué y qué haces?</p>
+            <div class="q-ans">Con <code>useUnknownInCatchVariables</code> (parte de <code>strict</code>), <code>e</code> es <code>unknown</code> porque en JavaScript se puede lanzar cualquier cosa: una cadena, un objeto o <code>undefined</code>. Se normaliza una vez con una función como <code>comoError(e)</code>, que devuelve siempre un <code>Error</code>, o se estrecha con <code>instanceof</code> para reconocer los errores propios.</div></div>
+          <div class="q"><p class="q-text">4. ¿Por qué el proyecto no usa <code>enum</code>?</p>
+            <div class="q-ans">Es la única construcción de tipos que genera código, es nominal (un valor de enum no encaja con la cadena equivalente que llega del servidor) y el numérico acepta cualquier número. Una lista <code>as const</code> con <code>typeof ESTADOS[number]</code> da la misma unión, existe en ejecución para recorrerla y validarla, y no tiene esos problemas.</div></div>
+          <div class="q"><p class="q-text">5. Un DTO público es <code>Omit&lt;Usuario, 'contrasena'&gt;</code>. ¿Qué riesgo tiene?</p>
+            <div class="q-ans">Es una lista negra: cualquier campo nuevo de <code>Usuario</code>, incluido uno sensible, sale automáticamente en la respuesta. Además <code>Omit</code> no comprueba que la clave exista, así que una errata no quita nada. Para lo que sale del sistema, <code>Pick</code> (lista blanca) o un esquema de salida explícito; y si se usa <code>Omit</code>, la versión estricta <code>OmitirDe&lt;T, K extends keyof T&gt;</code>.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué diferencia hay entre <code>const c: Config = {…}</code> y <code>const c = {…} satisfies Config</code>?</p>
+            <div class="q-ans">La anotación impone el tipo <code>Config</code> y pierde la información concreta (un literal pasa a ser <code>string</code>, una clave opcional sigue siendo opcional aunque esté). <code>satisfies</code> comprueba que el valor encaja en <code>Config</code>, avisando de erratas y campos que faltan, pero conserva el tipo inferido, más preciso. Es lo que permite derivar tipos de <code>RUTAS</code>.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Asincronía, validación y errores</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. <code>lista.forEach(async (fila) =&gt; { await guardar(fila); })</code> dice «importadas 5.000 filas» al instante. ¿Qué pasa?</p>
+            <div class="q-ans"><code>forEach</code> ignora lo que devuelve la callback, así que no espera a ninguna promesa: lanza todas y sigue. Las promesas quedan flotando y sus errores se pierden (en Node, un rechazo sin capturar puede matar el proceso). Se corrige con <code>for…of</code> y <code>await</code> si deben ir en orden, o con <code>Promise.all</code>/<code>allSettled</code> con concurrencia limitada. Un linter con tipos lo detecta.</div></div>
+          <div class="q"><p class="q-text">2. Un reintento con <code>try { return operacion(); } catch { … }</code> nunca reintenta. ¿Por qué?</p>
+            <div class="q-ans">Porque devuelve la promesa sin esperarla: el <code>try</code> termina antes de que la promesa se rechace y el rechazo ocurre fuera del bloque. Dentro de un <code>try</code> hay que escribir <code>return await operacion();</code>.</div></div>
+          <div class="q"><p class="q-text">3. Explica «parsea, no valides».</p>
+            <div class="q-ans">Una función que valida devuelve <code>boolean</code> y deja al que llama con un <code>as</code> detrás; nada impide saltársela o desincronizarla del tipo. Una que parsea devuelve el valor ya con su tipo (o un error), así que es imposible usar el dato sin haberlo comprobado, y además puede convertir (cadena ISO a <code>Date</code>, recortar espacios). Con Zod, el tipo sale del esquema con <code>z.infer</code>.</div></div>
+          <div class="q"><p class="q-text">4. ¿Cuándo usarías <code>Resultado&lt;T, E&gt;</code> y cuándo una excepción?</p>
+            <div class="q-ans">Result para fallos previsibles que son decisiones de negocio (una transición de estado no permitida, un dato inválido): aparecen en la firma y el compilador obliga a tratarlos. Excepción para lo roto: invariantes violadas, configuración de arranque, errores de programación. Result tiene coste (se propaga por las firmas, se mezcla mal con <code>async</code>), así que conviene acordarlo como equipo y no convertir todo.</div></div>
+          <div class="q"><p class="q-text">5. ¿Por qué <code>type IdTarea = string</code> no protege y la versión marcada sí?</p>
+            <div class="q-ans">Un alias es sólo otro nombre: por tipado estructural, cualquier <code>string</code> (un <code>IdUsuario</code>) encaja. La marca intersecta con una propiedad que sólo existe en el mundo de los tipos (<code>declare const marca: unique symbol</code>), así que una cadena sin pasar por el constructor inteligente no encaja. En ejecución ambas son cadenas: coste cero.</div></div>
+          <div class="q"><p class="q-text">6. Cliente y servidor comparten tipos. ¿Puede el servidor dejar de validar?</p>
+            <div class="q-ans">No. Un tipo compartido es un acuerdo de compilación entre dos programas, no una garantía: entre ellos hay una red y cualquiera puede enviar una petición con curl. El servidor autoriza, valida la entrada, ejecuta y valida su propia salida. Por eso el contrato se declara con esquemas, de los que salen tanto el tipo como el validador.</div></div>
+          <div class="q"><p class="q-text">7. ¿Por qué el cliente reintenta los GET y no los POST?</p>
+            <div class="q-ans">Porque un GET es idempotente: repetirlo no cambia nada. Un POST reintentado tras un corte puede crear dos registros si el primero sí llegó. Para reintentar un POST hace falta hacerlo idempotente, por ejemplo con una clave de idempotencia que el servidor recuerde.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Pruebas, herramientas y entrega</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. Al migrar de JavaScript a TypeScript, ¿qué pruebas puedes borrar y cuáles añadir?</p>
+            <div class="q-ans">Se pueden borrar las que sólo comprobaban tipos de argumentos o campos obligatorios: eso ya lo hace el compilador. Hay que añadir pruebas de lo que el compilador cree sin comprobar: guardas, esquemas, <code>.d.ts</code> escritos a mano y casos límite (<code>NaN</code>, cadena vacía, cero, listas vacías, fechas inválidas). Y pruebas de tipos con <code>expectTypeOf</code> para los tipos calculados.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué <code>@ts-expect-error</code> y no <code>@ts-ignore</code>?</p>
+            <div class="q-ans"><code>@ts-expect-error</code> exige que la línea siguiente tenga un error: si alguien relaja un tipo y el error desaparece, falla con «Unused '@ts-expect-error' directive». Por eso sirve para probar que algo no compila. <code>@ts-ignore</code> silencia cualquier cosa sin comprobar nada.</div></div>
+          <div class="q"><p class="q-text">3. El compilador sugiere <code>declare module 'libreria';</code> ante TS7016. ¿Por qué es una trampa?</p>
+            <div class="q-ans">Porque sin cuerpo declara la librería entera como <code>any</code>: el error desaparece y con él toda la comprobación. Primero se busca <code>@types/libreria</code>; si no existe, se escribe un <code>declare module</code> con sólo lo que se usa, sabiendo que es una afirmación sin comprobar que necesita pruebas de ejecución.</div></div>
+          <div class="q"><p class="q-text">4. La regla «el dominio no importa de la infraestructura» se incumple cada dos semanas. ¿Cómo lo resuelves?</p>
+            <div class="q-ans">Convirtiendo la convención en estructura: un monorepo con workspaces donde <code>@nakaboard/dominio</code> no declara dependencia de <code>@nakaboard/infra</code>. Un paquete sólo ve lo que declara en su package.json, así que el import prohibido deja de resolverse. Con <code>composite</code>, <code>references</code> y <code>tsc --build</code>, además, la compilación es incremental.</div></div>
+          <div class="q"><p class="q-text">5. Añades un campo opcional a un tipo que tu paquete recibe como parámetro y publicas una versión menor. Un consumidor no compila. ¿Cómo?</p>
+            <div class="q-ans">Añadir un campo opcional a un tipo de entrada suele ser compatible, pero rompe en dos casos: si amplía una unión sobre la que el consumidor tiene un <code>switch</code> exhaustivo con <code>casoImposible</code> (le falla precisamente a quien mejor usa tu API), y si el consumidor implementa una interfaz tuya. El versionado semántico se pensó para JavaScript; con tipos, cambio mayor es todo lo que haga que el código de un consumidor deje de compilar. Ante la duda, versión mayor.</div></div>
+          <div class="q"><p class="q-text">6. ¿Qué resuelve publicar desde la integración continua en lugar de desde un portátil?</p>
+            <div class="q-ans">Que se publique siempre desde un entorno limpio (sin un <code>dist/</code> viejo ni archivos locales como un <code>.env</code>), que antes pasen tipos, lint y pruebas, y que la publicación quede ligada a una etiqueta y sea reproducible, sin depender de credenciales de npm en el equipo de nadie. Como despublicar sólo es posible las primeras 72 horas, conviene practicar con <code>--tag beta</code> y un tarball.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <h3>Una idea por capítulo</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Cap.</th><th>Si sólo recuerdas una cosa</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>Los tipos se comprueban al compilar y se borran; <code>strict</code> desde el principio.</td></tr>
+            <tr><td>1</td><td><code>unknown</code> en vez de <code>any</code>; anota los bordes.</td></tr>
+            <tr><td>2</td><td>Tipado estructural: encaja la forma, no el nombre.</td></tr>
+            <tr><td>3</td><td>Unión de literales en vez de booleanos; estrecha antes de usar.</td></tr>
+            <tr><td>4</td><td><code>noUncheckedIndexedAccess</code> y parámetros <code>readonly</code>.</td></tr>
+            <tr><td>5</td><td>Valor por defecto antes que opcional; cuidado con <code>void</code> y <code>async</code>.</td></tr>
+            <tr><td>6</td><td>Exportaciones nombradas, <code>.js</code> en los imports, <code>import type</code>.</td></tr>
+            <tr><td>7</td><td><code>??</code>, no <code>||</code>; <code>exigir</code>, no <code>!</code>.</td></tr>
+            <tr><td>8</td><td><code>as const</code> + <code>typeof L[number]</code>; sin enums.</td></tr>
+            <tr><td>9–10</td><td>Genéricos que relacionan; <code>K extends keyof T</code> → <code>T[K]</code>.</td></tr>
+            <tr><td>11</td><td><code>Pick</code> para lo que sale; <code>OmitirDe</code> estricto.</td></tr>
+            <tr><td>12</td><td>Unión discriminada + <code>casoImposible</code>.</td></tr>
+            <tr><td>13</td><td>Guardas probadas y <code>satisfies</code>.</td></tr>
+            <tr><td>14–15</td><td>Distributividad y <code>never</code>; mapeados y plantillas con mesura.</td></tr>
+            <tr><td>16</td><td>Clases para errores; funciones para lo demás.</td></tr>
+            <tr><td>17</td><td>Sin promesas flotantes; <code>return await</code> en <code>try</code>.</td></tr>
+            <tr><td>18</td><td>Parsea una vez, en el borde, con Zod.</td></tr>
+            <tr><td>19</td><td>Result para lo previsible; marcas para lo que no debe mezclarse.</td></tr>
+            <tr><td>20</td><td>El contrato compartido no sustituye a validar en el servidor.</td></tr>
+            <tr><td>21–22</td><td>Prueba lo que el compilador cree; <code>.d.ts</code> mínimos y probados.</td></tr>
+            <tr><td>23–24</td><td>Paquetes con dependencias declaradas; publicar desde CI.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+        <ul class="clean">
+          <li>Activa <code>strict</code> en un proyecto JavaScript tuyo y arregla los errores sin un solo <code>!</code>.</li>
+          <li>Modela un estado de tu código como unión discriminada con <code>casoImposible</code>.</li>
+          <li>Escribe un esquema Zod para un JSON externo que hoy usas con <code>as</code>.</li>
+          <li>Añade un <code>.test-d.ts</code> con <code>expectTypeOf</code> a un tipo calculado que tengas.</li>
+        </ul></div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de TypeScript</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>

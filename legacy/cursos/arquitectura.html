@@ -8145,7 +8145,456 @@ ls docs/adr/ && grep -l "no usar\|NO aplicar\|descartad" docs/adr/*.md
     </details>
   </section>
 
-  <section class="view" id="glosario">
+    <section class="view chapter" id="cap-16"
+    data-num="16"
+    data-title="Repaso exprés: la arquitectura de NakaFlow en una lectura"
+    data-short="Repaso exprés del curso"
+    data-module="Módulo 5 · Repaso y recuperación"
+    data-time="55 min" data-level="Repaso" data-icon="🔁"
+    data-concepts="Repaso|Acoplamiento|Cohesión|SOLID|Inversión de dependencias|Capas|Hexagonal|Arquitectura limpia|Modelo rico|Caso de uso|Repositorio|DTO|Agregado|ArchUnit|ADR">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>reconstruir de memoria el viaje completo de NakaFlow</strong>: del servicio-Dios de la v0 a la arquitectura
+      limpia con dominio rico, documentada con ADR y vigilada por ArchUnit. Cada idea aparece con lo mínimo para recordarla: qué
+      problema resuelve, cómo se aplica en NakaFlow y cuándo no compensa.</p>
+      <p><strong>Cómo usarlo:</strong> léelo de arriba abajo tras un tiempo sin practicar, o salta al bloque que necesites. El
+      número entre paréntesis es el capítulo al que volver. El capítulo siguiente reúne las diferencias que más se confunden y
+      un simulacro de entrevista.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>🗺 Mapa del curso</summary>
+      <div class="acc-body">
+
+        <h3>El viaje de NakaFlow</h3>
+        <div class="diagram">  v0  servicio-Dios: web + reglas + SQL + correo en una clase           (0)
+   │   medir: fan-in, fan-out, cohesión, jdeps                          (1)
+   ▼
+  v1  SRP parte la clase · DIP gira la flecha hacia el negocio          (2)
+   │   capas y MVC bien hechas · inversión de dependencias              (3–4)
+   ▼
+  v2  hexagonal: puertos y adaptadores · limpia: círculos hacia dentro  (5–6)
+   │
+   ▼
+  v3  dominio rico y Franja · casos de uso · repositorios · DTOs         (7–10)
+   │   agregados, contextos y lenguaje ubicuo                           (11)
+   ▼
+  v4  ArchUnit + pirámide de tests · cuándo NO · monolito modular ·      (12–15)
+      estrangulador y ADR</div>
+
+        <h3>Las ideas que vertebran todo el curso</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Idea</th><th>Dónde reaparece</th></tr></thead>
+          <tbody>
+            <tr><td><b>Arquitectura = decisiones caras de cambiar</b>; su objetivo, que el coste del cambio no crezca con el proyecto.</td><td>Desde el cap. 0 hasta los ADR (15).</td></tr>
+            <tr><td><b>Bajar acoplamiento, subir cohesión</b>: la brújula.</td><td>Medición (1), SOLID (2), contextos (11, 14).</td></tr>
+            <tr><td><b>Las dependencias apuntan hacia el dominio</b>, nunca al revés.</td><td>DIP (2), inversión (4), hexagonal (5), limpia (6).</td></tr>
+            <tr><td><b>La testabilidad detecta la mala arquitectura</b>.</td><td>Test imposible en la v0 (0), trivial en la v1 (2), pirámide (12).</td></tr>
+            <tr><td><b>Traducir en cada frontera</b>: lo de fuera no entra tal cual.</td><td>Limpia (6), repositorio (9), DTOs (10), contextos (11).</td></tr>
+            <tr><td><b>Comprobar, no dibujar</b>: grep, jdeps, ArchUnit.</td><td>1, 3, 4, 5, 12.</td></tr>
+            <tr><td><b>Criterio sobre dogma</b>: aplicar sólo lo que protege algo.</td><td>Cuándo no (13), monolito modular (14), cierre (15).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧭 Bloque 1 · Por qué, cómo se mide y SOLID (cap. 0–2)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Por qué existe</b> (0): sin arquitectura sale el <b>monolito de barro</b>; todo depende de todo. La v0 de NakaFlow es un <b>servicio-Dios</b> a propósito: funciona y por eso esconde sus síntomas. No se reescribe: se refactoriza capítulo a capítulo, siempre funcionando.</li>
+          <li><b>Medir</b> (1): un sistema es un grafo; un cambio se propaga en contra de las flechas. <b>Fan-out</b> (de cuántos dependo) = fragilidad; <b>fan-in</b> (cuántos dependen de mí) = importancia. Lo muy usado debe depender de poco. <b>Cohesión</b> = todo cambia por la misma razón. Importa más la <b>dirección</b> que el número. Métrica práctica: ¿cuántos archivos toca este cambio? Se mide con <code>jdeps</code> antes y después.</li>
+          <li><b>SOLID</b> (2): <b>SRP</b> = una razón para cambiar (la v0 tenía cuatro: negocio, datos, web, correo). <b>DIP</b> = depender de abstracciones que <b>pertenecen al negocio</b>. <b>OCP</b> permite añadir SMS sin tocar el negocio; <b>ISP</b>, interfaces pequeñas; <b>LSP</b>, implementaciones que cumplen lo que prometen. Inyección por constructor = la costura para los dobles de test.</li>
+        </ul>
+        <div class="code-block" data-lang="Java · puertos del negocio (cap. 2)">
+<pre><code>public interface ReservaRepositorio {
+    void guardar(Reserva reserva);
+    boolean haySolape(Reserva reserva);      // ISP: solo lo que el negocio usa
+}
+
+public interface Notificador {
+    void confirmar(Reserva reserva);
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> declara qué necesita el negocio del exterior sin decir cómo se hace. Al vivir en el
+        paquete del negocio, la flecha de compilación va de la base de datos y el correo hacia el negocio, no al revés.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🏛 Bloque 2 · Capas, MVC e inversión de dependencias (cap. 3–4)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Capas</b> (3): presentación, negocio y datos; cada capa sólo llama a la de debajo. Es la arquitectura más común porque es fácil y suficiente para muchos proyectos. Se rompe por <b>fugas</b> (la presentación salta a datos, la entidad JPA sube a la vista) y por el <b>modelo anémico</b>. Su límite: en el modelo puro el negocio depende de los datos.</li>
+          <li><b>MVC</b> (3) es un patrón de la capa de presentación, no una arquitectura. El «modelo» de MVC (datos para la vista) no es el modelo de dominio. El controlador traduce entre web y dominio; no aplica reglas.</li>
+          <li><b>Inversión</b> (4): hay dependencia de <b>compilación</b> (qué importas: la que importa a la arquitectura) y de <b>ejecución</b> (qué objeto se llama). Invertir gira la primera; en ejecución el negocio sigue usando la base de datos. <b>Política</b> (qué hace el sistema, estable) frente a <b>detalle</b> (con qué tecnología, volátil): los detalles dependen de la política.</li>
+          <li>El <b>cableado</b> (elegir la implementación) vive en el borde. Dos adaptadores del mismo puerto (JPA y memoria) demuestran que el negocio no depende de ninguno. La victoria se mide: el paquete de negocio no menciona JDBC, JPA ni correo.</li>
+        </ul>
+        <div class="diagram">  ANTES (capas puras)                   DESPUÉS (inversión)
+  negocio ──▶ datos (JPA)               negocio ◀── datos (JPA)
+                                        └ ReservaRepositorio vive en negocio
+  compila contra la BD                  la BD compila contra el negocio</div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⬡ Bloque 3 · Hexagonal y arquitectura limpia (cap. 5–6)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Hexagonal</b> (5): el dominio en el centro; el exterior entra sólo por <b>puertos</b> (interfaces del dominio) y <b>adaptadores</b> (implementaciones). <b>Puerto de entrada</b> = lo que el dominio ofrece (el caso de uso, lo invoca el adaptador). <b>Puerto de salida</b> = lo que necesita (repositorio, notificador, lo implementa el adaptador). Aporta <b>simetría</b>: la web y la base de datos son igual de adaptadores. El controlador, un test y una CLI son tres adaptadores del mismo puerto.</li>
+          <li>Regla estricta: el dominio no depende de nada de fuera, ni del framework (<code>ReservarSalaServicio</code> no lleva <code>@Service</code>; lo crea el cableado). Hexagonal no es «más carpetas»: es una frontera verificable.</li>
+          <li><b>Arquitectura limpia</b> (6): cuatro círculos (entidades, casos de uso, adaptadores de interfaz, marcos y drivers), del más estable al más volátil. <b>Regla de dependencia</b>: los imports apuntan siempre hacia dentro. Distingue dos niveles de política: reglas del <b>negocio</b> (entidades) y de la <b>aplicación</b> (casos de uso).</li>
+          <li>Lo que cruza una frontera hacia dentro <b>toma la forma del círculo interior</b>: dos clases <code>Reserva</code> (dominio) y <code>ReservaEntity</code> (<code>@Entity</code>), con mapeo. La estructura produce sola la pirámide de tests correcta.</li>
+        </ul>
+        <div class="diagram">          ┌──────────── marcos y drivers (Spring, JPA, web) ────────────┐
+          │      ┌──────── adaptadores (controlador, repo JPA) ───────┐ │
+          │      │      ┌──── casos de uso (ReservarSala) ────┐       │ │
+          │      │      │   entidades (Reserva, Franja)       │       │ │
+          │      │      └─────────────────────────────────────┘       │ │
+          │      └──── las dependencias del código apuntan HACIA DENTRO ┘ │
+          └──────────────────────────────────────────────────────────────┘</div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>💎 Bloque 4 · Modelo rico y casos de uso (cap. 7–8)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Modelo anémico</b> (7): entidades como sacos de getters y setters y reglas en los servicios; la lógica se dispersa, se duplica y los bugs vuelven. Es el error que <b>sobrevive a la mejor arquitectura</b>.</li>
+          <li><b>Modelo rico</b> (7): la lógica vive con los datos que protege. <b>Invariante</b> = regla que siempre se cumple; <b>válido por construcción</b> = constructor que valida y sin setters que rompan reglas. <b>Objeto de valor</b>: inmutable, sin identidad, igualdad por valor, encapsula su regla (<code>Franja</code>). <b>Tell, don't ask</b>: <code>reserva.reprogramar(nueva)</code>, no sacar los datos y decidir fuera.</li>
+          <li><b>Caso de uso</b> (8): una intención del usuario (<code>ReservarSala</code>, <code>ReprogramarReserva</code>). <b>Orquesta, no decide</b>: elige el orden de los pasos; la entidad decide las reglas. Un caso de uso por intención, no un servicio gordo. El <b>servicio de dominio</b> es la excepción, para reglas entre varias entidades. La <b>transacción</b> coincide con el caso de uso.</li>
+        </ul>
+        <div class="code-block" data-lang="Java · com/nakaflow/dominio/Franja.java">
+<pre><code>public record Franja(LocalDateTime inicio, LocalDateTime fin) {
+    public Franja {                                  // constructor compacto: valida
+        if (inicio == null || fin == null) throw new ReservaInvalida("franja incompleta");
+        if (!fin.isAfter(inicio)) throw new ReservaInvalida("el fin debe ser posterior al inicio");
+    }
+    public boolean solapaCon(Franja otra) {
+        return this.inicio.isBefore(otra.fin) &amp;&amp; otra.inicio.isBefore(this.fin);
+    }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> convierte dos <code>LocalDateTime</code> sueltos en un concepto del dominio que no
+        puede existir inválido y que es el único dueño de la regla de solape. <b><code>record</code></b> · da inmutabilidad e
+        igualdad por valor, lo que define a un objeto de valor.</p>
+        <div class="code-block" data-lang="Java · ReprogramarReservaServicio (orquestar, no decidir)">
+<pre><code>Reserva reserva = repositorio.porId(reservaId)
+    .orElseThrow(() -&gt; new ReservaNoEncontrada(reservaId));   // orquestación
+reserva.reprogramar(nueva);                                    // decide la entidad
+if (repositorio.haySolapeExcepto(reserva))                     // orquestación
+    throw new SalaOcupada("La nueva franja choca con otra reserva");
+repositorio.guardar(reserva);</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> el caso de uso se lee como una lista de pasos. Las reglas sobre la propia reserva
+        (estado, pasado) viven en <code>reprogramar</code>; el solape con otras necesita el repositorio, así que lo orquesta el
+        caso de uso.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🔌 Bloque 5 · Repositorios y la frontera web (cap. 9–10)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Repositorio</b> (9): una <b>colección</b>, no un envoltorio de SQL; habla el idioma del dominio (<code>haySolape</code>, <code>reservasDe</code>) y devuelve entidades. El <b>DAO</b> piensa en tablas. Uno por <b>agregado</b>, no por tabla, y guarda el agregado entero.</li>
+          <li>Tres <b>fugas</b> a cerrar: tipos de JPA o Spring en la interfaz (<code>Pageable</code> → <code>RangoDeFechas</code>), la entidad JPA como entidad de dominio, y consultas SQL ad hoc (<code>ejecutar(String sql)</code>). Un <b>test de contrato</b> compartido garantiza que el doble en memoria y el adaptador JPA se comportan igual.</li>
+          <li><b>DTOs</b> (10): objetos planos para cruzar la frontera: <code>ReservaPeticion</code> entra y <code>ReservaRespuesta</code> sale. No expongas la entidad: API y dominio cambian por razones distintas. Validación de <b>forma</b> con Bean Validation en el DTO; de <b>negocio</b> en el dominio. Mapeo en las dos direcciones.</li>
+          <li>Errores: el dominio lanza <code>SalaOcupada</code>, <code>ReservaInvalida</code>, <code>ReservaNoEncontrada</code> sin saber de HTTP; el adaptador las traduce a 409, 400 y 404. Es la misma simetría que el repositorio, en el borde opuesto.</li>
+        </ul>
+        <div class="code-block" data-lang="Java · ManejadorErrores (adaptador web)">
+<pre><code>@RestControllerAdvice
+public class ManejadorErrores {
+    @ExceptionHandler(SalaOcupada.class)        // conflicto de negocio
+    ResponseEntity&lt;Problema&gt; ocupada(SalaOcupada e) {
+        return ResponseEntity.status(409).body(new Problema("SALA_OCUPADA", e.getMessage()));
+    }
+}</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> la correspondencia «error de negocio → código HTTP» vive en la frontera, en un solo
+        sitio. El dominio sigue sirviendo igual a una CLI o a un proceso batch.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Bloque 6 · DDD ligero y tests de arquitectura (cap. 11–12)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Agregado</b> (11): unidad de consistencia que se carga, guarda y valida junta. La <b>raíz</b> (<code>Reserva</code>) es la única puerta: <code>anadirAsistente</code> protege el aforo, y <code>asistentes()</code> devuelve una copia (<code>List.copyOf</code>). Entre agregados, referencias <b>por id</b> (<code>salaId</code>). Agregados pequeños: su frontera es la de la transacción.</li>
+          <li><b>Límite de contexto</b> (11): donde un término cambia de significado. «Reserva» no es lo mismo en reservas que en facturación; cada contexto tiene su modelo y se comunican por un evento (<code>ReservaConfirmada</code>). Los contextos son de modelado, no de despliegue.</li>
+          <li><b>Lenguaje ubicuo</b> (11): el código habla como el negocio (<code>reprogramar</code>, <code>Franja</code>, <code>SalaOcupada</code>, no <code>BookingManager</code>). Elimina la traducción donde se cuelan los malentendidos.</li>
+          <li><b>Pirámide de tests</b> (12): dominio con un <code>new</code> y una aserción; casos de uso con <b>fakes fieles</b> (repositorio en memoria), no mocks que mienten; adaptadores con integración; e2e sólo para flujos críticos. No reprobar lo mismo en varios niveles.</li>
+          <li><b>ArchUnit</b> (12): la arquitectura escrita como tests que analizan el bytecode y fallan el build. Toda regla que no se comprueba se degrada.</li>
+        </ul>
+        <div class="code-block" data-lang="Java · test de arquitectura con ArchUnit">
+<pre><code>@ArchTest static final ArchRule dominioPuro =
+    noClasses().that().resideInAPackage("com.nakaflow.dominio..")
+        .should().dependOnClassesThat().resideInAnyPackage(
+            "org.springframework..", "jakarta.persistence..", "jakarta.servlet..");</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> convierte «el dominio no depende de Spring ni de JPA» en un test del pipeline. Un
+        import hacia fuera bloquea la fusión en vez de descubrirse meses después.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⚖ Bloque 7 · Criterio, escala y cierre (cap. 13–15)</summary>
+      <div class="acc-body">
+        <ul class="clean">
+          <li><b>Cuándo NO</b> (13): la arquitectura limpia cuesta (seis o siete clases donde un CRUD tiene una). Sólo compensa si hay reglas de negocio que proteger o volatilidad tecnológica. Complejidad <b>esencial</b> (del problema) frente a <b>accidental</b> (de tu solución). <b>YAGNI</b>: una abstracción prematura suele ser la equivocada, y la duplicación es más barata que la abstracción incorrecta. NakaFlow: arquitectura en reservas, CRUD directo en el catálogo de sedes.</li>
+          <li>Señales de sobre-diseño: dominio anémico, casos de uso de una línea, DTOs idénticos a las entidades, un puerto con un solo adaptador eterno.</li>
+          <li><b>Monolito modular</b> (14): da lo que se busca en los microservicios (fronteras claras) sin la red. La unidad de separación es el <b>contexto delimitado</b>; partir por capas técnicas da un <b>monolito distribuido</b>. Cruzar el proceso trae latencia, fallo parcial, consistencia eventual, contratos versionados y observabilidad distribuida. <b>Ley de Conway</b>. Empezar modular y extraer sólo con una razón concreta (escala, equipo, tecnología).</li>
+          <li><b>Cierre</b> (15): se llega refactorizando con el <b>estrangulador</b> y los tests como andamio, nunca con la gran reescritura. Un <b>ADR</b> (contexto · decisión · consecuencias) captura el porqué, también de lo que no se hizo. ADR + fitness functions (ArchUnit) = el sistema inmunológico de la arquitectura.</li>
+        </ul>
+        <div class="code-block" data-lang="Markdown · ADR-007 (resumido)">
+<pre><code># ADR-007: Usar un puerto de repositorio para persistencia
+## Estado
+Aceptada · 2026-03-10
+## Decisión
+El dominio define ReservaRepositorio (puerto); la implementación JPA vive en
+infraestructura (adaptador) y un fake en memoria cumple el mismo contrato.
+## Consecuencias
++ El dominio se prueba sin base de datos.
+- Una interfaz y un mapeo más por agregado.
+- No aplicar a catálogos sin reglas (ver ADR-012).</code></pre>
+        </div>
+        <p class="code-note"><b>Qué hace:</b> deja escrito por qué existe la pieza y cuándo no aplicarla. Un ADR no se edita
+        cuando la decisión cambia: se escribe otro que lo sustituye.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="view chapter" id="cap-17"
+    data-num="17"
+    data-title="Diferencias clave y preparación de entrevista de arquitectura con NakaFlow"
+    data-short="Diferencias y entrevista"
+    data-module="Módulo 5 · Repaso y recuperación"
+    data-time="60 min" data-level="Repaso" data-icon="🎤"
+    data-concepts="Entrevista|Capas vs hexagonal vs limpia|Puerto vs adaptador|Repositorio vs DAO|Entidad vs objeto de valor|Caso de uso vs servicio de dominio|Monolito modular vs microservicios|Fake vs mock|ADR">
+
+    <div class="goal">
+      <h3>🎯 Objetivo del capítulo</h3>
+      <p>Vas a <strong>fijar las distinciones que más se confunden</strong> en arquitectura de software y a practicar las preguntas
+      que suelen aparecer en una entrevista técnica, respondiendo con las decisiones de NakaFlow.</p>
+      <p><strong>Cómo usarlo:</strong> intenta responder cada pregunta en voz alta antes de desplegarla. En arquitectura no hay
+      respuesta sin coste: una buena respuesta dice qué protege la decisión, qué cuesta y cuándo no la tomarías.</p>
+    </div>
+
+    <details class="acc" open>
+      <summary>⚖ Diferencias que se confunden</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Par</th><th>La diferencia</th><th>Cap.</th></tr></thead>
+          <tbody>
+            <tr><td><b>Fan-in · fan-out</b></td><td>Cuántos dependen de mí (importancia) · de cuántos dependo (fragilidad).</td><td>1</td></tr>
+            <tr><td><b>Cohesión · archivo corto</b></td><td>Todo cambia por la misma razón · tamaño, que no dice nada de la cohesión.</td><td>1</td></tr>
+            <tr><td><b>SRP «hace una cosa» · «una razón para cambiar»</b></td><td>Formulación vaga · ¿ante quién responde este código?</td><td>2</td></tr>
+            <tr><td><b>Meter una interfaz · aplicar DIP</b></td><td>Una interfaz en el paquete de datos no invierte nada · la interfaz debe pertenecer al negocio.</td><td>2, 4</td></tr>
+            <tr><td><b>Dependencia de compilación · de ejecución</b></td><td>Qué importas (lo que importa a la arquitectura) · qué objeto se llama de verdad.</td><td>4</td></tr>
+            <tr><td><b>Política · detalle</b></td><td>Qué hace el sistema y por qué (estable) · con qué tecnología (volátil).</td><td>4</td></tr>
+            <tr><td><b>MVC · arquitectura</b></td><td>Patrón de la capa de presentación · organización de todo el sistema.</td><td>3</td></tr>
+            <tr><td><b>Capas · hexagonal · limpia</b></td><td>Cada capa llama a la de debajo (el negocio depende de los datos) · dominio en el centro con puertos simétricos · la misma regla graduada en círculos (entidades y casos de uso).</td><td>3, 5, 6</td></tr>
+            <tr><td><b>Puerto de entrada · de salida</b></td><td>Lo que el dominio ofrece (lo llama el adaptador) · lo que necesita (lo implementa el adaptador).</td><td>5</td></tr>
+            <tr><td><b>Regla de negocio · regla de aplicación</b></td><td>Cierta aunque no existiera el software (entidad) · cómo la app orquesta (caso de uso).</td><td>6, 8</td></tr>
+            <tr><td><b>Modelo anémico · rico</b></td><td>Datos sin comportamiento, reglas en servicios · la lógica vive con los datos que protege.</td><td>7</td></tr>
+            <tr><td><b>Entidad · objeto de valor</b></td><td>Tiene identidad que persiste aunque cambie · sin identidad, inmutable, igual por valor (<code>Franja</code>).</td><td>7</td></tr>
+            <tr><td><b>Caso de uso · servicio de dominio</b></td><td>Orquesta una intención del usuario · regla de negocio que abarca varias entidades (la excepción).</td><td>8</td></tr>
+            <tr><td><b>Repositorio · DAO</b></td><td>Colección con lenguaje del dominio, devuelve agregados · acceso a tablas (<code>selectById</code>).</td><td>9</td></tr>
+            <tr><td><b>Validación de forma · de negocio</b></td><td>¿El dato tiene forma? (Bean Validation en el DTO) · ¿es legítimo? (dominio).</td><td>10</td></tr>
+            <tr><td><b>DTO · entidad de dominio · entidad JPA</b></td><td>Forma de la frontera · reglas del negocio · forma de la tabla. Tres objetos, tres razones de cambio.</td><td>6, 9, 10</td></tr>
+            <tr><td><b>Agregado · entidad</b></td><td>Unidad de consistencia con una raíz · una pieza con identidad dentro o fuera de un agregado.</td><td>11</td></tr>
+            <tr><td><b>Límite de contexto · módulo de despliegue</b></td><td>Frontera de significado (modelado) · unidad que se despliega. No coinciden por obligación.</td><td>11, 14</td></tr>
+            <tr><td><b>Fake fiel · mock</b></td><td>Implementación real simplificada que pasa el test de contrato · objeto que responde lo que le programas y puede mentir.</td><td>9, 12</td></tr>
+            <tr><td><b>Complejidad esencial · accidental</b></td><td>La del problema · la que añade tu solución.</td><td>13</td></tr>
+            <tr><td><b>Monolito modular · microservicios · monolito distribuido</b></td><td>Un desplegable con contextos separados · contextos por red · fronteras equivocadas y además por red.</td><td>14</td></tr>
+            <tr><td><b>Estrangulador · gran reescritura</b></td><td>Lo nuevo crece alrededor de lo viejo pieza a pieza · todo de golpe, sin entregar mientras.</td><td>15</td></tr>
+            <tr><td><b>ADR · fitness function</b></td><td>Documenta el porqué · hace cumplir la regla automáticamente. Hacen falta las dos.</td><td>12, 15</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🧩 Patrones y buenas prácticas</summary>
+      <div class="acc-body">
+        <h3>Qué aplicar según lo que haya que proteger</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Situación</th><th>Estructura que compensa</th></tr></thead>
+          <tbody>
+            <tr><td>CRUD sin reglas (catálogo de sedes)</td><td>Controlador + repositorio directo. Nada más.</td></tr>
+            <tr><td>Reglas de negocio reales (reservas: solape, aforo, pasado)</td><td>Dominio rico + casos de uso + puertos y adaptadores.</td></tr>
+            <tr><td>Tecnología volátil (notificar por correo, luego SMS)</td><td>Puerto de salida con varios adaptadores (OCP).</td></tr>
+            <tr><td>Varios significados para una palabra</td><td>Límites de contexto con su propio modelo y un evento entre ellos.</td></tr>
+            <tr><td>Varios equipos o necesidades de escala distintas</td><td>Extraer un contexto ya bien cosido a servicio.</td></tr>
+            <tr><td>Sistema heredado sin tests</td><td>Tests de caracterización primero; después, estrangulador.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Cómo razonar en voz alta una decisión</h3>
+        <ol class="steps">
+          <li><b>¿Qué protege?</b> Una regla de negocio, aislarse de una tecnología volátil, la autonomía de un equipo.</li>
+          <li><b>¿Qué cuesta?</b> Clases, mapeos, latencia, coordinación.</li>
+          <li><b>¿Hacia dónde apuntan las dependencias?</b> Siempre hacia el dominio.</li>
+          <li><b>¿Cómo lo compruebo?</b> Un test que antes era imposible, jdeps, ArchUnit.</li>
+          <li><b>¿Cómo lo dejo escrito?</b> Un ADR, incluyendo la alternativa descartada.</li>
+        </ol>
+
+        <div class="note good"><b class="t">⭐ Buenas prácticas que se repiten en todo el curso</b>
+        <ul class="clean">
+          <li>Mide antes y después de refactorizar: la mejora se demuestra.</li>
+          <li>Interfaces del negocio con nombres del negocio, nunca de la tecnología.</li>
+          <li>Entidades válidas por construcción, sin setters que rompan invariantes.</li>
+          <li>Un caso de uso por intención; la transacción en su límite.</li>
+          <li>Traduce en cada frontera: DTOs en la web, mapeo en la persistencia.</li>
+          <li>Organiza por contexto de negocio en el primer nivel; las capas, dentro.</li>
+          <li>Empieza simple y añade capas cuando un dolor concreto lo pida.</li>
+        </ul></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🐞 Errores clásicos y su diagnóstico</summary>
+      <div class="acc-body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Síntoma</th><th>Diagnóstico</th><th>Corrección</th></tr></thead>
+          <tbody>
+            <tr><td>No se puede probar «no reservar en el pasado» sin Spring ni base de datos.</td><td>La regla no está aislada: servicio-Dios o modelo anémico.</td><td>Regla en la entidad; dependencias por constructor (2, 7).</td></tr>
+            <tr><td>Hay interfaz, pero vive en el paquete de datos.</td><td>DIP aparente: la flecha sigue yendo del negocio a los datos.</td><td>Mover el puerto al negocio (2, 4).</td></tr>
+            <tr><td>El servicio hace <code>new ReservaRepositorioJpa(...)</code>.</td><td>Cableado dentro del dominio.</td><td>Inyección por constructor; cableado en el borde (4).</td></tr>
+            <tr><td>El dominio importa <code>jakarta.persistence</code> y usa <code>@Entity</code>.</td><td>Hexágono sin sellar.</td><td><code>Reserva</code> pura + <code>ReservaEntity</code> + mapeo; regla ArchUnit (5, 6, 12).</td></tr>
+            <tr><td>La API devuelve la entidad y filtra campos internos.</td><td>Contrato externo acoplado al modelo interno.</td><td><code>ReservaRespuesta</code> con mapeo (10).</td></tr>
+            <tr><td>Un servicio con veinte métodos.</td><td>Servicio-Dios renacido.</td><td>Un caso de uso por intención (8).</td></tr>
+            <tr><td>La regla de solape está en el SQL, en el fake y en el servicio.</td><td>Falta un objeto de valor dueño de la regla.</td><td><code>Franja.solapaCon</code> (7).</td></tr>
+            <tr><td><code>Pageable</code> de Spring en el puerto.</td><td>Fuga de tecnología al dominio.</td><td>Objeto de valor propio (<code>RangoDeFechas</code>) (9).</td></tr>
+            <tr><td>Añadir asistentes con <code>reserva.asistentes().add(...)</code> se salta el aforo.</td><td>La raíz expone la colección viva.</td><td>Devolver copia y operar por <code>anadirAsistente</code> (11).</td></tr>
+            <tr><td>Casos de uso de una línea y DTOs idénticos a las entidades.</td><td>Sobre-diseño en una parte sin reglas.</td><td>CRUD directo allí (13).</td></tr>
+            <tr><td>Cada funcionalidad obliga a desplegar tres microservicios.</td><td>Monolito distribuido: fronteras que no son contextos.</td><td>Volver a coser por contexto, si hace falta dentro de un monolito (14).</td></tr>
+            <tr><td>La regla de dependencia está en la wiki y se incumple.</td><td>Regla sin comprobar: se degrada.</td><td>ArchUnit en el pipeline + ADR (12, 15).</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Fundamentos y SOLID</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es la arquitectura de software, en una frase útil?</p>
+            <div class="q-ans">El conjunto de decisiones que son caras de cambiar después: cómo se separan las piezas y hacia dónde apuntan sus dependencias. Su objetivo es que el coste de cada cambio no crezca con el tamaño del proyecto. «Funciona» no basta: el servicio-Dios de la v0 funcionaba, pero cada cambio tocaba todo y no se podía probar nada aislado.</div></div>
+          <div class="q"><p class="q-text">2. Define acoplamiento y cohesión y di en qué dirección se quiere cada uno.</p>
+            <div class="q-ans">Acoplamiento: cuánto depende una pieza de otras; se quiere bajo, y sobre todo dirigido hacia lo estable (abstracciones del negocio), no hacia lo volátil (tecnología). Cohesión: que lo que hay dentro de una pieza cambie por la misma razón; se quiere alta. El servicio-Dios falla en ambas: depende de la web, el SQL y el correo, y cambia por cuatro motivos distintos.</div></div>
+          <div class="q"><p class="q-text">3. Un compañero crea <code>ReservaRepositorio</code> en el paquete de datos junto a su implementación JPA y dice que ya aplicó DIP. ¿Tiene razón?</p>
+            <div class="q-ans">No. La inversión consiste en que la abstracción pertenezca al que la usa: si la interfaz vive en datos, el negocio sigue importando del paquete de datos y la flecha de compilación no ha girado. Hay que mover la interfaz al negocio (con nombre y métodos del negocio, como <code>haySolape</code>) para que sea la implementación JPA la que dependa de él.</div></div>
+          <div class="q"><p class="q-text">4. «Al final el negocio tiene que usar la base de datos, así que la inversión no sirve.» ¿Dónde está el error?</p>
+            <div class="q-ans">Confunde dependencia de ejecución con dependencia de compilación. En ejecución, claro que el negocio llama a la base de datos. Pero en compilación el negocio sólo conoce su interfaz <code>ReservaRepositorio</code>; quien conoce JPA es el adaptador. Eso permite probar el negocio con un fake, cambiar de tecnología sin tocarlo y retrasar decisiones. La arquitectura vive en los imports.</div></div>
+          <div class="q"><p class="q-text">5. NakaFlow debe avisar también por SMS. ¿Cómo, respetando OCP?</p>
+            <div class="q-ans">Creando un adaptador nuevo que implemente el puerto <code>Notificador</code> (o uno que componga correo y SMS) y cambiando sólo el cableado. El negocio, que dice «necesito avisar», no se toca, así que no puede romperse ni hay que volver a probarlo: se extiende sin modificar.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué se dice que la testabilidad es el mejor detector de mala arquitectura?</p>
+            <div class="q-ans">Porque para probar una regla aislada hace falta que esté aislada. Si probar «no reservar en el pasado» exige levantar Spring, una base de datos y un servidor de correo, la regla está enredada con todo eso. En NakaFlow el mismo test pasó de imposible en la v0 a tres líneas sin Spring en la v1: eso mide la mejora mejor que cualquier diagrama.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Capas, hexagonal y limpia</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. «Tenemos buena arquitectura porque usamos MVC.» ¿Qué respondes?</p>
+            <div class="q-ans">Que MVC es un patrón de la capa de presentación, no una arquitectura del sistema. Dice cómo separar vista, controlador y datos de la vista, pero nada de dónde viven las reglas de negocio ni hacia dónde apuntan las dependencias. Confundirlo lleva a meter el negocio en el controlador. Además, el «modelo» de MVC no es el modelo de dominio.</div></div>
+          <div class="q"><p class="q-text">2. Distingue puerto de entrada y de salida con ejemplos de NakaFlow.</p>
+            <div class="q-ans">Puerto de entrada: lo que el dominio ofrece, como el caso de uso <code>ReservarSala</code>; lo implementa el dominio y lo invocan los adaptadores de entrada (controlador REST, test, CLI o un proceso batch). Puerto de salida: lo que el dominio necesita, como <code>ReservaRepositorio</code> o <code>Notificador</code>; lo declara el dominio y lo implementan los adaptadores de salida (JPA, memoria, correo).</div></div>
+          <div class="q"><p class="q-text">3. ¿Qué aporta la arquitectura limpia sobre hexagonal?</p>
+            <div class="q-ans">Gradúa la misma regla en círculos y distingue dos niveles de política dentro del dominio: reglas del negocio (entidades, como el solape de <code>Franja</code>, ciertas aunque no existiera software) y reglas de la aplicación (casos de uso, como el orden de pasos al reprogramar). La regla de dependencia es la única ley: los imports apuntan hacia dentro.</div></div>
+          <div class="q"><p class="q-text">4. Hay dos clases <code>Reserva</code> y <code>ReservaEntity</code>. «Es duplicación, fusionadlas.» ¿Qué se rompería?</p>
+            <div class="q-ans">La regla de dependencia: la entidad de dominio importaría JPA y su forma quedaría dictada por la tabla (constructor vacío, setters, proxies, carga perezosa). Las invariantes y el objeto de valor <code>Franja</code> tendrían que adaptarse a columnas planas. Son dos objetos que cambian por razones distintas; el mapeo en el adaptador es el precio de que el dominio no sepa que existe una base de datos.</div></div>
+          <div class="q"><p class="q-text">5. NakaFlow debe aceptar reservas desde un batch nocturno que lee un archivo. ¿Qué cambia en el dominio?</p>
+            <div class="q-ans">Nada. Se escribe un adaptador de entrada nuevo que lee el archivo, traduce cada línea a objetos de dominio y llama al mismo puerto de entrada (<code>ReservarSala</code>). Las reglas de solape, aforo y pasado se aplican igual porque viven en el dominio, y los errores se traducen a lo que tenga sentido para un batch (un informe), no a códigos HTTP.</div></div>
+          <div class="q"><p class="q-text">6. ¿Cuándo bastan unas capas bien hechas?</p>
+            <div class="q-ans">Cuando hay poco negocio que proteger y la tecnología es estable: muchos proyectos. Las capas son fáciles de entender y suficientes; no son un mal a superar. Su límite de fondo es que, en el modelo puro, el negocio depende de los datos. Colocar las interfaces de repositorio en la capa de negocio (DIP) ya mitiga gran parte del problema.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Dominio, repositorios y fronteras</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Qué es un modelo anémico y por qué «sobrevive a la mejor arquitectura»?</p>
+            <div class="q-ans">Entidades con sólo getters y setters y las reglas repartidas por los servicios. Sobrevive porque los círculos o los puertos pueden estar perfectos y el centro seguir vacío: la regla de solape aparece en tres servicios, se arregla en uno y el bug vuelve por los otros dos. El modelo rico pone cada regla en un solo dueño (la entidad o el objeto de valor) y hace imposible un objeto inválido.</div></div>
+          <div class="q"><p class="q-text">2. ¿Por qué <code>Franja</code> es un objeto de valor y no dos <code>LocalDateTime</code>?</p>
+            <div class="q-ans">Porque inicio y fin viajan siempre juntos y tienen reglas propias (fin posterior al inicio, solape, duración). Como <code>record</code> con constructor compacto que valida, no puede existir una franja inválida y la regla de solape tiene un único dueño. No tiene identidad: dos franjas con las mismas horas son iguales. La tabla puede seguir con columnas planas: se traduce en el adaptador.</div></div>
+          <div class="q"><p class="q-text">3. Explica «orquestar, no decidir» con reprogramar una reserva.</p>
+            <div class="q-ans">El caso de uso obtiene la reserva del repositorio, le dice <code>reserva.reprogramar(nueva)</code>, comprueba el solape con otras reservas (necesita el repositorio) y guarda. La entidad decide lo que es verdad sobre ella: que no esté cancelada, que no sea en el pasado. Ante una regla nueva: si es verdad sobre la entidad, va en la entidad; si es cómo la aplicación coordina, va en el caso de uso.</div></div>
+          <div class="q"><p class="q-text">4. Repositorio frente a DAO: ¿qué método delataría a cada uno?</p>
+            <div class="q-ans"><code>haySolape(reserva)</code> o <code>reservasDe(email, rango)</code> son de repositorio: hablan del negocio y devuelven entidades. <code>selectById</code> o <code>ejecutar(String sql)</code> son de DAO: piensan en tablas. El vocabulario importa porque una interfaz que suena a SQL arrastra la base de datos al dominio. Escribir primero el adaptador en memoria ayuda a diseñarla como colección.</div></div>
+          <div class="q"><p class="q-text">5. ¿Cómo recibe el cliente un 409 si el dominio no sabe de HTTP?</p>
+            <div class="q-ans">El dominio lanza <code>SalaOcupada</code>, una excepción de negocio pura. En el adaptador web, un <code>@RestControllerAdvice</code> la captura y la traduce a 409 con un DTO de error estable (<code>SALA_OCUPADA</code>). La traducción de errores es la misma disciplina que la de datos: todo lo que cruza la frontera se traduce allí.</div></div>
+          <div class="q"><p class="q-text">6. ¿Por qué referenciar la sala por <code>salaId</code> y no con un campo <code>Sala sala</code>?</p>
+            <div class="q-ans">Para mantener los agregados pequeños e independientes: cargar una reserva no arrastra la sala con todas sus reservas, cada agregado tiene su repositorio y su transacción, y no se modifica otro agregado por accidente. Las invariantes de conjunto (el aforo) las protege la raíz de su propio agregado.</div></div>
+          <div class="q"><p class="q-text">7. ¿Qué es un límite de contexto? Usa la palabra «reserva».</p>
+            <div class="q-ans">La frontera dentro de la cual un término tiene un significado coherente. En reservas, una reserva es una franja ocupada en una sala con asistentes; en facturación, una línea con importe e IVA. Una sola clase para ambos sería un objeto-monstruo con baja cohesión. Cada contexto tiene su modelo y se comunican por un evento (<code>ReservaConfirmada</code>). No exige microservicios: pueden ser paquetes de un monolito modular.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>🎤 Entrevista · Tests, criterio y evolución</summary>
+      <div class="acc-body">
+        <div class="quiz">
+          <div class="q"><p class="q-text">1. ¿Por qué preferir un fake fiel a un mock para probar casos de uso?</p>
+            <div class="q-ans">Un mock responde lo que le programas y puede mentir sobre cómo se comporta el sistema real. El repositorio en memoria es una implementación real simplificada y, al pasar el mismo test de contrato que el adaptador JPA, está garantizado que se comporta igual. Así los tests de casos de uso son rápidos y fiables, sin <code>@SpringBootTest</code>.</div></div>
+          <div class="q"><p class="q-text">2. ¿Qué es ArchUnit y por qué no basta con un grep?</p>
+            <div class="q-ans">Una librería que analiza el bytecode y expresa reglas de arquitectura como tests (el dominio no depende de Spring ni de JPA; la web no toca repositorios). Va en el pipeline y bloquea la fusión. El grep a mano depende de que alguien se acuerde de ejecutarlo; toda regla que no se comprueba automáticamente se degrada.</div></div>
+          <div class="q"><p class="q-text">3. «La arquitectura limpia siempre es lo correcto.» Rebátelo.</p>
+            <div class="q-ans">Todo tiene coste: donde un CRUD tiene una clase, la limpia tiene seis o siete con sus mapeos. El beneficio sólo existe si hay reglas que proteger o tecnología volátil. El catálogo de sedes de NakaFlow no tiene reglas: ahí la estructura completa sería complejidad accidental pura. Una misma aplicación aplica varias estrategias según la parte, y eso es criterio, no incoherencia.</div></div>
+          <div class="q"><p class="q-text">4. Sois cuatro personas y tu jefe quiere microservicios «porque es lo moderno». ¿Qué respondes?</p>
+            <div class="q-ans">Que lo que de verdad preocupa (fronteras claras, no pisarse) lo da un monolito modular organizado por contextos delimitados, sin pagar latencia, fallo parcial, consistencia eventual, contratos versionados ni observabilidad distribuida. Con un equipo, la ley de Conway también favorece los módulos. Si los contextos están bien cosidos, extraer uno más adelante es cambiar la implementación de una interfaz; se hace cuando haya una razón concreta (escala, equipo, tecnología).</div></div>
+          <div class="q"><p class="q-text">5. Heredas un servicio-Dios sin tests en producción. ¿Por dónde empiezas?</p>
+            <div class="q-ans">No por una reescritura: reparte mal el riesgo y deja de entregar. Primero, tests que fijen el comportamiento actual (el andamio). Después, el estrangulador: extraer una pieza cada vez (una regla al dominio, un puerto, un adaptador), con los tests en verde y el sistema funcionando, midiendo con jdeps y fijando cada regla conseguida con ArchUnit. Cada decisión relevante, en un ADR.</div></div>
+          <div class="q"><p class="q-text">6. «Los ADR son burocracia: el código ya dice cómo está montado.» ¿Qué respondes?</p>
+            <div class="q-ans">El código dice qué se hizo, no por qué ni qué se descartó. Un ADR corto (contexto, decisión, consecuencias) conserva el razonamiento y sus costes, evita repetir debates y que alguien deshaga por moda lo decidido con criterio. No se edita cuando cambia la decisión: se escribe otro que lo sustituye. Junto con las fitness functions, que hacen cumplir la decisión, forman el sistema inmunológico de la arquitectura.</div></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>⏱ Repaso de 5 minutos</summary>
+      <div class="acc-body">
+        <h3>Una idea por capítulo</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Cap.</th><th>Si sólo recuerdas una cosa</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>La arquitectura son las decisiones caras de cambiar.</td></tr>
+            <tr><td>1</td><td>Bajar acoplamiento, subir cohesión; la dirección importa más que el número.</td></tr>
+            <tr><td>2</td><td>SRP = una razón para cambiar; DIP = la interfaz es del negocio.</td></tr>
+            <tr><td>3</td><td>MVC es presentación; las capas bastan a menudo.</td></tr>
+            <tr><td>4</td><td>Compilación no es ejecución; los detalles dependen de la política.</td></tr>
+            <tr><td>5</td><td>Puertos y adaptadores: la web y la BD son igual de adaptadores.</td></tr>
+            <tr><td>6</td><td>Los imports apuntan hacia dentro; lo que entra se traduce.</td></tr>
+            <tr><td>7</td><td>Modelo rico, válido por construcción; <code>Franja</code> como objeto de valor.</td></tr>
+            <tr><td>8</td><td>El caso de uso orquesta; la entidad decide.</td></tr>
+            <tr><td>9</td><td>Repositorio = colección del dominio, uno por agregado.</td></tr>
+            <tr><td>10</td><td>DTOs en la frontera; errores de negocio traducidos a HTTP en el adaptador.</td></tr>
+            <tr><td>11</td><td>Agregados pequeños por la raíz; contextos con su modelo; lenguaje ubicuo.</td></tr>
+            <tr><td>12</td><td>Fakes fieles y ArchUnit: la arquitectura como prueba.</td></tr>
+            <tr><td>13</td><td>Sólo la estructura que protege algo; YAGNI.</td></tr>
+            <tr><td>14</td><td>Monolito modular primero; extraer con una razón.</td></tr>
+            <tr><td>15</td><td>Estrangular, no reescribir; ADR para el porqué.</td></tr>
+          </tbody>
+        </table></div>
+
+        <div class="note good"><b class="t">⭐ Cómo mantener vivo lo aprendido</b>
+        <ul class="clean">
+          <li>Pasa <code>jdeps</code> a un proyecto tuyo y busca flechas del negocio hacia la tecnología.</li>
+          <li>Elige una regla repartida por servicios y dale un único dueño en una entidad u objeto de valor.</li>
+          <li>Escribe una regla de ArchUnit para la frontera que más se incumple en tu equipo.</li>
+          <li>Redacta un ADR de una decisión reciente, incluyendo lo que se descartó.</li>
+        </ul></div>
+      </div>
+    </details>
+  </section>
+
+<section class="view" id="glosario">
     <div class="crumb">Anexo</div>
     <h1 class="page-title">📚 Glosario y chuleta de comandos</h1>
     <p class="lead">Todos los términos del curso en un solo lugar, por si necesitas refrescar alguno sin volver al capítulo.</p>
